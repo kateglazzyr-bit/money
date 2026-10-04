@@ -764,13 +764,17 @@ function Logo({ small = false }) {
         React.createElement("span", { className: "wordmark-text" }, "MONEY"),
         React.createElement("span", { className: "wordmark-rule" })));
 }
+// Полоса сверху показывает выбранный месяц (на экранах входа — текущий)
 function TopStrip() {
+    const store = useContext(StoreContext);
     const d = new Date();
+    const y = store && store.month ? store.month.y : d.getFullYear();
+    const m = store && store.month ? store.month.m : d.getMonth();
     return React.createElement("div", { className: "topstrip" },
         "\u0423\u0447\u0451\u0442 \u0442\u0440\u0430\u0442 \u00B7 ",
-        MONTHS_NOM[d.getMonth()],
+        MONTHS_NOM[m],
         " ",
-        d.getFullYear());
+        y);
 }
 function PageHeader({ title, subtitle }) {
     return (React.createElement("header", { className: "pagehead" },
