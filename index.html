@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Money">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -17,6 +17,8 @@ img { max-width: 100%; }
 [hidden] { display: none !important; }
 * { box-sizing: border-box; }
 button { background: none; border: 0; font: inherit; cursor: pointer; }
+/* розовая полоса под часами и батареей, когда приложение открыто с экрана «Домой» */
+.sb-fill { position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #ec4899; z-index: 1000; pointer-events: none; }
 </style>
 <title>MoneyFlow</title>
 <meta name="theme-color" content="#ec4899">
@@ -170,6 +172,7 @@ button { background: none; border: 0; font: inherit; cursor: pointer; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+<div class="sb-fill"></div>
 <div id="root"><div id="boot"></div></div>
 <script>
 window.addEventListener("error", function (e) { var b = document.getElementById("boot"); if (b) b.textContent = "Не загрузилось: " + (e.message || "ошибка") + ". Обновите страницу."; });
@@ -712,7 +715,7 @@ const ICON_SET = [
 ];
 function iconNode(name) {
     const icons = (window.lucide && window.lucide.icons) || {};
-    const ALIASES = { House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
+    const ALIASES = { CircleCheck: 'CheckCircle', CalendarDays: 'Calendar', ListChecks: 'CheckSquare', CalendarPlus: 'Calendar', House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
     const node = icons[name] || icons[ALIASES[name]];
     if (!node)
         return null;
@@ -771,7 +774,8 @@ function TopStrip() {
     const y = store && store.month ? store.month.y : d.getFullYear();
     const m = store && store.month ? store.month.m : d.getMonth();
     return React.createElement("div", { className: "topstrip" },
-        "\u0423\u0447\u0451\u0442 \u0442\u0440\u0430\u0442 \u00B7 ",
+        window.APP_STRIP || 'Учёт трат',
+        " \u00B7 ",
         MONTHS_NOM[m],
         " ",
         y);
@@ -919,7 +923,7 @@ function Splash() {
                 "\u0414\u043E\u0431\u0440\u044B\u0439 \u0434\u0435\u043D\u044C,",
                 React.createElement("br", null),
                 name) : 'Добрый день'),
-            React.createElement("p", { className: "eyebrow" }, "\u0412\u0430\u0448 \u043B\u0438\u0447\u043D\u044B\u0439 \u0443\u0447\u0451\u0442 \u0442\u0440\u0430\u0442"),
+            React.createElement("p", { className: "eyebrow" }, window.APP_TAGLINE || 'Ваш личный учёт трат'),
             React.createElement(Stamp, { size: 96, className: "splash-stamp", text: "MONEY \u2022 FLOW \u2022 MONEY \u2022 FLOW \u2022 ", heart: true })),
         React.createElement(Stripes, { className: "splash-stripes" })));
 }
