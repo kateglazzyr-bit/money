@@ -47,6 +47,7 @@ button { background: none; border: 0; font: inherit; cursor: pointer; }
   .logo { font-family: var(--display); font-size: 30px; color: var(--ink); line-height: 1; }
   .logo-with { font-style: italic; font-size: 0.55em; margin: 0 0.3em; color: var(--pink-deep); }
   .stamp-heart { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--pink-deep); }
+  .logo-heart { color: var(--ink); display: block; }
   .title-mark { color: var(--pink-deep); font-size: 12px; line-height: 1; }
   .pagehead { margin: 0 -16px 24px; }
   .pagehead .topstrip { margin: 0; }
@@ -235,6 +236,7 @@ function Login() {
     const [mode, setMode] = useState('in'); // in | up
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
+    const [name, setName] = useState('');
     const [msg, setMsg] = useState('');
     const [busy, setBusy] = useState(false);
     const submit = async (e) => {
@@ -245,12 +247,18 @@ function Login() {
             if (mode === 'in')
                 await firebase.auth().signInWithEmailAndPassword(email.trim(), pass);
             else {
+                if (!name.trim()) {
+                    setMsg('Напишите, как вас зовут — так приложение будет здороваться');
+                    setBusy(false);
+                    return;
+                }
                 if (pass.length < 6) {
                     setMsg('Пароль — минимум 6 символов');
                     setBusy(false);
                     return;
                 }
                 const cred = await firebase.auth().createUserWithEmailAndPassword(email.trim(), pass);
+                await cred.user.updateProfile({ displayName: name.trim() });
                 await cred.user.sendEmailVerification();
             }
         }
@@ -280,6 +288,8 @@ function Login() {
     return (React.createElement(AuthShell, { title: mode === 'in' ? 'Вход' : 'Новый аккаунт' },
         React.createElement("form", { onSubmit: submit, className: "space-y-4" },
             React.createElement(Segmented, { value: mode, onChange: (v) => { setMode(v); setMsg(''); }, options: [['in', 'Войти'], ['up', 'Создать аккаунт']] }),
+            mode === 'up' && React.createElement(Field, { label: "\u0412\u0430\u0448\u0435 \u0438\u043C\u044F" },
+                React.createElement("input", { id: "login-name", className: "input", autoComplete: "given-name", placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F", value: name, onChange: (e) => setName(e.target.value) })),
             React.createElement(Field, { label: "\u041F\u043E\u0447\u0442\u0430" },
                 React.createElement("input", { id: "login-email", className: "input", type: "email", autoComplete: "email", value: email, onChange: (e) => setEmail(e.target.value) })),
             React.createElement(Field, { label: mode === 'in' ? 'Пароль' : 'Придумайте пароль' },
@@ -320,6 +330,22 @@ function VerifyEmail({ user }) {
         React.createElement("button", { type: "button", onClick: resend, className: "btn-ghost w-full py-3" }, "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0438\u0441\u044C\u043C\u043E \u0435\u0449\u0451 \u0440\u0430\u0437"),
         React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
 }
+function AskName({ onSave }) {
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    return (React.createElement(AuthShell, { title: "\u041A\u0430\u043A \u0432\u0430\u0441 \u0437\u043E\u0432\u0443\u0442?" },
+        React.createElement("form", { className: "space-y-4", onSubmit: async (e) => { e.preventDefault(); if (!name.trim())
+                return; setBusy(true); try {
+                await onSave(name.trim());
+            }
+            finally {
+                setBusy(false);
+            } } },
+            React.createElement("p", { className: "text-center text-gray-600" }, "\u0422\u0430\u043A \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0441 \u0432\u0430\u043C\u0438 \u0437\u0434\u043E\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F."),
+            React.createElement(Field, { label: "\u0418\u043C\u044F" },
+                React.createElement("input", { id: "ask-name", className: "input", autoComplete: "given-name", value: name, onChange: (e) => setName(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F" })),
+            React.createElement("button", { type: "submit", disabled: busy || !name.trim(), className: "btn-primary w-full py-3" }, "\u0413\u043E\u0442\u043E\u0432\u043E"))));
+}
 function NoAccess({ user }) {
     return (React.createElement(AuthShell, { title: "\u041F\u043E\u0447\u0442\u0438 \u0433\u043E\u0442\u043E\u0432\u043E" },
         React.createElement("p", { className: "text-center text-gray-600" },
@@ -341,6 +367,7 @@ function StoreProvider({ children }) {
     const [error, setError] = useState('');
     const dbRef = useRef(null);
     const [user, setUser] = useState(null);
+    const [displayName, setDisplayName] = useState('');
     const [isOwner, setIsOwner] = useState(false);
     const [members, setMembers] = useState([]);
     useEffect(() => {
@@ -385,6 +412,7 @@ function StoreProvider({ children }) {
                 if (cancelled)
                     return;
                 setUser(u);
+                setDisplayName(u?.displayName || '');
                 setIsOwner(false);
                 if (u && !u.emailVerified) {
                     unsubs.forEach(x => x());
@@ -460,7 +488,14 @@ function StoreProvider({ children }) {
     const api = {
         expenses, categories, payments, debts, mode, error, saveDoc, removeDoc, month, setMonth, user,
         signOut: () => window.firebase && firebase.auth().signOut(),
-        isOwner, members,
+        isOwner, members, displayName,
+        setName: (n) => wrap(async () => {
+            const v = n.trim();
+            if (!v)
+                return;
+            await firebase.auth().currentUser.updateProfile({ displayName: v });
+            setDisplayName(v);
+        }),
         addMember: (email) => wrap(async () => {
             const e = email.trim().toLowerCase();
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
@@ -554,6 +589,8 @@ function StoreProvider({ children }) {
         return React.createElement(VerifyEmail, { user: user });
     if (mode === 'noaccess' && user)
         return React.createElement(NoAccess, { user: user });
+    if (user && !displayName)
+        return React.createElement(AskName, { onSave: async (n) => { await user.updateProfile({ displayName: n }); setDisplayName(n); } });
     if (mode === 'loading' && window.FIREBASE_CONFIG)
         return React.createElement("div", { id: "boot" });
     return React.createElement(StoreContext.Provider, { value: api }, children);
@@ -620,11 +657,10 @@ function Stamp({ text = 'MONEY · EST. 2026 · MONEY · EST. 2026 · ', size = 8
             ? React.createElement(Heart, { size: size * 0.14, className: "stamp-heart" })
             : React.createElement("span", { className: "stamp-mark", style: { fontSize: size * 0.3 } }, "\u20BD")));
 }
+// Вместо надписи — тонкое контурное сердечко
 function LoveLogo() {
-    return React.createElement("div", { className: "logo" },
-        "Money",
-        React.createElement("span", { className: "logo-with" }, "with"),
-        "Love");
+    return (React.createElement("svg", { className: "logo-heart", width: "28", height: "26", viewBox: "0 0 24 22", "aria-hidden": "true" },
+        React.createElement("path", { d: "M12 20.2s-7.6-4.7-9.9-9.2C.4 7.6 2.4 3 6.4 3c2.4 0 3.9 1.4 5.6 3.5C13.7 4.4 15.2 3 17.6 3c4 0 6 4.6 4.3 8-2.3 4.5-9.9 9.2-9.9 9.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinejoin: "round", strokeLinecap: "round" })));
 }
 function Logo({ small = false }) {
     return (React.createElement("div", { className: `wordmark ${small ? 'wordmark-sm' : ''}` },
@@ -773,14 +809,16 @@ function CalendarGrid({ y, m, expenses, payments, selected, onSelect }) {
 }
 // ---- components/Splash.jsx
 function Splash() {
+    const store = useStore();
+    const name = (store && store.displayName) || (window.FIREBASE_CONFIG ? '' : 'Катя и Эрик');
     return (React.createElement("div", { className: "splash" },
         React.createElement(TopStrip, null),
         React.createElement("div", { className: "splash-body" },
             React.createElement(LoveLogo, null),
-            React.createElement("h1", { className: "display splash-title" },
+            React.createElement("h1", { className: "display splash-title" }, name ? React.createElement(React.Fragment, null,
                 "\u0414\u043E\u0431\u0440\u044B\u0439 \u0434\u0435\u043D\u044C,",
                 React.createElement("br", null),
-                "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A"),
+                name) : 'Добрый день'),
             React.createElement("p", { className: "eyebrow" }, "\u0412\u0430\u0448 \u043B\u0438\u0447\u043D\u044B\u0439 \u0443\u0447\u0451\u0442 \u0442\u0440\u0430\u0442"),
             React.createElement(Stamp, { size: 96, className: "splash-stamp", text: "MONEY \u2022 FLOW \u2022 MONEY \u2022 FLOW \u2022 ", heart: true })),
         React.createElement(Stripes, { className: "splash-stripes" })));
@@ -1212,7 +1250,8 @@ function Categories() {
 }
 // ---- pages/Settings.jsx
 function Settings() {
-    const { expenses, categories, clearAll, mode, user, signOut, isOwner, members, addMember, removeMember, importData, error } = useStore();
+    const { expenses, categories, clearAll, mode, user, signOut, isOwner, members, addMember, removeMember, importData, error, displayName, setName } = useStore();
+    const [editName, setEditName] = useState(null);
     const [newMember, setNewMember] = useState('');
     const [confirmMember, setConfirmMember] = useState(null);
     const [importMsg, setImportMsg] = useState('');
@@ -1324,8 +1363,10 @@ function Settings() {
             React.createElement("h2", { className: "font-medium text-gray-800 mb-4" }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
             React.createElement("div", { className: "space-y-3" },
                 React.createElement("p", { className: "flex justify-between items-center" },
-                    React.createElement("span", { className: "text-gray-600" }, "\u0418\u043C\u0435\u043D\u0430:"),
-                    React.createElement("span", { className: "font-semibold" }, "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A")),
+                    React.createElement("span", { className: "text-gray-600" }, user ? 'Ваше имя:' : 'Имена:'),
+                    user ? (editName !== null ? (React.createElement("form", { className: "flex gap-2", onSubmit: async (e) => { e.preventDefault(); await setName(editName); setEditName(null); } },
+                        React.createElement("input", { id: "profile-name", className: "input py-1 w-36", value: editName, onChange: (e) => setEditName(e.target.value), autoFocus: true }),
+                        React.createElement("button", { type: "submit", className: "mini-btn" }, "\u041E\u041A"))) : (React.createElement("button", { type: "button", className: "font-semibold underline underline-offset-4 decoration-[color:var(--line)]", onClick: () => setEditName(displayName) }, displayName || 'указать'))) : React.createElement("span", { className: "font-semibold" }, "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A")),
                 React.createElement("p", { className: "text-gray-500 text-sm" }, mode === 'cloud' ? (user ? 'Данные хранятся в облаке Firebase и видны только Кате и Эрику.' : 'Данные хранятся в облаке и видны всем, с кем вы поделились ссылкой.') : 'Данные хранятся только на этом устройстве.'))),
         user && isOwner && (React.createElement("section", { className: "mb-6" },
             React.createElement(SectionLabel, { right: members.length ? String(members.length) : null }, "\u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438"),
@@ -1607,7 +1648,8 @@ function Debts() {
 const START_HASH = (location.hash || '').replace('#', '');
 const HASH_PATHS = { add: '/', payments: '/payments', debts: '/debts', report: '/reports' };
 window.__START_ADD = START_HASH === 'add';
-function App() {
+// Заставка «Добрый день» показывается после входа: Main монтируется только когда доступ открыт
+function Main() {
     const [showSplash, setShowSplash] = useState(!HASH_PATHS[START_HASH]);
     const [path, setPath] = useState(HASH_PATHS[START_HASH] || '/');
     useEffect(() => { const t = setTimeout(() => setShowSplash(false), 2500); return () => clearTimeout(t); }, []);
@@ -1616,11 +1658,14 @@ function App() {
     const pages = { '/': Dashboard, '/payments': Payments, '/debts': Debts, '/reports': Reports, '/categories': Categories, '/settings': Settings };
     const Page = pages[path] || Dashboard;
     const go = (p) => { setPath(p); window.scrollTo(0, 0); };
-    return (React.createElement(StoreProvider, null,
-        React.createElement(NavContext.Provider, { value: { path, go } },
-            React.createElement("div", { className: "min-h-screen" },
-                React.createElement(Page, null),
-                React.createElement(Navigation, null)))));
+    return (React.createElement(NavContext.Provider, { value: { path, go } },
+        React.createElement("div", { className: "min-h-screen" },
+            React.createElement(Page, null),
+            React.createElement(Navigation, null))));
+}
+function App() {
+    return React.createElement(StoreProvider, null,
+        React.createElement(Main, null));
 }
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
 
