@@ -184,7 +184,9 @@ Chart.register(...(Chart.registerables || []));
 function ChartBox({ type, data, options }) {
     const ref = useRef(null);
     useEffect(() => {
-        const c = new Chart(ref.current, { type, data, options });
+        // Chart.js дописывает оси прямо в переданный объект настроек — даём каждой диаграмме свою копию,
+        // иначе круговая диаграмма получает оси от столбчатой
+        const c = new Chart(ref.current, { type, data: JSON.parse(JSON.stringify(data)), options: JSON.parse(JSON.stringify(options || {})) });
         return () => c.destroy();
     }, [type, JSON.stringify(data), JSON.stringify(options)]);
     return React.createElement("canvas", { ref: ref });
@@ -210,14 +212,14 @@ const lsSet = (k, v) => {
 };
 // Realtime Database под тем же интерфейсом, что и база Claude
 const clean = (o) => JSON.parse(JSON.stringify(o));
-const firebaseAdapter = (rtdb) => ({
+const firebaseAdapter = (rtdb, base = 'shared/') => ({
     doc: (path) => ({
-        set: (body) => rtdb.ref('shared/' + path).set(clean(body)),
-        delete: () => rtdb.ref('shared/' + path).remove(),
+        set: (body) => rtdb.ref(base + path).set(clean(body)),
+        delete: () => rtdb.ref(base + path).remove(),
     }),
     collection: (name) => ({
         onSnapshot: (next, err) => {
-            const ref = rtdb.ref('shared/' + name);
+            const ref = rtdb.ref(base + name);
             const h = ref.on('value', (snap) => {
                 const v = snap.val() || {};
                 next({ docs: Object.entries(v).map(([id, d]) => ({ id, data: () => d })) });
@@ -376,8 +378,13 @@ function StoreProvider({ children }) {
     const [displayName, setDisplayName] = useState('');
     const [isOwner, setIsOwner] = useState(false);
     const [members, setMembers] = useState([]);
+    const [uid, setUid] = useState(null);
+    const [invites, setInvites] = useState([]); // пространства, куда меня пригласили
+    const [activeSid, setActiveSid] = useState(null);
+    const switchRef = useRef(null);
     useEffect(() => {
         let unsubs = [];
+        let authOff = null;
         let cancelled = false;
         const useLocal = () => {
             if (cancelled)
@@ -388,17 +395,18 @@ function StoreProvider({ children }) {
             setDebts(lsGet('debts'));
             setMode('local');
         };
-        const attach = (db) => {
-            unsubs.forEach(u => u());
-            unsubs = [];
+        let dataUnsubs = [];
+        const attach = (db, onDenied) => {
+            dataUnsubs.forEach(u => u());
+            dataUnsubs = [];
             dbRef.current = db;
             setMode('cloud');
             const toList = (snap) => snap.docs.map(d => ({ ...d.data(), id: d.id }));
-            const onErr = (e) => window.FIREBASE_CONFIG && /permission/i.test((e && (e.code || e.message)) || '') ? setMode('noaccess') : setError(e?.code === 'PERMISSION_DENIED' || /permission/i.test(e?.message || '') ? 'Нет доступа к данным. Проверьте, что вы вошли под своей почтой.' : (e?.message || 'Ошибка связи с облаком'));
-            unsubs.push(db.collection('expenses').onSnapshot(s => setExpenses(toList(s)), onErr));
-            unsubs.push(db.collection('categories').onSnapshot(s => setCategories(toList(s)), onErr));
-            unsubs.push(db.collection('payments').onSnapshot(s => setPayments(toList(s)), onErr));
-            unsubs.push(db.collection('debts').onSnapshot(s => setDebts(toList(s)), onErr));
+            const onErr = (e) => window.FIREBASE_CONFIG && /permission/i.test((e && (e.code || e.message)) || '') ? (onDenied ? onDenied() : setMode('noaccess')) : setError(e?.code === 'PERMISSION_DENIED' || /permission/i.test(e?.message || '') ? 'Нет доступа к данным. Проверьте, что вы вошли под своей почтой.' : (e?.message || 'Ошибка связи с облаком'));
+            dataUnsubs.push(db.collection('expenses').onSnapshot(s => setExpenses(toList(s)), onErr));
+            dataUnsubs.push(db.collection('categories').onSnapshot(s => setCategories(toList(s)), onErr));
+            dataUnsubs.push(db.collection('payments').onSnapshot(s => setPayments(toList(s)), onErr));
+            dataUnsubs.push(db.collection('debts').onSnapshot(s => setDebts(toList(s)), onErr));
         };
         const start = async () => {
             const db = window.claude?.use ? await window.claude.use('db').catch(() => null) : null;
@@ -420,28 +428,94 @@ function StoreProvider({ children }) {
                 setUser(u);
                 setDisplayName(u?.displayName || '');
                 setIsOwner(false);
+                // слушатель входа живёт отдельно — его нельзя снимать при выходе, иначе следующий вход «зависнет»
+                unsubs.forEach(x => x());
+                unsubs = [];
+                dbRef.current = null;
                 if (u && !u.emailVerified) {
-                    unsubs.forEach(x => x());
-                    unsubs = [off];
                     setMode('verify');
                     return;
                 }
                 if (u) {
                     const rtdb = firebase.database();
-                    attach(firebaseAdapter(rtdb));
-                    // владелец — тот, кому правила разрешают читать список участников
-                    const mref = rtdb.ref('members');
-                    const h = mref.on('value', (snap) => {
-                        setIsOwner(true);
-                        const v = snap.val() || {};
-                        setMembers(Object.entries(v).map(([k, m]) => ({ key: k, email: m.email || k.replace(/,/g, '.'), addedAt: m.addedAt })));
-                    }, () => { setIsOwner(false); setMembers([]); });
-                    unsubs.push(() => mref.off('value', h));
+                    const myUid = u.uid, myKey = emailKey(u.email);
+                    setUid(myUid);
+                    const saveKey = 'money-space-' + myUid;
+                    let membersOff = null;
+                    // Переключение пространства: данные + список участников
+                    const switchTo = (sid) => {
+                        setActiveSid(sid);
+                        try {
+                            localStorage.setItem(saveKey, sid);
+                        }
+                        catch (e) { }
+                        setExpenses([]);
+                        setCategories([]);
+                        setPayments([]);
+                        setDebts([]);
+                        attach(firebaseAdapter(rtdb, 'spaces/' + sid + '/data/'), () => { if (sid !== myUid)
+                            switchTo(myUid);
+                        else
+                            setMode('noaccess'); });
+                        setIsOwner(sid === myUid);
+                        if (membersOff)
+                            membersOff();
+                        const mref = rtdb.ref('spaces/' + sid + '/members');
+                        const h = mref.on('value', (snap) => {
+                            const v = snap.val() || {};
+                            setMembers(Object.entries(v).map(([k, m]) => ({ key: k, email: m.email || k.replace(/,/g, '.'), addedAt: m.addedAt })));
+                        }, () => setMembers([]));
+                        membersOff = () => mref.off('value', h);
+                    };
+                    switchRef.current = switchTo;
+                    unsubs.push(() => { if (membersOff)
+                        membersOff(); dataUnsubs.forEach(x => x()); });
+                    // Своё пространство: создать при первом входе и перенести старые общие данные
+                    const metaRef = rtdb.ref('spaces/' + myUid + '/meta');
+                    metaRef.once('value').then(async (snap) => {
+                        let meta = snap.val();
+                        if (!meta) {
+                            meta = { ownerEmail: u.email.toLowerCase(), name: u.displayName || '', createdAt: todayYmd() };
+                            await metaRef.set(meta);
+                        }
+                        if (!meta.migrated) {
+                            try {
+                                const [sh, mem] = await Promise.all([rtdb.ref('shared').once('value'), rtdb.ref('members').once('value')]);
+                                const shv = sh.val();
+                                if (shv)
+                                    await rtdb.ref('spaces/' + myUid + '/data').update(shv);
+                                for (const [k, m] of Object.entries(mem.val() || {})) {
+                                    await rtdb.ref('spaces/' + myUid + '/members/' + k).set(m);
+                                    await rtdb.ref('invites/' + k + '/' + myUid).set({ name: meta.name || u.displayName || '', ownerEmail: meta.ownerEmail });
+                                }
+                            }
+                            catch (e) { /* старых общих данных нет или они не наши — это нормально */ }
+                            await metaRef.update({ migrated: true });
+                        }
+                    }).catch(() => { });
+                    // Приглашения: куда меня добавили другие
+                    let first = true;
+                    const iref = rtdb.ref('invites/' + myKey);
+                    const ih = iref.on('value', (snap) => {
+                        const list = Object.entries(snap.val() || {}).map(([sid, v]) => ({ sid, name: v.name || '', ownerEmail: v.ownerEmail || '' }));
+                        setInvites(list);
+                        if (first) {
+                            first = false;
+                            let saved = null;
+                            try {
+                                saved = localStorage.getItem(saveKey);
+                            }
+                            catch (e) { }
+                            const valid = [myUid, ...list.map(x => x.sid)];
+                            switchTo(saved && valid.includes(saved) ? saved : (list[0] ? list[0].sid : myUid));
+                        }
+                    }, () => { if (first) {
+                        first = false;
+                        switchTo(myUid);
+                    } });
+                    unsubs.push(() => iref.off('value', ih));
                 }
                 else {
-                    unsubs.forEach(x => x());
-                    unsubs = [];
-                    dbRef.current = null;
                     setExpenses([]);
                     setCategories([]);
                     setPayments([]);
@@ -449,13 +523,14 @@ function StoreProvider({ children }) {
                     setMode('signedout');
                 }
             });
-            unsubs.push(off);
+            authOff = off;
         }
         else if (!window.claude?.use)
             useLocal();
         else
             start();
-        return () => { cancelled = true; unsubs.forEach(u => u()); };
+        return () => { cancelled = true; unsubs.forEach(u => u()); if (authOff)
+            authOff(); };
     }, []);
     const wrap = async (fn) => {
         try {
@@ -501,20 +576,32 @@ function StoreProvider({ children }) {
                 return;
             await firebase.auth().currentUser.updateProfile({ displayName: v });
             setDisplayName(v);
+            if (uid)
+                await firebase.database().ref('spaces/' + uid + '/meta').update({ name: v });
         }),
+        invites, activeSid, uid,
+        switchSpace: (sid) => switchRef.current && switchRef.current(sid),
         addMember: (email) => wrap(async () => {
             const e = email.trim().toLowerCase();
             if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
                 throw { message: 'Проверьте адрес почты' };
-            await firebase.database().ref('members/' + emailKey(e)).set({ email: e, addedAt: todayYmd() });
+            if (e === (user?.email || '').toLowerCase())
+                throw { message: 'Это ваша почта — вы и так владелец' };
+            const rtdb = firebase.database();
+            await rtdb.ref('spaces/' + uid + '/members/' + emailKey(e)).set({ email: e, addedAt: todayYmd() });
+            await rtdb.ref('invites/' + emailKey(e) + '/' + uid).set({ name: displayName || '', ownerEmail: (user?.email || '').toLowerCase() });
         }),
-        removeMember: (key) => wrap(async () => { await firebase.database().ref('members/' + key).remove(); }),
+        removeMember: (key) => wrap(async () => {
+            const rtdb = firebase.database();
+            await rtdb.ref('spaces/' + uid + '/members/' + key).remove();
+            await rtdb.ref('invites/' + key + '/' + uid).remove();
+        }),
         importData: (data) => wrap(async () => {
             const rtdb = firebase.database();
             for (const col of ['categories', 'expenses', 'payments', 'debts']) {
                 const items = data[col] || {};
                 if (Object.keys(items).length)
-                    await rtdb.ref('shared/' + col).update(clean(items));
+                    await rtdb.ref('spaces/' + activeSid + '/data/' + col).update(clean(items));
             }
         }),
         addExpense: (data) => wrap(async () => {
@@ -596,7 +683,10 @@ function StoreProvider({ children }) {
     if (mode === 'noaccess' && user)
         return React.createElement(NoAccess, { user: user });
     if (user && !displayName)
-        return React.createElement(AskName, { onSave: async (n) => { await user.updateProfile({ displayName: n }); setDisplayName(n); } });
+        return React.createElement(AskName, { onSave: async (n) => { await user.updateProfile({ displayName: n }); setDisplayName(n); try {
+                await firebase.database().ref('spaces/' + user.uid + '/meta').update({ name: n });
+            }
+            catch (e) { } } });
     if (mode === 'loading' && window.FIREBASE_CONFIG)
         return React.createElement("div", { id: "boot" });
     return React.createElement(StoreContext.Provider, { value: api }, children);
@@ -1194,7 +1284,7 @@ function Reports() {
             monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Bar, { data: barChartData, options: chartOptions }))),
         React.createElement("div", { className: "paper p-4" },
             React.createElement("h2", { className: "display text-2xl text-gray-800 mb-4 text-center" }, "\u0420\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C"),
-            monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Pie, { data: pieChartData, options: chartOptions }))),
+            monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Pie, { data: pieChartData, options: { responsive: true, maintainAspectRatio: true, plugins: chartOptions.plugins } }))),
         React.createElement("div", { className: "mt-6 bg-lav rounded-lg p-4 border border-pink-100" },
             React.createElement("h3", { className: "font-medium text-gray-700 mb-3" }, "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0430 \u043C\u0435\u0441\u044F\u0446\u0430"),
             React.createElement("div", { className: "space-y-2 text-sm" },
@@ -1270,7 +1360,7 @@ function Categories() {
 }
 // ---- pages/Settings.jsx
 function Settings() {
-    const { expenses, categories, clearAll, mode, user, signOut, isOwner, members, addMember, removeMember, importData, error, displayName, setName } = useStore();
+    const { expenses, categories, clearAll, mode, user, signOut, isOwner, members, addMember, removeMember, importData, error, displayName, setName, invites, activeSid, uid, switchSpace } = useStore();
     const [editName, setEditName] = useState(null);
     const [newMember, setNewMember] = useState('');
     const [confirmMember, setConfirmMember] = useState(null);
@@ -1388,6 +1478,14 @@ function Settings() {
                         React.createElement("input", { id: "profile-name", className: "input py-1 w-36", value: editName, onChange: (e) => setEditName(e.target.value), autoFocus: true }),
                         React.createElement("button", { type: "submit", className: "mini-btn" }, "\u041E\u041A"))) : (React.createElement("button", { type: "button", className: "font-semibold underline underline-offset-4 decoration-[color:var(--line)]", onClick: () => setEditName(displayName) }, displayName || 'указать'))) : React.createElement("span", { className: "font-semibold" }, "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A")),
                 React.createElement("p", { className: "text-gray-500 text-sm" }, mode === 'cloud' ? (user ? 'Данные хранятся в облаке Firebase и видны только Кате и Эрику.' : 'Данные хранятся в облаке и видны всем, с кем вы поделились ссылкой.') : 'Данные хранятся только на этом устройстве.'))),
+        user && invites.length > 0 && (React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "\u041F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u043E"),
+            React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, [{ sid: uid, label: 'Моё', sub: 'только мои траты и те, кого я пригласила' }, ...invites.map(i => ({ sid: i.sid, label: i.name ? `Пространство: ${i.name}` : 'Общее пространство', sub: i.ownerEmail }))].map(o => (React.createElement("button", { key: o.sid, type: "button", onClick: () => switchSpace(o.sid), className: "w-full px-4 py-3 flex items-center gap-3 text-left" },
+                React.createElement("span", { className: `w-4 h-4 rounded-full border shrink-0 ${activeSid === o.sid ? 'border-gray-800 bg-gray-800' : 'border-gray-400'}`, style: activeSid === o.sid ? { boxShadow: 'inset 0 0 0 3px var(--paper)' } : undefined }),
+                React.createElement("span", { className: "min-w-0" },
+                    React.createElement("span", { className: "block text-gray-800" }, o.label),
+                    React.createElement("span", { className: "block text-xs text-gray-500 truncate" }, o.sub)))))))),
+        user && !isOwner && activeSid && (React.createElement("p", { className: "note mb-6" }, "\u0412\u044B \u0432\u0435\u0434\u0451\u0442\u0435 \u0442\u0440\u0430\u0442\u044B \u0432 \u0447\u0443\u0436\u043E\u043C \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0435. \u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u043E\u0432 \u0437\u0434\u0435\u0441\u044C \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u0435\u0433\u043E \u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446.")),
         user && isOwner && (React.createElement("section", { className: "mb-6" },
             React.createElement(SectionLabel, { right: members.length ? String(members.length) : null }, "\u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438"),
             React.createElement("div", { className: "paper" },
@@ -1405,7 +1503,7 @@ function Settings() {
                     React.createElement("input", { id: "member-email", type: "email", className: "input flex-1 min-w-0", placeholder: "\u043F\u043E\u0447\u0442\u0430 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430", value: newMember, onChange: (e) => setNewMember(e.target.value) }),
                     React.createElement("button", { type: "submit", className: "btn-primary px-4" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
                 error && React.createElement("p", { className: "note mx-4 mb-4" }, error),
-                React.createElement("p", { className: "px-4 pb-4 text-xs text-gray-500" }, "\u0427\u0435\u043B\u043E\u0432\u0435\u043A \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435, \u043D\u0430\u0436\u0438\u043C\u0430\u0435\u0442 \u00AB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u00BB \u0441 \u044D\u0442\u043E\u0439 \u043F\u043E\u0447\u0442\u043E\u0439 \u0438 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442 \u0435\u0451 \u043F\u043E \u043F\u0438\u0441\u044C\u043C\u0443.")))),
+                React.createElement("p", { className: "px-4 pb-4 text-xs text-gray-500" }, "\u042D\u0442\u0438 \u043B\u044E\u0434\u0438 \u0432\u0438\u0434\u044F\u0442 \u0438 \u043C\u0435\u043D\u044F\u044E\u0442 \u0442\u0440\u0430\u0442\u044B \u0432 \u0432\u0430\u0448\u0435\u043C \u043F\u0440\u043E\u0441\u0442\u0440\u0430\u043D\u0441\u0442\u0432\u0435. \u041D\u043E\u0432\u044B\u0439 \u0447\u0435\u043B\u043E\u0432\u0435\u043A \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435, \u0441\u043E\u0437\u0434\u0430\u0451\u0442 \u0430\u043A\u043A\u0430\u0443\u043D\u0442 \u0441 \u044D\u0442\u043E\u0439 \u043F\u043E\u0447\u0442\u043E\u0439 \u0438 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442 \u0435\u0451 \u043F\u043E \u043F\u0438\u0441\u044C\u043C\u0443. \u041E\u0441\u0442\u0430\u043B\u044C\u043D\u044B\u0435 \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u0438 \u0432\u0435\u0434\u0443\u0442 \u0441\u0432\u043E\u0438 \u0442\u0440\u0430\u0442\u044B \u043E\u0442\u0434\u0435\u043B\u044C\u043D\u043E \u0438 \u0432\u0430\u0448\u0438\u0445 \u043D\u0435 \u0432\u0438\u0434\u044F\u0442.")))),
         user && isOwner && (React.createElement("section", { className: "mb-6" },
             React.createElement(SectionLabel, null, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u0434\u0430\u043D\u043D\u044B\u0445"),
             React.createElement("div", { className: "paper px-4 py-4 space-y-3" },
