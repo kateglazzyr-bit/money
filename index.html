@@ -48,6 +48,8 @@ button { background: none; border: 0; font: inherit; cursor: pointer; }
   .logo-with { font-style: italic; font-size: 0.55em; margin: 0 0.3em; color: var(--pink-deep); }
   .stamp-heart { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--pink-deep); }
   .logo-heart { color: var(--ink); display: block; }
+  .cat-bar { height: 3px; background: var(--line); position: relative; margin-left: 50px; }
+  .cat-bar span { position: absolute; inset: 0 auto 0 0; opacity: .8; }
   .title-mark { color: var(--pink-deep); font-size: 12px; line-height: 1; }
   .pagehead { margin: 0 -16px 24px; }
   .pagehead .topstrip { margin: 0; }
@@ -1171,6 +1173,33 @@ function Reports() {
     return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
         React.createElement(PageHeader, { title: "\u041E\u0442\u0447\u0451\u0442" }),
         React.createElement(MonthSwitcher, null),
+        (() => {
+            const total = monthExpenses.reduce((acc, e) => acc + e.amount, 0);
+            const rows = Object.entries(categoryTotals)
+                .map(([id, sum]) => ({ id, sum, cat: categories.find(c => c.id === id) }))
+                .sort((a, b) => b.sum - a.sum);
+            return (React.createElement("section", { className: "mb-6" },
+                React.createElement(SectionLabel, { right: money(total) }, "\u041F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C"),
+                rows.length === 0 ? (React.createElement("div", { className: "paper p-6 text-center text-gray-400" }, "\u0412 \u044D\u0442\u043E\u043C \u043C\u0435\u0441\u044F\u0446\u0435 \u0442\u0440\u0430\u0442 \u043D\u0435\u0442")) : (React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, rows.map(r => {
+                    const pct = total ? Math.round((r.sum / total) * 100) : 0;
+                    const n = monthExpenses.filter(e => e.categoryId === r.id).length;
+                    return (React.createElement("div", { key: r.id, className: "px-4 py-3" },
+                        React.createElement("div", { className: "flex items-center gap-3" },
+                            React.createElement(CategoryBadge, { category: r.cat, size: 18, box: 38 }),
+                            React.createElement("div", { className: "flex-1 min-w-0" },
+                                React.createElement("p", { className: "font-medium text-gray-800 truncate" }, r.cat?.name || 'Другое'),
+                                React.createElement("p", { className: "text-xs text-gray-400" },
+                                    n,
+                                    " ",
+                                    n % 10 === 1 && n % 100 !== 11 ? 'операция' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 'операции' : 'операций',
+                                    " \u00B7 ",
+                                    pct,
+                                    "%")),
+                            React.createElement("span", { className: "display text-xl text-gray-800 tabular-nums shrink-0" }, money(r.sum))),
+                        React.createElement("div", { className: "cat-bar mt-2" },
+                            React.createElement("span", { style: { width: pct + '%', background: r.cat?.color || '#B67590' } }))));
+                })))));
+        })(),
         React.createElement("div", { className: "paper p-4 mb-6" },
             React.createElement("h2", { className: "display text-2xl text-gray-800 mb-4 text-center" }, "\u0414\u0438\u043D\u0430\u043C\u0438\u043A\u0430 \u043F\u043E \u0434\u043D\u044F\u043C"),
             monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Bar, { data: barChartData, options: chartOptions }))),
