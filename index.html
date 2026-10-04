@@ -243,6 +243,7 @@ function Login() {
         e.preventDefault();
         setBusy(true);
         setMsg('');
+        const slow = setTimeout(() => setMsg('Сервер долго не отвечает. Проверьте интернет; если включён VPN — попробуйте выключить его или сменить страну.'), 12000);
         try {
             if (mode === 'in')
                 await firebase.auth().signInWithEmailAndPassword(email.trim(), pass);
@@ -267,9 +268,10 @@ function Login() {
             setMsg(c.includes('email-already-in-use') ? 'Аккаунт с этой почтой уже есть — нажмите «Войти»'
                 : c.includes('invalid-email') ? 'Проверьте адрес почты'
                     : c.includes('weak-password') ? 'Пароль слишком простой, минимум 6 символов'
-                        : /password|credential|user-not-found/.test(c) ? 'Неверная почта или пароль'
-                            : 'Не получилось. Проверьте интернет и попробуйте ещё раз.');
+                        : /password|credential|user-not-found/.test(c) ? (mode === 'in' ? 'Неверная почта или пароль. Если вы ещё не регистрировались — выберите «Создать аккаунт».' : 'Неверная почта или пароль')
+                            : 'Не получилось (' + (c || 'ошибка сети') + '). Проверьте интернет и попробуйте ещё раз.');
         }
+        clearTimeout(slow);
         setBusy(false);
     };
     const reset = async () => {
