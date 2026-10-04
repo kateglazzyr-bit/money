@@ -1,0 +1,1629 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Money">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: 0; }
+html, body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+* { box-sizing: border-box; }
+button { background: none; border: 0; font: inherit; cursor: pointer; }
+</style>
+<title>MoneyFlow</title>
+<meta name="theme-color" content="#ec4899">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,600&family=Cormorant:ital,wght@0,500;0,600;1,500&family=Jost:wght@300;400;500&display=swap">
+<style>
+  /* Пастельная бумага: розовый и лавандово-голубой как фактура, графит как главный цвет действий. Одна светлая тема по задумке. */
+  :root {
+    --cream: #F7F6F3; --pink: #E8CCD7; --pink-deep: #B67590; --azure: #DEE5ED; --lav: #ECEBF7;
+    --blush: #F3E6DE; --ink: #2F2F2E; --gray: #6C6C6A; --line: #E4E2DE; --paper: #FFFFFF;
+  --late: #A4475E; --soon: #4A5A73;
+    --display: 'Cormorant', 'Times New Roman', serif; --sans: 'Jost', -apple-system, 'Segoe UI', sans-serif;
+    color-scheme: light;
+  }
+  html, body { background: var(--cream); color: var(--ink); }
+  body { font-family: var(--sans); font-weight: 400; -webkit-font-smoothing: antialiased; }
+  .display, h1, h2, h3, .font-serif { font-family: var(--display); font-weight: 500; letter-spacing: -0.01em; line-height: 1.02; text-wrap: balance; }
+  .eyebrow { font-family: var(--sans); font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gray); }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  .topstrip { background: var(--pink); color: var(--ink); text-align: center; font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase; padding: 6px 12px; margin: 0 -16px; }
+  .wordmark { display: flex; align-items: center; gap: 12px; color: var(--ink); }
+  .wordmark-text { font-family: 'Bodoni Moda', 'Didot', 'Times New Roman', serif; font-weight: 600; font-size: 30px; letter-spacing: 0.32em; margin-right: -0.32em; line-height: 1; font-optical-sizing: auto; }
+  .wordmark-rule { width: 28px; height: 1px; background: currentColor; opacity: .7; }
+  .wordmark-sm .wordmark-text { font-size: 19px; }
+  .wordmark-sm .wordmark-rule { width: 20px; }
+  .wordmark-xl .wordmark-text { font-size: 52px; letter-spacing: 0.26em; margin-right: -0.26em; }
+  .wordmark-xl .wordmark-rule { width: 34px; }
+  .logo { font-family: var(--display); font-size: 30px; color: var(--ink); line-height: 1; }
+  .logo-with { font-style: italic; font-size: 0.55em; margin: 0 0.3em; color: var(--pink-deep); }
+  .stamp-heart { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: var(--pink-deep); }
+  .title-mark { color: var(--pink-deep); font-size: 12px; line-height: 1; }
+  .pagehead { margin: 0 -16px 24px; }
+  .pagehead .topstrip { margin: 0; }
+  .pagehead-bar { background: var(--lav); border-bottom: 1px solid #D9D6EC; display: flex; justify-content: center; padding: 14px 16px; }
+  .pagehead-title { padding: 28px 16px 4px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .pagehead-title h1 { font-size: 46px; color: var(--ink); }
+
+  .stripes { background: repeating-linear-gradient(90deg, var(--pink) 0 18px, var(--lav) 18px 36px); padding: 28px 22px; }
+  .hero-card { position: relative; background: var(--cream); padding: 26px 20px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .hero-sum { font-size: 58px; color: var(--ink); margin: 2px 0 4px; font-variant-numeric: lining-nums tabular-nums; }
+  .hero-cur { font-size: 0.5em; margin-left: 6px; color: var(--gray); font-style: italic; }
+  .hero-stamp { position: absolute; right: -16px; bottom: -26px; }
+
+  .stamp { position: relative; display: inline-block; background: var(--cream); border-radius: 50%; color: var(--ink); }
+  .stamp-ring, .stamp-edge { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .stamp-ring { animation: spin 22s linear infinite; }
+  .stamp-ring text { font-family: var(--sans); font-size: 9.6px; letter-spacing: 2.4px; fill: var(--ink); text-transform: uppercase; }
+  .stamp-edge circle { fill: none; stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+  .stamp-mark { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -52%); font-family: 'Bodoni Moda', serif; font-weight: 500; color: var(--ink); line-height: 1; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .paper { background: var(--paper); border: 1px solid var(--line); }
+  .bg-lav { background: var(--lav); }
+  .dayhead { display: flex; align-items: center; gap: 8px; padding: 0 4px 10px; }
+  .dayhead-sum { margin-left: auto; font-family: var(--display); font-size: 18px; color: var(--gray); }
+
+  .btn-primary { background: var(--ink); color: var(--cream); border: 1px solid var(--ink); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; transition: background .2s; }
+  .btn-primary:hover, .btn-primary:active { background: #474745; }
+  .fab { position: fixed; right: 18px; bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 30; width: 60px; height: 60px; border-radius: 50%;
+    background: var(--ink); color: var(--cream); border: none; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 5px var(--cream), 0 0 0 6px var(--ink); }
+
+  .navbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--cream); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .navbar > div { max-width: 28rem; margin: 0 auto; display: flex; }
+  .navbtn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 9px; color: var(--gray); position: relative; }
+  .navbtn-active { color: var(--ink); }
+  .navbtn-active::before { content: ''; position: absolute; top: -1px; left: 30%; right: 30%; height: 2px; background: var(--ink); }
+  .navlabel { font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; }
+
+  .splash { position: fixed; inset: 0; z-index: 50; background: var(--lav); display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+  .splash .topstrip { margin: 0; }
+  .splash-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 0 24px; text-align: center; animation: rise 1.1s ease-out both; }
+  .splash-title { font-size: 58px; color: var(--ink); }
+  .splash-sub { font-size: 26px; font-style: italic; color: var(--gray); }
+  .splash-stamp { margin-top: 12px; background: var(--lav); }
+  .splash-stripes { height: 22vh; padding: 0; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(47,47,46,.38); display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { width: 100%; max-width: 28rem; max-height: 90vh; overflow-y: auto; background: var(--cream); padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); animation: sheetUp .28s ease-out; }
+  .sheet-grip { width: 38px; height: 3px; background: var(--line); margin: 0 auto 18px; }
+  @keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .input { width: 100%; background: var(--paper); border: 1px solid var(--line); padding: 12px 14px; font-size: 16px; color: var(--ink); border-radius: 2px; outline: none; }
+  .input:focus { border-color: var(--ink); }
+  .input-num { font-family: var(--display); font-size: 24px; padding: 8px 14px; font-variant-numeric: tabular-nums; }
+  .segmented { display: flex; border: 1px solid var(--ink); }
+  .segmented button { flex: 1; padding: 10px 4px; font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink); }
+  .segmented button + button { border-left: 1px solid var(--ink); }
+  .segmented .seg-on { background: var(--ink); color: var(--cream); }
+  .chip { display: inline-block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; padding: 3px 7px; border: 1px solid currentColor; line-height: 1.2; }
+  .chip-late { color: var(--late); background: #F6E4E8; border-color: #E6BFC9; }
+  .chip-soon { color: var(--soon); background: var(--azure); border-color: #C9D3E0; }
+  .chip-calm { color: var(--gray); border-color: var(--line); }
+  .mini-btn { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; padding: 6px 10px; border: 1px solid var(--ink); color: var(--ink); background: transparent; white-space: nowrap; }
+  .mini-btn:active { background: var(--ink); color: var(--cream); }
+  .btn-ghost { border: 1px solid var(--line); color: var(--gray); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; background: var(--paper); }
+  .link-danger { color: var(--late); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+  .note { font-size: 13px; color: var(--ink); background: var(--azure); padding: 10px 12px; }
+  .progress { height: 3px; background: var(--line); position: relative; overflow: hidden; }
+  .progress span { position: absolute; inset: 0 auto 0 0; background: var(--pink-deep); }
+  .hero-split { flex-direction: row; align-items: stretch; gap: 0; padding: 18px 10px; }
+  .split { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 4px; opacity: .55; transition: opacity .2s; min-width: 0; }
+  .split-on { opacity: 1; }
+  .split-sum { font-size: 30px; color: var(--ink); white-space: nowrap; }
+  .split-on .split-sum { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 6px; }
+  .split-rule { width: 1px; background: var(--line); }
+  .monthsw { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .monthsw > button { padding: 12px; color: var(--ink); }
+  .monthsw-name { display: flex; align-items: baseline; gap: 8px; }
+  .monthsw-name .display { font-size: 28px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+  .cal-wd { text-align: center; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gray); padding: 4px 0; }
+  .cal-we { color: var(--pink-deep); }
+  .cal-day { position: relative; aspect-ratio: 1 / 1.1; border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; color: var(--ink); min-width: 0; }
+  .cal-num { font-family: var(--display); font-size: 18px; line-height: 1; font-variant-numeric: lining-nums; }
+  .cal-sum { font-size: 9.5px; color: var(--ink); opacity: .8; height: 11px; line-height: 11px; }
+  .cal-today { border-color: var(--ink); }
+  .cal-sel { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+  .cal-sel .cal-sum { color: var(--cream); }
+  .cal-due { position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--soon); display: inline-block; }
+  .cal-due.static { position: static; }
+  .expense-note { font-family: var(--display); font-style: italic; font-size: 16px; line-height: 1.25; color: var(--gray); margin: 1px 0 2px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #boot { min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Bodoni Moda', serif; letter-spacing: .3em; font-size: 30px; color: var(--ink); background: var(--lav); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { serif: ['Cormorant', 'Times New Roman', 'serif'], sans: ['Jost', '-apple-system', 'sans-serif'] },
+    borderRadius: { lg: '2px', xl: '3px', '2xl': '4px' },
+    colors: {
+      pink: { 50: '#FBF2F5', 100: '#F4E1E9', 200: '#E8CCD7', 300: '#D9AFC0', 400: '#C98FA7', 500: '#B67590', 600: '#9E5F79', 700: '#844C63', 800: '#6B3D50', 900: '#52303E' },
+      gray: { 50: '#F8F8F6', 100: '#F0EFEC', 200: '#E3E1DD', 300: '#D2CEC8', 400: '#A8A8A4', 500: '#8A8A87', 600: '#6C6C6A', 700: '#575755', 800: '#3F3F3D', 900: '#2A2A29' },
+      purple: { 50: '#ECEBF7' }
+    }
+  } } };
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div id="root"><div id="boot"></div></div>
+<script>
+window.addEventListener("error", function (e) { var b = document.getElementById("boot"); if (b) b.textContent = "Не загрузилось: " + (e.message || "ошибка") + ". Обновите страницу."; });
+"use strict";
+const { useState, useEffect, useRef, createContext, useContext } = React;
+// Мини-роутер вместо react-router
+const NavContext = createContext({ path: '/', go: () => { } });
+const useLocation = () => ({ pathname: useContext(NavContext).path });
+const useNavigate = () => useContext(NavContext).go;
+// Обёртки Chart.js вместо react-chartjs-2
+Chart.register(...(Chart.registerables || []));
+function ChartBox({ type, data, options }) {
+    const ref = useRef(null);
+    useEffect(() => {
+        const c = new Chart(ref.current, { type, data, options });
+        return () => c.destroy();
+    }, [type, JSON.stringify(data), JSON.stringify(options)]);
+    return React.createElement("canvas", { ref: ref });
+}
+const Bar = (p) => React.createElement(ChartBox, { type: "bar", ...p });
+const Pie = (p) => React.createElement(ChartBox, { type: "pie", ...p });
+// ---- store.jsx
+// Хранилище: облачная база артефакта (db), запасной вариант — память браузера.
+const StoreContext = createContext(null);
+const lsGet = (k) => {
+    try {
+        return JSON.parse(localStorage.getItem(k) || '[]');
+    }
+    catch {
+        return [];
+    }
+};
+const lsSet = (k, v) => {
+    try {
+        localStorage.setItem(k, JSON.stringify(v));
+    }
+    catch { /* ignore */ }
+};
+// Realtime Database под тем же интерфейсом, что и база Claude
+const clean = (o) => JSON.parse(JSON.stringify(o));
+const firebaseAdapter = (rtdb) => ({
+    doc: (path) => ({
+        set: (body) => rtdb.ref('shared/' + path).set(clean(body)),
+        delete: () => rtdb.ref('shared/' + path).remove(),
+    }),
+    collection: (name) => ({
+        onSnapshot: (next, err) => {
+            const ref = rtdb.ref('shared/' + name);
+            const h = ref.on('value', (snap) => {
+                const v = snap.val() || {};
+                next({ docs: Object.entries(v).map(([id, d]) => ({ id, data: () => d })) });
+            }, err);
+            return () => ref.off('value', h);
+        },
+    }),
+});
+const emailKey = (e) => (e || '').trim().toLowerCase().replace(/\./g, ',');
+function AuthShell({ title, children }) {
+    return (React.createElement("div", { className: "splash", style: { overflowY: 'auto' } },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "splash-body w-full max-w-sm mx-auto py-8" },
+            React.createElement(LoveLogo, null),
+            React.createElement("h1", { className: "display splash-title", style: { fontSize: 44 } }, title),
+            React.createElement("div", { className: "w-full space-y-4 text-left" }, children)),
+        React.createElement(Stripes, { className: "splash-stripes", style: { minHeight: 60 } })));
+}
+function Login() {
+    const [mode, setMode] = useState('in'); // in | up
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
+    const [msg, setMsg] = useState('');
+    const [busy, setBusy] = useState(false);
+    const submit = async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setMsg('');
+        try {
+            if (mode === 'in')
+                await firebase.auth().signInWithEmailAndPassword(email.trim(), pass);
+            else {
+                if (pass.length < 6) {
+                    setMsg('Пароль — минимум 6 символов');
+                    setBusy(false);
+                    return;
+                }
+                const cred = await firebase.auth().createUserWithEmailAndPassword(email.trim(), pass);
+                await cred.user.sendEmailVerification();
+            }
+        }
+        catch (err) {
+            const c = err.code || '';
+            setMsg(c.includes('email-already-in-use') ? 'Аккаунт с этой почтой уже есть — нажмите «Войти»'
+                : c.includes('invalid-email') ? 'Проверьте адрес почты'
+                    : c.includes('weak-password') ? 'Пароль слишком простой, минимум 6 символов'
+                        : /password|credential|user-not-found/.test(c) ? 'Неверная почта или пароль'
+                            : 'Не получилось. Проверьте интернет и попробуйте ещё раз.');
+        }
+        setBusy(false);
+    };
+    const reset = async () => {
+        if (!email.trim()) {
+            setMsg('Введите почту, и мы пришлём ссылку для нового пароля');
+            return;
+        }
+        try {
+            await firebase.auth().sendPasswordResetEmail(email.trim());
+            setMsg('Письмо для смены пароля отправлено');
+        }
+        catch {
+            setMsg('Не удалось отправить письмо');
+        }
+    };
+    return (React.createElement(AuthShell, { title: mode === 'in' ? 'Вход' : 'Новый аккаунт' },
+        React.createElement("form", { onSubmit: submit, className: "space-y-4" },
+            React.createElement(Segmented, { value: mode, onChange: (v) => { setMode(v); setMsg(''); }, options: [['in', 'Войти'], ['up', 'Создать аккаунт']] }),
+            React.createElement(Field, { label: "\u041F\u043E\u0447\u0442\u0430" },
+                React.createElement("input", { id: "login-email", className: "input", type: "email", autoComplete: "email", value: email, onChange: (e) => setEmail(e.target.value) })),
+            React.createElement(Field, { label: mode === 'in' ? 'Пароль' : 'Придумайте пароль' },
+                React.createElement("input", { id: "login-pass", className: "input", type: "password", autoComplete: mode === 'in' ? 'current-password' : 'new-password', value: pass, onChange: (e) => setPass(e.target.value) })),
+            msg && React.createElement("p", { className: "note" }, msg),
+            React.createElement("button", { type: "submit", disabled: busy, className: "btn-primary w-full py-3" }, busy ? 'Минутку…' : mode === 'in' ? 'Войти' : 'Создать аккаунт'),
+            mode === 'in'
+                ? React.createElement("button", { type: "button", onClick: reset, className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0417\u0430\u0431\u044B\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C?")
+                : React.createElement("p", { className: "text-xs text-gray-500 text-center" }, "\u041F\u043E\u0441\u043B\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043F\u0440\u0438\u0434\u0451\u0442 \u043F\u0438\u0441\u044C\u043C\u043E \u0434\u043B\u044F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u043F\u043E\u0447\u0442\u044B. \u0414\u043E\u0441\u0442\u0443\u043F \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u043E\u0442\u043A\u0440\u043E\u0435\u0442\u0441\u044F, \u043A\u043E\u0433\u0434\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446 \u0434\u043E\u0431\u0430\u0432\u0438\u0442 \u0432\u0430\u0448\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438."))));
+}
+function VerifyEmail({ user }) {
+    const [msg, setMsg] = useState('');
+    const check = async () => {
+        await user.reload();
+        if (firebase.auth().currentUser.emailVerified) {
+            await firebase.auth().currentUser.getIdToken(true);
+            location.reload();
+        }
+        else
+            setMsg('Почта ещё не подтверждена. Откройте письмо и нажмите ссылку.');
+    };
+    const resend = async () => {
+        try {
+            await user.sendEmailVerification();
+            setMsg('Письмо отправлено ещё раз. Проверьте папку «Спам».');
+        }
+        catch {
+            setMsg('Подождите минуту и попробуйте снова');
+        }
+    };
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u043F\u043E\u0447\u0442\u0443" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u041C\u044B \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0438 \u043F\u0438\u0441\u044C\u043C\u043E \u043D\u0430 ",
+            React.createElement("b", null, user.email),
+            ". \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u0432 \u043D\u0451\u043C \u0441\u0441\u044B\u043B\u043A\u0443, \u043F\u043E\u0442\u043E\u043C \u0432\u0435\u0440\u043D\u0438\u0442\u0435\u0441\u044C \u0441\u044E\u0434\u0430."),
+        msg && React.createElement("p", { className: "note" }, msg),
+        React.createElement("button", { type: "button", onClick: check, className: "btn-primary w-full py-3" }, "\u042F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043B\u0430 \u043F\u043E\u0447\u0442\u0443"),
+        React.createElement("button", { type: "button", onClick: resend, className: "btn-ghost w-full py-3" }, "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0438\u0441\u044C\u043C\u043E \u0435\u0449\u0451 \u0440\u0430\u0437"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+function NoAccess({ user }) {
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0447\u0442\u0438 \u0433\u043E\u0442\u043E\u0432\u043E" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u0410\u043A\u043A\u0430\u0443\u043D\u0442 ",
+            React.createElement("b", null, user.email),
+            " \u0441\u043E\u0437\u0434\u0430\u043D. \u041F\u043E\u043F\u0440\u043E\u0441\u0438\u0442\u0435 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u0442\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u00AB\u0415\u0449\u0451 \u2192 \u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438\u00BB, \u0437\u0430\u0442\u0435\u043C \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C\u00BB."),
+        React.createElement("button", { type: "button", onClick: () => location.reload(), className: "btn-primary w-full py-3" }, "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function StoreProvider({ children }) {
+    const [expenses, setExpenses] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [payments, setPayments] = useState([]);
+    const [debts, setDebts] = useState([]);
+    const setters = { expenses: setExpenses, categories: setCategories, payments: setPayments, debts: setDebts };
+    const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+    const [mode, setMode] = useState('loading'); // loading | cloud | local
+    const [error, setError] = useState('');
+    const dbRef = useRef(null);
+    const [user, setUser] = useState(null);
+    const [isOwner, setIsOwner] = useState(false);
+    const [members, setMembers] = useState([]);
+    useEffect(() => {
+        let unsubs = [];
+        let cancelled = false;
+        const useLocal = () => {
+            if (cancelled)
+                return;
+            setExpenses(lsGet('expenses'));
+            setCategories(lsGet('categories'));
+            setPayments(lsGet('payments'));
+            setDebts(lsGet('debts'));
+            setMode('local');
+        };
+        const attach = (db) => {
+            unsubs.forEach(u => u());
+            unsubs = [];
+            dbRef.current = db;
+            setMode('cloud');
+            const toList = (snap) => snap.docs.map(d => ({ ...d.data(), id: d.id }));
+            const onErr = (e) => window.FIREBASE_CONFIG && /permission/i.test((e && (e.code || e.message)) || '') ? setMode('noaccess') : setError(e?.code === 'PERMISSION_DENIED' || /permission/i.test(e?.message || '') ? 'Нет доступа к данным. Проверьте, что вы вошли под своей почтой.' : (e?.message || 'Ошибка связи с облаком'));
+            unsubs.push(db.collection('expenses').onSnapshot(s => setExpenses(toList(s)), onErr));
+            unsubs.push(db.collection('categories').onSnapshot(s => setCategories(toList(s)), onErr));
+            unsubs.push(db.collection('payments').onSnapshot(s => setPayments(toList(s)), onErr));
+            unsubs.push(db.collection('debts').onSnapshot(s => setDebts(toList(s)), onErr));
+        };
+        const start = async () => {
+            const db = window.claude?.use ? await window.claude.use('db').catch(() => null) : null;
+            if (cancelled)
+                return;
+            if (!db) {
+                useLocal();
+                return;
+            }
+            attach(db);
+        };
+        // Свой хостинг: Firebase (вход по почте) — иначе Claude, иначе память браузера
+        if (window.FIREBASE_CONFIG && window.firebase) {
+            if (!firebase.apps.length)
+                firebase.initializeApp(window.FIREBASE_CONFIG);
+            const off = firebase.auth().onAuthStateChanged((u) => {
+                if (cancelled)
+                    return;
+                setUser(u);
+                setIsOwner(false);
+                if (u && !u.emailVerified) {
+                    unsubs.forEach(x => x());
+                    unsubs = [off];
+                    setMode('verify');
+                    return;
+                }
+                if (u) {
+                    const rtdb = firebase.database();
+                    attach(firebaseAdapter(rtdb));
+                    // владелец — тот, кому правила разрешают читать список участников
+                    const mref = rtdb.ref('members');
+                    const h = mref.on('value', (snap) => {
+                        setIsOwner(true);
+                        const v = snap.val() || {};
+                        setMembers(Object.entries(v).map(([k, m]) => ({ key: k, email: m.email || k.replace(/,/g, '.'), addedAt: m.addedAt })));
+                    }, () => { setIsOwner(false); setMembers([]); });
+                    unsubs.push(() => mref.off('value', h));
+                }
+                else {
+                    unsubs.forEach(x => x());
+                    unsubs = [];
+                    dbRef.current = null;
+                    setExpenses([]);
+                    setCategories([]);
+                    setPayments([]);
+                    setDebts([]);
+                    setMode('signedout');
+                }
+            });
+            unsubs.push(off);
+        }
+        else if (!window.claude?.use)
+            useLocal();
+        else
+            start();
+        return () => { cancelled = true; unsubs.forEach(u => u()); };
+    }, []);
+    const wrap = async (fn) => {
+        try {
+            setError('');
+            await fn();
+        }
+        catch (e) {
+            setError(e?.code === 'invalid_argument'
+                ? 'Нет прав на изменение. Попросите владельца дать доступ «Участник».'
+                : (e?.message || 'Не удалось сохранить'));
+        }
+    };
+    const current = { expenses, categories, payments, debts };
+    // Универсальные запись/удаление для платежей и долгов
+    const saveDoc = (col, item) => wrap(async () => {
+        const id = item.id || newId();
+        const { id: _, ...body } = item;
+        if (dbRef.current)
+            await dbRef.current.doc(col + '/' + id).set(body);
+        else {
+            const list = current[col];
+            const next = list.some(x => x.id === id) ? list.map(x => x.id === id ? { ...body, id } : x) : [...list, { ...body, id }];
+            setters[col](next);
+            lsSet(col, next);
+        }
+    });
+    const removeDoc = (col, id) => wrap(async () => {
+        if (dbRef.current)
+            await dbRef.current.doc(col + '/' + id).delete();
+        else {
+            const next = current[col].filter(x => x.id !== id);
+            setters[col](next);
+            lsSet(col, next);
+        }
+    });
+    const api = {
+        expenses, categories, payments, debts, mode, error, saveDoc, removeDoc, month, setMonth, user,
+        signOut: () => window.firebase && firebase.auth().signOut(),
+        isOwner, members,
+        addMember: (email) => wrap(async () => {
+            const e = email.trim().toLowerCase();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+                throw { message: 'Проверьте адрес почты' };
+            await firebase.database().ref('members/' + emailKey(e)).set({ email: e, addedAt: todayYmd() });
+        }),
+        removeMember: (key) => wrap(async () => { await firebase.database().ref('members/' + key).remove(); }),
+        importData: (data) => wrap(async () => {
+            const rtdb = firebase.database();
+            for (const col of ['categories', 'expenses', 'payments', 'debts']) {
+                const items = data[col] || {};
+                if (Object.keys(items).length)
+                    await rtdb.ref('shared/' + col).update(clean(items));
+            }
+        }),
+        addExpense: (data) => wrap(async () => {
+            const id = newId();
+            const item = { ...data, id };
+            if (dbRef.current) {
+                const { id: _, ...body } = item;
+                await dbRef.current.doc('expenses/' + id).set(body);
+            }
+            else {
+                const next = [...expenses, item];
+                setExpenses(next);
+                lsSet('expenses', next);
+            }
+        }),
+        updateExpense: (item) => wrap(async () => {
+            if (dbRef.current) {
+                const { id, ...body } = item;
+                await dbRef.current.doc('expenses/' + id).set(body);
+            }
+            else {
+                const next = expenses.map(e => e.id === item.id ? item : e);
+                setExpenses(next);
+                lsSet('expenses', next);
+            }
+        }),
+        deleteExpense: (id) => wrap(async () => {
+            if (dbRef.current)
+                await dbRef.current.doc('expenses/' + id).delete();
+            else {
+                const next = expenses.filter(e => e.id !== id);
+                setExpenses(next);
+                lsSet('expenses', next);
+            }
+        }),
+        addCategory: (data) => wrap(async () => {
+            const id = newId();
+            if (dbRef.current)
+                await dbRef.current.doc('categories/' + id).set(data);
+            else {
+                const next = [...categories, { ...data, id }];
+                setCategories(next);
+                lsSet('categories', next);
+            }
+        }),
+        deleteCategory: (id) => wrap(async () => {
+            if (dbRef.current)
+                await dbRef.current.doc('categories/' + id).delete();
+            else {
+                const next = categories.filter(c => c.id !== id);
+                setCategories(next);
+                lsSet('categories', next);
+            }
+        }),
+        clearAll: () => wrap(async () => {
+            if (dbRef.current) {
+                for (const e of expenses)
+                    await dbRef.current.doc('expenses/' + e.id).delete();
+                for (const c of categories)
+                    await dbRef.current.doc('categories/' + c.id).delete();
+                for (const x of payments)
+                    await dbRef.current.doc('payments/' + x.id).delete();
+                for (const x of debts)
+                    await dbRef.current.doc('debts/' + x.id).delete();
+            }
+            else {
+                setExpenses([]);
+                setCategories([]);
+                setPayments([]);
+                setDebts([]);
+                ['expenses', 'categories', 'payments', 'debts'].forEach(k => lsSet(k, []));
+            }
+        }),
+    };
+    if (mode === 'signedout')
+        return React.createElement(Login, null);
+    if (mode === 'verify' && user)
+        return React.createElement(VerifyEmail, { user: user });
+    if (mode === 'noaccess' && user)
+        return React.createElement(NoAccess, { user: user });
+    if (mode === 'loading' && window.FIREBASE_CONFIG)
+        return React.createElement("div", { id: "boot" });
+    return React.createElement(StoreContext.Provider, { value: api }, children);
+}
+const useStore = () => useContext(StoreContext);
+// ---- components/Icon.jsx
+// Контурные иконки (Lucide). Ключ хранится в категории; старые эмодзи показываются как есть.
+const ICON_SET = [
+    ['ShoppingCart', 'Продукты'], ['ShoppingBag', 'Покупки'], ['Utensils', 'Еда'], ['Coffee', 'Кофе'],
+    ['Pizza', 'Фастфуд'], ['Apple', 'Фрукты'], ['Wine', 'Вино'], ['Beer', 'Бар'],
+    ['Car', 'Авто'], ['Fuel', 'Бензин'], ['Bus', 'Автобус'], ['TrainFront', 'Метро'],
+    ['Bike', 'Велосипед'], ['Plane', 'Перелёт'], ['Hotel', 'Отель'], ['Umbrella', 'Отпуск'],
+    ['House', 'Дом'], ['Sofa', 'Интерьер'], ['Zap', 'Свет'], ['Droplet', 'Вода'],
+    ['Wifi', 'Интернет'], ['Smartphone', 'Связь'], ['Wrench', 'Ремонт'], ['Bath', 'Быт'],
+    ['Shirt', 'Одежда'], ['Footprints', 'Обувь'], ['Gem', 'Украшения'], ['Scissors', 'Стрижка'],
+    ['Sparkles', 'Красота'], ['Flower2', 'Цветы'], ['Heart', 'Любовь'], ['HeartPulse', 'Здоровье'],
+    ['Pill', 'Аптека'], ['Stethoscope', 'Врач'], ['Dumbbell', 'Спорт'], ['Baby', 'Дети'],
+    ['PawPrint', 'Питомцы'], ['Gift', 'Подарки'], ['PartyPopper', 'Праздники'], ['Ticket', 'Билеты'],
+    ['Film', 'Кино'], ['Popcorn', 'Досуг'], ['Music', 'Музыка'], ['Gamepad2', 'Игры'],
+    ['Tv', 'Подписки'], ['Book', 'Книги'], ['GraduationCap', 'Учёба'], ['Palette', 'Хобби'],
+    ['Camera', 'Фото'], ['Laptop', 'Техника'], ['Briefcase', 'Работа'], ['CreditCard', 'Карта'],
+    ['Receipt', 'Счета'], ['Landmark', 'Налоги'], ['Wallet', 'Наличные'], ['Leaf', 'Разное'],
+];
+function iconNode(name) {
+    const icons = (window.lucide && window.lucide.icons) || {};
+    const ALIASES = { House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
+    const node = icons[name] || icons[ALIASES[name]];
+    if (!node)
+        return null;
+    // Разные версии Lucide: [tag, attrs][] либо ['svg', attrs, children]
+    return node[0] === 'svg' ? node[2] : node;
+}
+function Icon({ name, size = 22, strokeWidth = 1.6, className = '', style }) {
+    const children = name ? iconNode(name) : null;
+    if (!children) {
+        // эмодзи из старых категорий или если иконки не загрузились
+        return React.createElement("span", { className: className, style: { fontSize: size * 0.9, lineHeight: 1, ...style } }, name && !/^[A-Z]/.test(name) ? name : '•');
+    }
+    return (React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: strokeWidth, strokeLinecap: "round", strokeLinejoin: "round", className: className, style: style, "aria-hidden": "true" }, children.map(([tag, attrs], i) => React.createElement(tag, { ...attrs, key: i }))));
+}
+function CategoryBadge({ category, size = 22, box = 44 }) {
+    const color = category?.color || '#ec4899';
+    return (React.createElement("div", { className: "flex items-center justify-center rounded-full shrink-0", style: { width: box, height: box, color, backgroundColor: color + '14', border: `1px solid ${color}40` } },
+        React.createElement(Icon, { name: category?.icon, size: size })));
+}
+// ---- components/Decor.jsx
+// Декоративные элементы в духе референса: полоса-анонс, логотип, печать, маркиза, сердечки.
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+function Heart({ size = 9, className = '' }) {
+    return (React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", className: className, "aria-hidden": "true" },
+        React.createElement("path", { fill: "currentColor", d: "M12 21s-7.5-4.6-10-9.3C.3 8.3 2.2 4 6.2 4c2.4 0 3.9 1.4 5.8 3.6C13.9 5.4 15.4 4 17.8 4c4 0 5.9 4.3 4.2 7.7C19.5 16.4 12 21 12 21z" })));
+}
+function Stamp({ text = 'MONEY · EST. 2026 · MONEY · EST. 2026 · ', size = 84, className = '', heart = false }) {
+    const id = React.useId ? React.useId().replace(/:/g, '') : 'st';
+    return (React.createElement("div", { className: `stamp ${className}`, style: { width: size, height: size }, "aria-hidden": "true" },
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-ring" },
+            React.createElement("path", { id: 'c' + id, d: "M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0", fill: "none" }),
+            React.createElement("text", null,
+                React.createElement("textPath", { href: '#c' + id, startOffset: "0" }, text))),
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-edge" },
+            React.createElement("circle", { cx: "50", cy: "50", r: "47" })),
+        heart
+            ? React.createElement(Heart, { size: size * 0.14, className: "stamp-heart" })
+            : React.createElement("span", { className: "stamp-mark", style: { fontSize: size * 0.3 } }, "\u20BD")));
+}
+function LoveLogo() {
+    return React.createElement("div", { className: "logo" },
+        "Money",
+        React.createElement("span", { className: "logo-with" }, "with"),
+        "Love");
+}
+function Logo({ small = false }) {
+    return (React.createElement("div", { className: `wordmark ${small ? 'wordmark-sm' : ''}` },
+        React.createElement("span", { className: "wordmark-rule" }),
+        React.createElement("span", { className: "wordmark-text" }, "MONEY"),
+        React.createElement("span", { className: "wordmark-rule" })));
+}
+function TopStrip() {
+    const d = new Date();
+    return React.createElement("div", { className: "topstrip" },
+        "\u0423\u0447\u0451\u0442 \u0442\u0440\u0430\u0442 \u00B7 ",
+        MONTHS_NOM[d.getMonth()],
+        " ",
+        d.getFullYear());
+}
+function PageHeader({ title, subtitle }) {
+    return (React.createElement("header", { className: "pagehead" },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "pagehead-title" },
+            React.createElement("span", { className: "title-mark" }, "\u2726"),
+            React.createElement("h1", { className: "display" }, title),
+            subtitle && React.createElement("p", { className: "eyebrow mt-2" }, subtitle))));
+}
+function Stripes({ children, className = '' }) {
+    return React.createElement("div", { className: `stripes ${className}` }, children);
+}
+// ---- components/Ui.jsx
+// Общие элементы: нижний лист, поля, даты и деньги.
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const ymdToDate = (ymd) => new Date(ymd + 'T12:00');
+const daysUntil = (ymd) => Math.round((ymdToDate(ymd) - ymdToDate(todayYmd())) / 86400000);
+const fmtDay = (ymd) => ymdToDate(ymd).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+const money = (n) => (Number(n) || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ₽';
+const addPeriod = (ymd, repeat) => {
+    const d = ymdToDate(ymd);
+    const day = d.getDate();
+    if (repeat === 'weekly')
+        d.setDate(d.getDate() + 7);
+    if (repeat === 'monthly') {
+        d.setDate(1);
+        d.setMonth(d.getMonth() + 1);
+        d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    }
+    if (repeat === 'yearly')
+        d.setFullYear(d.getFullYear() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const whenLabel = (ymd) => {
+    const n = daysUntil(ymd);
+    if (n < 0)
+        return { text: `просрочено на ${-n} дн.`, tone: 'late' };
+    if (n === 0)
+        return { text: 'сегодня', tone: 'soon' };
+    if (n === 1)
+        return { text: 'завтра', tone: 'soon' };
+    if (n <= 7)
+        return { text: `через ${n} дн.`, tone: 'soon' };
+    return { text: fmtDay(ymd), tone: 'calm' };
+};
+function Sheet({ title, onClose, children }) {
+    return (React.createElement("div", { className: "sheet-backdrop", onClick: onClose },
+        React.createElement("div", { className: "sheet", onClick: (e) => e.stopPropagation() },
+            React.createElement("div", { className: "sheet-grip" }),
+            React.createElement("h2", { className: "display text-3xl text-gray-800 mb-5" }, title),
+            children)));
+}
+function Field({ label, children }) {
+    return (React.createElement("label", { className: "block" },
+        React.createElement("span", { className: "eyebrow block mb-2" }, label),
+        children));
+}
+function Segmented({ value, onChange, options }) {
+    return (React.createElement("div", { className: "segmented", role: "tablist" }, options.map(([v, l]) => (React.createElement("button", { key: v, type: "button", role: "tab", "aria-selected": value === v, className: value === v ? 'seg-on' : '', onClick: () => onChange(v) }, l)))));
+}
+function Chip({ tone = 'calm', children }) {
+    return React.createElement("span", { className: `chip chip-${tone}` }, children);
+}
+function SectionLabel({ children, right }) {
+    return (React.createElement("div", { className: "dayhead" },
+        React.createElement("span", { className: "eyebrow" }, children),
+        right && React.createElement("span", { className: "dayhead-sum" }, right)));
+}
+// ---- components/Calendar.jsx
+// Переключатель месяцев и календарь трат.
+const WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const ymdOf = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+const localYmd = (iso) => { const d = new Date(iso); return ymdOf(d.getFullYear(), d.getMonth(), d.getDate()); };
+const short = (n) => n >= 10000 ? Math.round(n / 1000) + 'к' : n >= 1000 ? (Math.round(n / 100) / 10).toString().replace('.', ',') + 'к' : String(Math.round(n));
+const inMonth = (iso, y, m) => { const d = new Date(iso); return d.getFullYear() === y && d.getMonth() === m; };
+function MonthSwitcher() {
+    const { month, setMonth } = useStore();
+    const now = new Date();
+    const isNow = month.y === now.getFullYear() && month.m === now.getMonth();
+    const shift = (k) => { const d = new Date(month.y, month.m + k, 1); setMonth({ y: d.getFullYear(), m: d.getMonth() }); };
+    const [picker, setPicker] = useState(false);
+    return (React.createElement("div", { className: "mb-6" },
+        React.createElement("div", { className: "monthsw" },
+            React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u043C\u0435\u0441\u044F\u0446", onClick: () => shift(-1) },
+                React.createElement(Icon, { name: "ChevronLeft", size: 20 })),
+            React.createElement("button", { type: "button", className: "monthsw-name", onClick: () => setPicker(v => !v), "aria-expanded": picker },
+                React.createElement("span", { className: "display" }, MONTHS_NOM[month.m]),
+                " ",
+                React.createElement("span", { className: "eyebrow" }, month.y)),
+            React.createElement("button", { type: "button", "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u043C\u0435\u0441\u044F\u0446", onClick: () => shift(1) },
+                React.createElement(Icon, { name: "ChevronRight", size: 20 }))),
+        !isNow && !picker && (React.createElement("button", { type: "button", className: "eyebrow block mx-auto mt-2 underline underline-offset-4", onClick: () => setMonth({ y: now.getFullYear(), m: now.getMonth() }) }, "\u043A \u0442\u0435\u043A\u0443\u0449\u0435\u043C\u0443 \u043C\u0435\u0441\u044F\u0446\u0443")),
+        picker && (React.createElement("div", { className: "paper p-3 mt-3" },
+            React.createElement("div", { className: "flex items-center justify-between mb-2" },
+                React.createElement("button", { type: "button", className: "p-2", "aria-label": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u0433\u043E\u0434", onClick: () => setMonth({ ...month, y: month.y - 1 }) },
+                    React.createElement(Icon, { name: "ChevronLeft", size: 16 })),
+                React.createElement("span", { className: "display text-xl" }, month.y),
+                React.createElement("button", { type: "button", className: "p-2", "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0433\u043E\u0434", onClick: () => setMonth({ ...month, y: month.y + 1 }) },
+                    React.createElement(Icon, { name: "ChevronRight", size: 16 }))),
+            React.createElement("div", { className: "grid grid-cols-4 gap-1" }, MONTHS_NOM.map((n, i) => (React.createElement("button", { key: n, type: "button", onClick: () => { setMonth({ y: month.y, m: i }); setPicker(false); }, className: `py-2 text-sm ${i === month.m ? 'bg-gray-800 text-white' : 'text-gray-700'}` }, n.slice(0, 3)))))))));
+}
+function CalendarGrid({ y, m, expenses, payments, selected, onSelect }) {
+    const days = new Date(y, m + 1, 0).getDate();
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    const sums = {};
+    expenses.forEach(e => { const k = localYmd(e.date); sums[k] = (sums[k] || 0) + e.amount; });
+    const due = new Set(payments.filter(p => !p.done).map(p => p.dueDate));
+    const max = Math.max(1, ...Object.values(sums));
+    const today = todayYmd();
+    const cells = [...Array(lead).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+    return (React.createElement("div", { className: "paper p-3 mb-6" },
+        React.createElement("div", { className: "cal-grid mb-1" }, WEEK.map((w, i) => React.createElement("span", { key: w, className: `cal-wd ${i > 4 ? 'cal-we' : ''}` }, w))),
+        React.createElement("div", { className: "cal-grid" }, cells.map((d, i) => {
+            if (!d)
+                return React.createElement("span", { key: 'e' + i });
+            const k = ymdOf(y, m, d);
+            const sum = sums[k] || 0;
+            const level = sum ? 0.18 + 0.62 * (sum / max) : 0;
+            return (React.createElement("button", { key: k, type: "button", onClick: () => onSelect(selected === k ? null : k), className: `cal-day ${k === today ? 'cal-today' : ''} ${selected === k ? 'cal-sel' : ''}`, style: selected === k ? undefined : { background: sum ? `rgba(201,143,167,${level})` : undefined }, "aria-label": `${d} ${MONTHS_GEN[m]}${sum ? ', ' + money(sum) : ''}${due.has(k) ? ', есть платёж' : ''}` },
+                React.createElement("span", { className: "cal-num" }, d),
+                React.createElement("span", { className: "cal-sum" }, sum ? short(sum) : ''),
+                due.has(k) && React.createElement("span", { className: "cal-due" })));
+        })),
+        React.createElement("div", { className: "flex items-center gap-4 mt-3 text-[11px] text-gray-500" },
+            React.createElement("span", { className: "flex items-center gap-1" },
+                React.createElement("span", { className: "inline-block w-3 h-3", style: { background: 'rgba(201,143,167,.6)' } }),
+                " \u0442\u0440\u0430\u0442\u044B"),
+            React.createElement("span", { className: "flex items-center gap-1" },
+                React.createElement("span", { className: "cal-due static" }),
+                " \u043F\u043B\u0430\u0442\u0451\u0436"),
+            React.createElement("span", { className: "ml-auto" }, "\u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u043D\u0430 \u0434\u0435\u043D\u044C"))));
+}
+// ---- components/Splash.jsx
+function Splash() {
+    return (React.createElement("div", { className: "splash" },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "splash-body" },
+            React.createElement(LoveLogo, null),
+            React.createElement("h1", { className: "display splash-title" },
+                "\u0414\u043E\u0431\u0440\u044B\u0439 \u0434\u0435\u043D\u044C,",
+                React.createElement("br", null),
+                "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A"),
+            React.createElement("p", { className: "eyebrow" }, "\u0412\u0430\u0448 \u043B\u0438\u0447\u043D\u044B\u0439 \u0443\u0447\u0451\u0442 \u0442\u0440\u0430\u0442"),
+            React.createElement(Stamp, { size: 96, className: "splash-stamp", text: "MONEY \u2022 FLOW \u2022 MONEY \u2022 FLOW \u2022 ", heart: true })),
+        React.createElement(Stripes, { className: "splash-stripes" })));
+}
+// ---- components/Navigation.jsx
+function Navigation() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    const tabs = [
+        { path: '/', label: 'Траты', icon: 'List' },
+        { path: '/payments', label: 'Платежи', icon: 'CalendarClock' },
+        { path: '/debts', label: 'Долги', icon: 'HandCoins' },
+        { path: '/reports', label: 'Отчёт', icon: 'ChartColumn' },
+        { path: '/settings', label: 'Ещё', icon: 'Settings' }
+    ];
+    return (React.createElement("nav", { className: "navbar", style: { paddingBottom: 'env(safe-area-inset-bottom, 0px)' } },
+        React.createElement("div", { className: "max-w-md mx-auto flex justify-around" }, tabs.map(tab => (React.createElement("button", { key: tab.path, onClick: () => navigate(tab.path), className: `navbtn ${(location.pathname === tab.path || (tab.path === '/settings' && location.pathname === '/categories')) ? 'navbtn-active' : ''}` },
+            React.createElement(Icon, { name: tab.icon, size: 22 }),
+            React.createElement("span", { className: "navlabel" }, tab.label)))))));
+}
+// ---- components/ExpenseList.jsx
+function ExpenseList({ expenses, categories, onEdit, onDelete }) {
+    // Группируем расходы по датам
+    const groupedByDate = {};
+    expenses.forEach(expense => {
+        const date = new Date(expense.date);
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        if (!groupedByDate[dateKey]) {
+            groupedByDate[dateKey] = [];
+        }
+        groupedByDate[dateKey].push(expense);
+    });
+    // Сортируем даты в обратном порядке
+    const sortedDates = Object.keys(groupedByDate).sort((a, b) => {
+        return b.localeCompare(a);
+    });
+    const getCategory = (categoryId) => {
+        return categories.find(c => c.id === categoryId);
+    };
+    const getDayName = (dateString) => {
+        const date = new Date(dateString + 'T12:00');
+        const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+        return days[date.getDay()];
+    };
+    return (React.createElement("div", { className: "space-y-7" }, sortedDates.map(dateKey => (React.createElement("div", { key: dateKey },
+        React.createElement("div", { className: "dayhead" },
+            React.createElement("span", { className: "eyebrow" },
+                new Date(dateKey + 'T12:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }),
+                " \u00B7 ",
+                getDayName(dateKey)),
+            React.createElement("span", { className: "dayhead-sum" },
+                groupedByDate[dateKey].reduce((s, e) => s + e.amount, 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }),
+                " \u20BD")),
+        React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, groupedByDate[dateKey].sort((a, b) => b.date.localeCompare(a.date)).map(expense => {
+            const category = getCategory(expense.categoryId);
+            const expenseDate = new Date(expense.date);
+            const time = expenseDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+            return (React.createElement("div", { key: expense.id, className: "px-4 py-3 flex items-center justify-between cursor-pointer active:bg-pink-50 transition-colors", onClick: () => onEdit(expense.id) },
+                React.createElement("div", { className: "flex items-center gap-3 flex-1 min-w-0" },
+                    React.createElement(CategoryBadge, { category: category, size: 19, box: 40 }),
+                    React.createElement("div", { className: "min-w-0" },
+                        React.createElement("p", { className: "font-medium text-gray-800" }, category?.name || 'Другое'),
+                        expense.description && (React.createElement("p", { className: "expense-note" }, expense.description)),
+                        React.createElement("p", { className: "text-xs text-gray-400" }, time))),
+                React.createElement("div", { className: "flex items-center gap-3" },
+                    React.createElement("span", { className: "display text-xl text-gray-800 tabular-nums" },
+                        expense.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2 }),
+                        " \u20BD"),
+                    React.createElement("button", { onClick: (e) => {
+                            e.stopPropagation();
+                            onDelete(expense.id);
+                        }, "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0442\u0440\u0430\u0442\u0443", className: "text-gray-300 hover:text-red-500 transition-colors text-lg px-1" }, "\u2715"))));
+        })))))));
+}
+// ---- components/AddExpenseModal.jsx
+function AddExpenseModal({ categories, onAdd, onClose, defaultDate }) {
+    const [amount, setAmount] = useState('');
+    const [categoryId, setCategoryId] = useState(categories[0]?.id || '');
+    const [date, setDate] = useState(defaultDate || todayYmd());
+    const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
+    const [note, setNote] = useState('');
+    // если категории ещё загружаются (открыли с виджета) — выбрать первую, когда придут
+    useEffect(() => { if (!categoryId && categories[0])
+        setCategoryId(categories[0].id); }, [categories, categoryId]);
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!amount || !categoryId)
+            return;
+        const dateTime = new Date(`${date}T${time}`).toISOString();
+        onAdd({
+            amount: parseFloat(amount),
+            categoryId,
+            date: dateTime,
+            description: note.trim()
+        });
+        setAmount('');
+        setNote('');
+        setCategoryId(categories[0]?.id || '');
+        setDate(new Date().toISOString().split('T')[0]);
+        setTime(new Date().toTimeString().slice(0, 5));
+    };
+    return (React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-end z-50" },
+        React.createElement("div", { className: "w-full bg-white rounded-t-2xl p-6 animate-slideUp" },
+            React.createElement("h2", { className: "text-2xl font-serif text-gray-800 mb-6" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0440\u0430\u0442\u0443"),
+            React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0421\u0443\u043C\u043C\u0430 (\u20BD)"),
+                    React.createElement("input", { type: "number", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0.00", className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
+                    React.createElement("div", { className: "flex flex-wrap gap-2 max-h-40 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm transition-colors ${categoryId === cat.id ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` },
+                        React.createElement(CategoryBadge, { category: cat, size: 16, box: 28 }),
+                        cat.name))))),
+                React.createElement("div", null,
+                    React.createElement("label", { htmlFor: "add-note", className: "block text-gray-600 text-sm mb-2" },
+                        "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435 ",
+                        React.createElement("span", { className: "text-gray-400" }, "\u2014 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E")),
+                    React.createElement("textarea", { id: "add-note", rows: 2, maxLength: 300, value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u043F\u043E\u0434\u0430\u0440\u043E\u043A \u043C\u0430\u043C\u0435, \u0443\u0436\u0438\u043D \u0441 \u0434\u0440\u0443\u0437\u044C\u044F\u043C\u0438", className: "input resize-none text-base" })),
+                React.createElement("div", { className: "grid grid-cols-2 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0414\u0430\u0442\u0430"),
+                        React.createElement("input", { type: "date", value: date, onChange: (e) => setDate(e.target.value), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none" })),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0412\u0440\u0435\u043C\u044F"),
+                        React.createElement("input", { type: "time", value: time, onChange: (e) => setTime(e.target.value), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none" }))),
+                React.createElement("div", { className: "flex gap-3 pt-4" },
+                    React.createElement("button", { type: "button", onClick: onClose, className: "flex-1 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "submit", className: "flex-1 px-4 py-3 btn-primary" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")))),
+        React.createElement("style", null, `
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `)));
+}
+// ---- components/EditExpenseModal.jsx
+function EditExpenseModal({ expense, categories, onSave, onClose }) {
+    const [amount, setAmount] = useState(expense.amount);
+    const [categoryId, setCategoryId] = useState(expense.categoryId);
+    const dateObj = new Date(expense.date);
+    const [date, setDate] = useState(dateObj.toISOString().split('T')[0]);
+    const [time, setTime] = useState(dateObj.toTimeString().slice(0, 5));
+    const [note, setNote] = useState(expense.description || '');
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        const dateTime = new Date(`${date}T${time}`).toISOString();
+        onSave({
+            ...expense,
+            amount: parseFloat(amount),
+            categoryId,
+            date: dateTime,
+            description: note.trim()
+        });
+    };
+    return (React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-end z-50" },
+        React.createElement("div", { className: "w-full bg-white rounded-t-2xl p-6 animate-slideUp" },
+            React.createElement("h2", { className: "text-2xl font-serif text-gray-800 mb-6" }, "\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0442\u0440\u0430\u0442\u0443"),
+            React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0421\u0443\u043C\u043C\u0430 (\u20BD)"),
+                    React.createElement("input", { type: "number", step: "0.01", value: amount, onChange: (e) => setAmount(parseFloat(e.target.value)), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
+                    React.createElement("div", { className: "flex flex-wrap gap-2 max-h-40 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm transition-colors ${categoryId === cat.id ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` },
+                        React.createElement(CategoryBadge, { category: cat, size: 16, box: 28 }),
+                        cat.name))))),
+                React.createElement("div", null,
+                    React.createElement("label", { htmlFor: "edit-note", className: "block text-gray-600 text-sm mb-2" },
+                        "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435 ",
+                        React.createElement("span", { className: "text-gray-400" }, "\u2014 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E")),
+                    React.createElement("textarea", { id: "edit-note", rows: 2, maxLength: 300, value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u043F\u043E\u0434\u0430\u0440\u043E\u043A \u043C\u0430\u043C\u0435, \u0443\u0436\u0438\u043D \u0441 \u0434\u0440\u0443\u0437\u044C\u044F\u043C\u0438", className: "input resize-none text-base" })),
+                React.createElement("div", { className: "grid grid-cols-2 gap-4" },
+                    React.createElement("div", null,
+                        React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0414\u0430\u0442\u0430"),
+                        React.createElement("input", { type: "date", value: date, onChange: (e) => setDate(e.target.value), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none" })),
+                    React.createElement("div", null,
+                        React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0412\u0440\u0435\u043C\u044F"),
+                        React.createElement("input", { type: "time", value: time, onChange: (e) => setTime(e.target.value), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none" }))),
+                React.createElement("div", { className: "flex gap-3 pt-4" },
+                    React.createElement("button", { type: "button", onClick: onClose, className: "flex-1 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "submit", className: "flex-1 px-4 py-3 btn-primary" }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")))),
+        React.createElement("style", null, `
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `)));
+}
+// ---- pages/Dashboard.jsx
+const plural = (n, f) => f[(n % 10 === 1 && n % 100 !== 11) ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 1 : 2];
+function Dashboard() {
+    const { expenses, categories, payments, addExpense, updateExpense, deleteExpense, error, month } = useStore();
+    const go = useNavigate();
+    const nextPay = payments.filter(p => !p.done).sort((a, b) => a.dueDate.localeCompare(b.dueDate))[0];
+    const [showAddModal, setShowAddModal] = useState(() => { const v = !!window.__START_ADD; window.__START_ADD = false; return v; });
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingExpense, setEditingExpense] = useState(null);
+    const { y, m } = month;
+    const monthExpenses = expenses.filter(exp => inMonth(exp.date, y, m));
+    const [view, setView] = useState('list');
+    const [selDay, setSelDay] = useState(null);
+    useEffect(() => { setSelDay(null); }, [y, m]);
+    const shown = selDay ? monthExpenses.filter(e => localYmd(e.date) === selDay) : monthExpenses;
+    const dayPayments = selDay ? payments.filter(p => !p.done && p.dueDate === selDay) : [];
+    const monthTotal = monthExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const handleAddExpense = (newExpense) => {
+        addExpense(newExpense);
+        setShowAddModal(false);
+    };
+    const handleEditExpense = (expenseId) => {
+        const expense = expenses.find(e => e.id === expenseId);
+        setEditingExpense(expense);
+        setShowEditModal(true);
+    };
+    const handleSaveEditExpense = (updatedExpense) => {
+        updateExpense(updatedExpense);
+        setShowEditModal(false);
+        setEditingExpense(null);
+    };
+    const handleDeleteExpense = (expenseId) => deleteExpense(expenseId);
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u041C\u043E\u0438 \u0442\u0440\u0430\u0442\u044B" }),
+        React.createElement(MonthSwitcher, null),
+        React.createElement(Stripes, { className: "-mx-4 mb-8" },
+            React.createElement("div", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" },
+                    MONTHS_NOM[m],
+                    " ",
+                    y),
+                React.createElement("p", { className: "display hero-sum" },
+                    monthTotal.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+                    React.createElement("span", { className: "hero-cur" }, "\u20BD")),
+                React.createElement("p", { className: "eyebrow" },
+                    monthExpenses.length,
+                    " ",
+                    plural(monthExpenses.length, ['операция', 'операции', 'операций'])),
+                React.createElement(Stamp, { size: 78, className: "hero-stamp" }))),
+        nextPay && (React.createElement("button", { type: "button", onClick: () => go('/payments'), className: "paper w-full px-4 py-3 mb-7 flex items-center gap-3 text-left" },
+            React.createElement(Icon, { name: "CalendarClock", size: 20, className: "text-gray-600 shrink-0" }),
+            React.createElement("span", { className: "flex-1 min-w-0" },
+                React.createElement("span", { className: "eyebrow block" }, "\u0411\u043B\u0438\u0436\u0430\u0439\u0448\u0438\u0439 \u043F\u043B\u0430\u0442\u0451\u0436"),
+                React.createElement("span", { className: "block text-gray-800 truncate" },
+                    nextPay.title,
+                    " \u00B7 ",
+                    React.createElement("span", { className: whenLabel(nextPay.dueDate).tone === 'late' ? 'text-[color:var(--late)]' : '' }, whenLabel(nextPay.dueDate).text))),
+            React.createElement("span", { className: "display text-xl text-gray-800 tabular-nums shrink-0" }, money(nextPay.amount)))),
+        error && React.createElement("p", { className: "mb-4 text-sm text-red-600 bg-red-50 rounded-lg p-3" }, error),
+        React.createElement("div", { className: "mb-5" },
+            React.createElement(Segmented, { value: view, onChange: (v) => { setView(v); setSelDay(null); }, options: [['list', 'Список'], ['cal', 'Календарь']] })),
+        view === 'cal' && (React.createElement(CalendarGrid, { y: y, m: m, expenses: monthExpenses, payments: payments, selected: selDay, onSelect: setSelDay })),
+        selDay && (React.createElement("div", { className: "dayhead" },
+            React.createElement("span", { className: "eyebrow" }, fmtDay(selDay)),
+            React.createElement("button", { type: "button", className: "eyebrow underline underline-offset-4 ml-auto", onClick: () => setSelDay(null) }, "\u0432\u0435\u0441\u044C \u043C\u0435\u0441\u044F\u0446"))),
+        dayPayments.length > 0 && (React.createElement("div", { className: "note mb-4" },
+            "\u041F\u043B\u0430\u0442\u0451\u0436 \u0432 \u044D\u0442\u043E\u0442 \u0434\u0435\u043D\u044C: ",
+            dayPayments.map(p => `${p.title} · ${money(p.amount)}`).join(', '))),
+        shown.length === 0 ? (React.createElement("div", { className: "paper p-8 text-center text-gray-500" },
+            React.createElement("p", { className: "title-mark mb-2" }, "\u2726"),
+            React.createElement("p", { className: "display text-2xl text-gray-700 mb-1" }, selDay ? 'В этот день трат нет' : 'Пока пусто'),
+            React.createElement("p", { className: "text-sm" }, categories.length === 0 ? 'Сначала создайте категорию во вкладке «Категории»' : 'Нажмите + чтобы добавить первую трату'))) : (React.createElement(ExpenseList, { expenses: shown, categories: categories, onEdit: handleEditExpense, onDelete: handleDeleteExpense })),
+        React.createElement("button", { onClick: () => setShowAddModal(true), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0440\u0430\u0442\u0443", className: "fab" },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        showAddModal && (React.createElement(AddExpenseModal, { categories: categories, defaultDate: selDay, onAdd: handleAddExpense, onClose: () => setShowAddModal(false) })),
+        showEditModal && editingExpense && (React.createElement(EditExpenseModal, { expense: editingExpense, categories: categories, onSave: handleSaveEditExpense, onClose: () => {
+                setShowEditModal(false);
+                setEditingExpense(null);
+            } }))));
+}
+// ---- pages/Reports.jsx
+function Reports() {
+    const { expenses, categories, clearAll, mode, month } = useStore();
+    const { y, m } = month;
+    const monthEnd = new Date(y, m + 1, 0);
+    const monthExpenses = expenses.filter(exp => inMonth(exp.date, y, m));
+    // Данные по дням для столбцов
+    const daysInMonth = new Array(monthEnd.getDate()).fill(0);
+    const dailyData = new Array(monthEnd.getDate()).fill(0);
+    monthExpenses.forEach(exp => {
+        const expDate = new Date(exp.date);
+        const day = expDate.getDate() - 1;
+        dailyData[day] += exp.amount;
+    });
+    const barChartData = {
+        labels: Array.from({ length: monthEnd.getDate() }, (_, i) => i + 1),
+        datasets: [
+            {
+                label: 'Траты (₽)',
+                data: dailyData,
+                backgroundColor: '#D9AFC0',
+                hoverBackgroundColor: '#B67590',
+                borderRadius: 2,
+                borderSkipped: false,
+            }
+        ]
+    };
+    // Данные по категориям для круговой диаграммы
+    const categoryTotals = {};
+    monthExpenses.forEach(exp => {
+        categoryTotals[exp.categoryId] = (categoryTotals[exp.categoryId] || 0) + exp.amount;
+    });
+    const categoryNames = Object.keys(categoryTotals).map(catId => {
+        const cat = categories.find(c => c.id === catId);
+        return cat?.name || 'Другое';
+    });
+    const categoryValues = Object.values(categoryTotals);
+    const pieChartData = {
+        labels: categoryNames,
+        datasets: [
+            {
+                data: categoryValues,
+                backgroundColor: ['#E8CCD7', '#B9C6D6', '#6C6C6A', '#EBD9CC', '#C98FA7', '#DEE5ED', '#A8A8A4', '#F4E1E9'],
+                borderColor: '#FFFBF0',
+                borderWidth: 2,
+            }
+        ]
+    };
+    const chartOptions = {
+        responsive: true,
+        scales: undefined,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                labels: {
+                    font: { family: "Jost, sans-serif", size: 11 },
+                    color: '#6C6C6A', boxWidth: 10, boxHeight: 10
+                }
+            }
+        }
+    };
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u041E\u0442\u0447\u0451\u0442" }),
+        React.createElement(MonthSwitcher, null),
+        React.createElement("div", { className: "paper p-4 mb-6" },
+            React.createElement("h2", { className: "display text-2xl text-gray-800 mb-4 text-center" }, "\u0414\u0438\u043D\u0430\u043C\u0438\u043A\u0430 \u043F\u043E \u0434\u043D\u044F\u043C"),
+            monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Bar, { data: barChartData, options: chartOptions }))),
+        React.createElement("div", { className: "paper p-4" },
+            React.createElement("h2", { className: "display text-2xl text-gray-800 mb-4 text-center" }, "\u0420\u0430\u0441\u043F\u0440\u0435\u0434\u0435\u043B\u0435\u043D\u0438\u0435 \u043F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C"),
+            monthExpenses.length === 0 ? (React.createElement("p", { className: "text-gray-400 text-center py-8" }, "\u041D\u0435\u0442 \u0434\u0430\u043D\u043D\u044B\u0445")) : (React.createElement(Pie, { data: pieChartData, options: chartOptions }))),
+        React.createElement("div", { className: "mt-6 bg-lav rounded-lg p-4 border border-pink-100" },
+            React.createElement("h3", { className: "font-medium text-gray-700 mb-3" }, "\u0421\u0442\u0430\u0442\u0438\u0441\u0442\u0438\u043A\u0430 \u043C\u0435\u0441\u044F\u0446\u0430"),
+            React.createElement("div", { className: "space-y-2 text-sm" },
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u0412\u0441\u0435\u0433\u043E \u043F\u043E\u0442\u0440\u0430\u0447\u0435\u043D\u043E:"),
+                    React.createElement("span", { className: "font-semibold text-gray-800" },
+                        monthExpenses.reduce((s, e) => s + e.amount, 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }),
+                        " \u20BD")),
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0439:"),
+                    React.createElement("span", { className: "font-semibold text-gray-800" }, monthExpenses.length)),
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439:"),
+                    React.createElement("span", { className: "font-semibold text-gray-800" }, Object.keys(categoryTotals).length))))));
+}
+// ---- pages/Categories.jsx
+const DEFAULT_ICONS = ICON_SET.map(([key]) => key);
+function Categories() {
+    const { categories, addCategory, deleteCategory } = useStore();
+    const [confirmId, setConfirmId] = useState(null);
+    const go = useNavigate();
+    const [showForm, setShowForm] = useState(false);
+    const [name, setName] = useState('');
+    const [icon, setIcon] = useState(DEFAULT_ICONS[0]);
+    const [color, setColor] = useState('#ec4899');
+    const handleAddCategory = (e) => {
+        e.preventDefault();
+        if (!name.trim())
+            return;
+        addCategory({ name, icon, color });
+        setName('');
+        setIcon(DEFAULT_ICONS[0]);
+        setColor('#ec4899');
+        setShowForm(false);
+    };
+    const handleDeleteCategory = (id) => { deleteCategory(id); setConfirmId(null); };
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438" }),
+        React.createElement("button", { type: "button", onClick: () => go('/settings'), className: "eyebrow flex items-center gap-1 -mt-3 mb-5" },
+            React.createElement(Icon, { name: "ChevronLeft", size: 14 }),
+            " \u041D\u0430\u0437\u0430\u0434"),
+        React.createElement("div", { className: "space-y-3 mb-6" },
+            categories.length === 0 && (React.createElement("p", { className: "text-gray-400 text-sm text-center py-6" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439 \u043F\u043E\u043A\u0430 \u043D\u0435\u0442. \u0421\u043E\u0437\u0434\u0430\u0439\u0442\u0435 \u043F\u0435\u0440\u0432\u0443\u044E \u2014 \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \u00AB\u041F\u0440\u043E\u0434\u0443\u043A\u0442\u044B\u00BB.")),
+            categories.map(cat => (React.createElement("div", { key: cat.id, className: "bg-white rounded-lg p-4 flex items-center justify-between hover:bg-gray-50 group" },
+                React.createElement("div", { className: "flex items-center gap-3" },
+                    React.createElement(CategoryBadge, { category: cat, size: 24, box: 48 }),
+                    React.createElement("div", null,
+                        React.createElement("p", { className: "font-medium text-gray-800" }, cat.name),
+                        React.createElement("p", { className: "text-xs text-gray-400" }, cat.color))),
+                confirmId === cat.id ? (React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("button", { onClick: () => setConfirmId(null), className: "px-3 py-1 text-sm rounded-lg bg-gray-100 text-gray-700" }, "\u041D\u0435\u0442"),
+                    React.createElement("button", { onClick: () => handleDeleteCategory(cat.id), className: "px-3 py-1 text-sm rounded-lg bg-red-100 text-red-600" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C"))) : (React.createElement("button", { onClick: () => setConfirmId(cat.id), "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044E", className: "text-gray-300 hover:text-red-500 text-lg px-2" }, "\u2715")))))),
+        !showForm ? (React.createElement("button", { onClick: () => setShowForm(true), className: "w-full py-3 btn-primary" }, "+ \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044E")) : (React.createElement("div", { className: "bg-white rounded-lg p-6 border-2 border-pink-100" },
+            React.createElement("h2", { className: "text-lg font-serif text-gray-800 mb-4" }, "\u041D\u043E\u0432\u0430\u044F \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
+            React.createElement("form", { onSubmit: handleAddCategory, className: "space-y-4" },
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435"),
+                    React.createElement("input", { type: "text", value: name, onChange: (e) => setName(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041F\u0440\u043E\u0434\u0443\u043A\u0442\u044B", className: "w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none", autoFocus: true })),
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0418\u043A\u043E\u043D\u043A\u0430"),
+                    React.createElement("div", { className: "grid grid-cols-6 gap-2 max-h-64 overflow-y-auto p-1 -m-1" }, ICON_SET.map(([key, label]) => (React.createElement("button", { key: key, type: "button", title: label, "aria-label": label, onClick: () => setIcon(key), className: `aspect-square flex items-center justify-center rounded-xl border transition-all ${icon === key ? 'border-pink-400 bg-pink-50' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`, style: icon === key ? { color } : undefined },
+                        React.createElement(Icon, { name: key, size: 22 })))))),
+                React.createElement("div", null,
+                    React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0426\u0432\u0435\u0442"),
+                    React.createElement("div", { className: "flex items-center gap-3" },
+                        React.createElement("input", { type: "color", value: color, onChange: (e) => setColor(e.target.value), className: "w-12 h-12 rounded-lg cursor-pointer border-2 border-gray-200" }),
+                        React.createElement("div", { className: "flex-1 flex items-center gap-3 p-3 rounded-lg border border-gray-100" },
+                            React.createElement(CategoryBadge, { category: { icon, color } }),
+                            React.createElement("span", { className: "font-medium text-gray-800" }, name || 'Предпросмотр')))),
+                React.createElement("div", { className: "flex gap-3 pt-4" },
+                    React.createElement("button", { type: "button", onClick: () => setShowForm(false), className: "flex-1 px-4 py-2 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "submit", className: "flex-1 px-4 py-2 btn-primary" }, "\u0421\u043E\u0437\u0434\u0430\u0442\u044C")))))));
+}
+// ---- pages/Settings.jsx
+function Settings() {
+    const { expenses, categories, clearAll, mode, user, signOut, isOwner, members, addMember, removeMember, importData, error } = useStore();
+    const [newMember, setNewMember] = useState('');
+    const [confirmMember, setConfirmMember] = useState(null);
+    const [importMsg, setImportMsg] = useState('');
+    const onImport = async (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (!f)
+            return;
+        try {
+            const data = JSON.parse(await f.text());
+            const n = Object.keys(data.expenses || {}).length;
+            setImportMsg('Переношу…');
+            await importData(data);
+            setImportMsg(`Готово: перенесено трат — ${n}, категорий — ${Object.keys(data.categories || {}).length}, платежей — ${Object.keys(data.payments || {}).length}, долгов — ${Object.keys(data.debts || {}).length}.`);
+        }
+        catch {
+            setImportMsg('Не получилось прочитать файл. Нужен файл money-perenos.json из чата.');
+        }
+        e.target.value = '';
+    };
+    const [msg, setMsg] = useState('');
+    const go = useNavigate();
+    const [confirmClear, setConfirmClear] = useState(false);
+    const handleExportToExcel = async () => {
+        if (expenses.length === 0) {
+            setMsg('Нет данных для экспорта');
+            return;
+        }
+        // Подготавливаем данные
+        const data = [...expenses].sort((a, b) => b.date.localeCompare(a.date)).map(exp => {
+            const category = categories.find(c => c.id === exp.categoryId);
+            const date = new Date(exp.date);
+            return {
+                'Дата': date.toLocaleDateString('ru-RU'),
+                'Время': date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                'Категория': category?.name || 'Другое',
+                'Сумма (₽)': exp.amount,
+                'Примечание': exp.description || ''
+            };
+        });
+        // Создаём рабочую книгу
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Траты');
+        // Форматируем столбцы
+        ws['!cols'] = [
+            { wch: 12 },
+            { wch: 10 },
+            { wch: 20 },
+            { wch: 12 },
+            { wch: 40 }
+        ];
+        // Скачиваем файл
+        const fileName = `траты_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const downloads = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+        if (!downloads) {
+            try {
+                XLSX.writeFile(wb, fileName);
+            }
+            catch {
+                setMsg('Скачивание недоступно на этом устройстве');
+            }
+            return;
+        }
+        try {
+            await downloads.save({ filename: fileName, data: new Blob([buf]) });
+            setMsg('Файл сохранён');
+        }
+        catch (e) {
+            if (e?.code !== 'declined')
+                setMsg('Не получилось сохранить файл');
+        }
+    };
+    const handleClearAll = async () => {
+        await clearAll();
+        setConfirmClear(false);
+        setMsg('Все данные удалены');
+    };
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438" }),
+        msg && React.createElement("p", { className: "mb-4 text-sm text-gray-700 bg-pink-50 border border-pink-100 rounded-lg p-3" }, msg),
+        React.createElement("button", { type: "button", onClick: () => go('/categories'), className: "paper w-full px-4 py-4 mb-6 flex items-center gap-3 text-left" },
+            React.createElement(Icon, { name: "Tags", size: 20, className: "text-gray-600" }),
+            React.createElement("span", { className: "flex-1" },
+                React.createElement("span", { className: "block font-medium text-gray-800" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438"),
+                React.createElement("span", { className: "block text-xs text-gray-500" },
+                    categories.length,
+                    " \u0448\u0442. \u00B7 \u0438\u043A\u043E\u043D\u043A\u0438 \u0438 \u0446\u0432\u0435\u0442\u0430")),
+            React.createElement(Icon, { name: "ChevronRight", size: 18, className: "text-gray-400" })),
+        React.createElement("div", { className: "bg-white rounded-lg p-6 mb-6 shadow-sm border border-gray-100" },
+            React.createElement("h2", { className: "font-medium text-gray-800 mb-4" }, "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F"),
+            React.createElement("div", { className: "space-y-3 text-sm" },
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0439:"),
+                    React.createElement("span", { className: "font-semibold" }, expenses.length)),
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439:"),
+                    React.createElement("span", { className: "font-semibold" }, categories.length)),
+                React.createElement("p", { className: "flex justify-between" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u0412\u0441\u0435\u0433\u043E \u043F\u043E\u0442\u0440\u0430\u0447\u0435\u043D\u043E:"),
+                    React.createElement("span", { className: "font-semibold" },
+                        expenses.reduce((s, e) => s + e.amount, 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }),
+                        " \u20BD")))),
+        React.createElement("div", { className: "bg-white rounded-lg p-6 mb-6 shadow-sm border border-blue-100" },
+            React.createElement("h2", { className: "font-medium text-gray-800 mb-2" }, "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0434\u0430\u043D\u043D\u044B\u0445"),
+            React.createElement("p", { className: "text-gray-500 text-sm mb-4" }, "\u0421\u043A\u0430\u0447\u0430\u0439\u0442\u0435 \u0432\u0441\u0435 \u0432\u0430\u0448\u0438 \u0442\u0440\u0430\u0442\u044B \u0432 \u0444\u043E\u0440\u043C\u0430\u0442\u0435 Excel \u0434\u043B\u044F \u0430\u043D\u0430\u043B\u0438\u0437\u0430 \u0432 \u0434\u0440\u0443\u0433\u0438\u0445 \u043F\u0440\u043E\u0433\u0440\u0430\u043C\u043C\u0430\u0445"),
+            React.createElement("button", { onClick: handleExportToExcel, className: "w-full py-3 bg-blue-50 text-blue-600 rounded-lg font-medium hover:bg-blue-100 transition-colors border-2 border-blue-200" }, "\u0421\u043A\u0430\u0447\u0430\u0442\u044C Excel")),
+        React.createElement("div", { className: "bg-white rounded-lg p-6 mb-6 shadow-sm border border-gray-100" },
+            React.createElement("h2", { className: "font-medium text-gray-800 mb-4" }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
+            React.createElement("div", { className: "space-y-3" },
+                React.createElement("p", { className: "flex justify-between items-center" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u0418\u043C\u0435\u043D\u0430:"),
+                    React.createElement("span", { className: "font-semibold" }, "\u041A\u0430\u0442\u044F \u0438 \u042D\u0440\u0438\u043A")),
+                React.createElement("p", { className: "text-gray-500 text-sm" }, mode === 'cloud' ? (user ? 'Данные хранятся в облаке Firebase и видны только Кате и Эрику.' : 'Данные хранятся в облаке и видны всем, с кем вы поделились ссылкой.') : 'Данные хранятся только на этом устройстве.'))),
+        user && isOwner && (React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, { right: members.length ? String(members.length) : null }, "\u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438"),
+            React.createElement("div", { className: "paper" },
+                React.createElement("div", { className: "divide-y divide-[color:var(--line)]" },
+                    React.createElement("div", { className: "px-4 py-3 flex items-center justify-between gap-3" },
+                        React.createElement("span", { className: "min-w-0 truncate text-gray-800" }, user.email),
+                        React.createElement("span", { className: "chip chip-calm" }, "\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446")),
+                    members.filter(m => m.email !== user.email.toLowerCase()).map(m => (React.createElement("div", { key: m.key, className: "px-4 py-3 flex items-center justify-between gap-3" },
+                        React.createElement("span", { className: "min-w-0 truncate text-gray-800" }, m.email),
+                        confirmMember === m.key ? (React.createElement("span", { className: "flex gap-3 shrink-0 text-sm" },
+                            React.createElement("button", { type: "button", className: "link-danger", onClick: () => { removeMember(m.key); setConfirmMember(null); } }, "\u0423\u0431\u0440\u0430\u0442\u044C"),
+                            React.createElement("button", { type: "button", className: "text-gray-500 underline", onClick: () => setConfirmMember(null) }, "\u041D\u0435\u0442"))) : (React.createElement("button", { type: "button", "aria-label": 'Убрать ' + m.email, className: "text-gray-300 px-1", onClick: () => setConfirmMember(m.key) }, "\u2715")))))),
+                React.createElement("form", { className: "px-4 py-4 border-t border-[color:var(--line)] flex gap-2", onSubmit: async (e) => { e.preventDefault(); if (!newMember.trim())
+                        return; await addMember(newMember); setNewMember(''); } },
+                    React.createElement("input", { id: "member-email", type: "email", className: "input flex-1 min-w-0", placeholder: "\u043F\u043E\u0447\u0442\u0430 \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430", value: newMember, onChange: (e) => setNewMember(e.target.value) }),
+                    React.createElement("button", { type: "submit", className: "btn-primary px-4" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+                error && React.createElement("p", { className: "note mx-4 mb-4" }, error),
+                React.createElement("p", { className: "px-4 pb-4 text-xs text-gray-500" }, "\u0427\u0435\u043B\u043E\u0432\u0435\u043A \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435, \u043D\u0430\u0436\u0438\u043C\u0430\u0435\u0442 \u00AB\u0421\u043E\u0437\u0434\u0430\u0442\u044C \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u00BB \u0441 \u044D\u0442\u043E\u0439 \u043F\u043E\u0447\u0442\u043E\u0439 \u0438 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442 \u0435\u0451 \u043F\u043E \u043F\u0438\u0441\u044C\u043C\u0443.")))),
+        user && isOwner && (React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u0434\u0430\u043D\u043D\u044B\u0445"),
+            React.createElement("div", { className: "paper px-4 py-4 space-y-3" },
+                React.createElement("p", { className: "text-sm text-gray-600" }, "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u0435 \u0444\u0430\u0439\u043B money-perenos.json, \u043A\u043E\u0442\u043E\u0440\u044B\u0439 \u043F\u0440\u0438\u0441\u043B\u0430\u043B Claude. \u0422\u0440\u0430\u0442\u044B, \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438, \u043F\u043B\u0430\u0442\u0435\u0436\u0438 \u0438 \u0434\u043E\u043B\u0433\u0438 \u0434\u043E\u0431\u0430\u0432\u044F\u0442\u0441\u044F \u0432 \u043E\u0431\u043B\u0430\u043A\u043E; \u043F\u043E\u0432\u0442\u043E\u0440\u043D\u0430\u044F \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0437\u0430\u0434\u0432\u043E\u0438\u0442."),
+                React.createElement("label", { className: "btn-ghost w-full py-3 block text-center cursor-pointer" },
+                    "\u0412\u044B\u0431\u0440\u0430\u0442\u044C \u0444\u0430\u0439\u043B",
+                    React.createElement("input", { id: "import-file", type: "file", accept: "application/json,.json", className: "hidden", onChange: onImport })),
+                importMsg && React.createElement("p", { className: "note" }, importMsg)))),
+        user && (React.createElement("div", { className: "paper px-4 py-4 mb-6 flex items-center justify-between gap-3" },
+            React.createElement("span", { className: "min-w-0" },
+                React.createElement("span", { className: "eyebrow block" }, "\u0412\u044B \u0432\u043E\u0448\u043B\u0438 \u043A\u0430\u043A"),
+                React.createElement("span", { className: "block text-gray-800 truncate" }, user.email)),
+            React.createElement("button", { type: "button", className: "mini-btn", onClick: signOut }, "\u0412\u044B\u0439\u0442\u0438"))),
+        React.createElement("div", { className: "bg-red-50 rounded-lg p-6 border-2 border-red-200" },
+            React.createElement("h2", { className: "font-medium text-red-800 mb-4" }, "\u041E\u043F\u0430\u0441\u043D\u044B\u0435 \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044F"),
+            confirmClear ? (React.createElement("div", { className: "space-y-2" },
+                React.createElement("p", { className: "text-sm text-red-700" }, "\u0422\u043E\u0447\u043D\u043E \u0443\u0434\u0430\u043B\u0438\u0442\u044C \u0432\u0441\u0435 \u0442\u0440\u0430\u0442\u044B \u0438 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438? \u042D\u0442\u043E \u043D\u0435\u043B\u044C\u0437\u044F \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C."),
+                React.createElement("div", { className: "flex gap-2" },
+                    React.createElement("button", { onClick: () => setConfirmClear(false), className: "flex-1 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-200" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { onClick: handleClearAll, className: "flex-1 py-3 bg-red-500 text-white rounded-lg font-medium" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C")))) : (React.createElement("button", { onClick: () => setConfirmClear(true), className: "w-full py-3 bg-red-100 text-red-600 rounded-lg font-medium hover:bg-red-200 transition-colors" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0432\u0441\u0435 \u0434\u0430\u043D\u043D\u044B\u0435")),
+            React.createElement("p", { className: "text-gray-500 text-xs mt-3" }, "\u042D\u0442\u043E \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043D\u0435\u043B\u044C\u0437\u044F \u043E\u0442\u043C\u0435\u043D\u0438\u0442\u044C. \u0423\u0431\u0435\u0434\u0438\u0442\u0435\u0441\u044C, \u0447\u0442\u043E \u0432\u044B \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043B\u0438 \u0434\u0430\u043D\u043D\u044B\u0435 \u043F\u0435\u0440\u0435\u0434 \u0443\u0434\u0430\u043B\u0435\u043D\u0438\u0435\u043C."))));
+}
+// ---- pages/Payments.jsx
+const REPEATS = [['none', 'Разово'], ['weekly', 'Неделя'], ['monthly', 'Месяц'], ['yearly', 'Год']];
+const REPEAT_TEXT = { weekly: 'каждую неделю', monthly: 'каждый месяц', yearly: 'каждый год' };
+function PaymentSheet({ payment, categories, onSave, onDelete, onClose }) {
+    const [title, setTitle] = useState(payment?.title || '');
+    const [amount, setAmount] = useState(payment?.amount ?? '');
+    const [dueDate, setDueDate] = useState(payment?.dueDate || todayYmd());
+    const [repeat, setRepeat] = useState(payment?.repeat || 'monthly');
+    const [categoryId, setCategoryId] = useState(payment?.categoryId || categories[0]?.id || '');
+    const [confirmDel, setConfirmDel] = useState(false);
+    const submit = (e) => {
+        e.preventDefault();
+        if (!title.trim() || !amount)
+            return;
+        onSave({ ...(payment || {}), title: title.trim(), amount: parseFloat(amount), dueDate, repeat, categoryId });
+    };
+    return (React.createElement(Sheet, { title: payment ? 'Платёж' : 'Новый платёж', onClose: onClose },
+        React.createElement("form", { onSubmit: submit, className: "space-y-5" },
+            React.createElement(Field, { label: "\u0427\u0442\u043E \u043E\u043F\u043B\u0430\u0442\u0438\u0442\u044C" },
+                React.createElement("input", { id: "pay-title", className: "input", value: title, onChange: (e) => setTitle(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0418\u043D\u0442\u0435\u0440\u043D\u0435\u0442" })),
+            React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                React.createElement(Field, { label: "\u0421\u0443\u043C\u043C\u0430, \u20BD" },
+                    React.createElement("input", { id: "pay-amount", className: "input input-num", type: "number", inputMode: "decimal", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0" })),
+                React.createElement(Field, { label: "\u0414\u0430\u0442\u0430 \u043E\u043F\u043B\u0430\u0442\u044B" },
+                    React.createElement("input", { id: "pay-date", className: "input", type: "date", value: dueDate, onChange: (e) => setDueDate(e.target.value) }))),
+            React.createElement(Field, { label: "\u041F\u043E\u0432\u0442\u043E\u0440" },
+                React.createElement(Segmented, { value: repeat, onChange: setRepeat, options: REPEATS })),
+            categories.length > 0 && (React.createElement(Field, { label: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F \u0442\u0440\u0430\u0442\u044B \u043F\u043E\u0441\u043B\u0435 \u043E\u043F\u043B\u0430\u0442\u044B" },
+                React.createElement("div", { className: "flex flex-wrap gap-2 max-h-32 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm ${categoryId === cat.id ? 'border-gray-800 text-gray-800' : 'border-gray-200 text-gray-600'}` },
+                    React.createElement(CategoryBadge, { category: cat, size: 16, box: 28 }),
+                    cat.name)))))),
+            React.createElement("div", { className: "flex gap-3 pt-2" },
+                React.createElement("button", { type: "button", onClick: onClose, className: "btn-ghost flex-1 py-3" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { type: "submit", className: "btn-primary flex-1 py-3" }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")),
+            payment && (confirmDel ? (React.createElement("div", { className: "flex gap-2 items-center justify-center text-sm" },
+                React.createElement("span", { className: "text-gray-600" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u043B\u0430\u0442\u0451\u0436?"),
+                React.createElement("button", { type: "button", className: "link-danger", onClick: () => onDelete(payment.id) }, "\u0414\u0430, \u0443\u0434\u0430\u043B\u0438\u0442\u044C"),
+                React.createElement("button", { type: "button", className: "text-gray-500 underline", onClick: () => setConfirmDel(false) }, "\u041D\u0435\u0442"))) : (React.createElement("button", { type: "button", className: "link-danger w-full text-center", onClick: () => setConfirmDel(true) }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u043B\u0430\u0442\u0451\u0436"))))));
+}
+function PaymentRow({ p, category, onOpen, onPaid }) {
+    const w = whenLabel(p.dueDate);
+    return (React.createElement("div", { className: "px-4 py-3 flex items-center gap-3" },
+        React.createElement("button", { type: "button", onClick: onOpen, className: "flex items-center gap-3 flex-1 min-w-0 text-left" },
+            React.createElement(CategoryBadge, { category: category || { icon: 'Receipt', color: '#6C6C6A' }, size: 19, box: 40 }),
+            React.createElement("div", { className: "min-w-0" },
+                React.createElement("p", { className: "font-medium text-gray-800 truncate" }, p.title),
+                React.createElement("p", { className: "flex items-center gap-2 mt-1 flex-wrap" },
+                    React.createElement(Chip, { tone: w.tone }, w.text),
+                    p.repeat !== 'none' && React.createElement("span", { className: "text-xs text-gray-400" }, REPEAT_TEXT[p.repeat])))),
+        React.createElement("div", { className: "flex flex-col items-end gap-1 shrink-0" },
+            React.createElement("span", { className: "display text-xl text-gray-800 tabular-nums" }, money(p.amount)),
+            React.createElement("button", { type: "button", className: "mini-btn", onClick: onPaid }, "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E"))));
+}
+function Payments() {
+    const { payments, categories, saveDoc, removeDoc, addExpense, error } = useStore();
+    const [sheet, setSheet] = useState(null); // null | 'new' | payment
+    const [toast, setToast] = useState('');
+    const active = payments.filter(p => !p.done).sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const done = payments.filter(p => p.done).sort((a, b) => (b.paidAt || '').localeCompare(a.paidAt || '')).slice(0, 10);
+    const late = active.filter(p => daysUntil(p.dueDate) < 0);
+    const week = active.filter(p => { const n = daysUntil(p.dueDate); return n >= 0 && n <= 7; });
+    const later = active.filter(p => daysUntil(p.dueDate) > 7);
+    const now = new Date();
+    const monthEndYmd = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, '0')}`;
+    const leftThisMonth = active.filter(p => p.dueDate <= monthEndYmd).reduce((s, p) => s + p.amount, 0);
+    const catOf = (id) => categories.find(c => c.id === id);
+    const markPaid = async (p) => {
+        if (p.categoryId) {
+            await addExpense({ amount: p.amount, categoryId: p.categoryId, date: new Date().toISOString(), description: p.title });
+        }
+        if (p.repeat && p.repeat !== 'none') {
+            await saveDoc('payments', { ...p, dueDate: addPeriod(p.dueDate, p.repeat) });
+            setToast(`«${p.title}» оплачен. Следующий: ${fmtDay(addPeriod(p.dueDate, p.repeat))}`);
+        }
+        else {
+            await saveDoc('payments', { ...p, done: true, paidAt: todayYmd() });
+            setToast(`«${p.title}» оплачен${p.categoryId ? ' и добавлен в траты' : ''}`);
+        }
+    };
+    const group = (label, list, tone) => list.length > 0 && (React.createElement("section", { className: "mb-7" },
+        React.createElement(SectionLabel, { right: money(list.reduce((s, p) => s + p.amount, 0)) }, tone === 'late' ? React.createElement("span", { className: "text-[color:var(--late)]" }, label) : label),
+        React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, list.map(p => React.createElement(PaymentRow, { key: p.id, p: p, category: catOf(p.categoryId), onOpen: () => setSheet(p), onPaid: () => markPaid(p) })))));
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u041F\u043B\u0430\u0442\u0435\u0436\u0438" }),
+        React.createElement(Stripes, { className: "-mx-4 mb-8" },
+            React.createElement("div", { className: "hero-card" },
+                React.createElement("p", { className: "eyebrow" }, "\u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u043B\u0430\u0442\u0438\u0442\u044C \u0432 \u044D\u0442\u043E\u043C \u043C\u0435\u0441\u044F\u0446\u0435"),
+                React.createElement("p", { className: "display hero-sum" },
+                    (leftThisMonth).toLocaleString('ru-RU', { maximumFractionDigits: 2 }),
+                    React.createElement("span", { className: "hero-cur" }, "\u20BD")),
+                React.createElement("p", { className: "eyebrow" }, late.length > 0 ? `просрочено: ${late.length}` : `${active.length} в списке`))),
+        (error || toast) && React.createElement("p", { className: "note mb-5", onClick: () => setToast('') }, error || toast),
+        active.length === 0 ? (React.createElement("div", { className: "paper p-8 text-center text-gray-500 mb-7" },
+            React.createElement("p", { className: "title-mark mb-2" }, "\u2726"),
+            React.createElement("p", { className: "display text-2xl text-gray-700 mb-1" }, "\u041F\u043B\u0430\u0442\u0435\u0436\u0435\u0439 \u043D\u0435\u0442"),
+            React.createElement("p", { className: "text-sm" }, "\u0414\u043E\u0431\u0430\u0432\u044C\u0442\u0435 \u0430\u0440\u0435\u043D\u0434\u0443, \u0441\u0432\u044F\u0437\u044C, \u043F\u043E\u0434\u043F\u0438\u0441\u043A\u0438 \u2014 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0430\u043F\u043E\u043C\u043D\u0438\u0442, \u0447\u0442\u043E \u0438 \u043A\u043E\u0433\u0434\u0430 \u043F\u043B\u0430\u0442\u0438\u0442\u044C."))) : (React.createElement(React.Fragment, null,
+            group('Просрочено', late, 'late'),
+            group('Ближайшие 7 дней', week),
+            group('Позже', later))),
+        done.length > 0 && (React.createElement("section", { className: "mb-7 opacity-70" },
+            React.createElement(SectionLabel, null, "\u041E\u043F\u043B\u0430\u0447\u0435\u043D\u043E"),
+            React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, done.map(p => (React.createElement("div", { key: p.id, className: "px-4 py-3 flex items-center justify-between gap-3" },
+                React.createElement("span", { className: "text-gray-600 line-through truncate" }, p.title),
+                React.createElement("span", { className: "flex items-center gap-3 shrink-0" },
+                    React.createElement("span", { className: "text-gray-500 tabular-nums" }, money(p.amount)),
+                    React.createElement("button", { type: "button", "aria-label": "\u0423\u0431\u0440\u0430\u0442\u044C \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430", className: "text-gray-300 px-1", onClick: () => removeDoc('payments', p.id) }, "\u2715")))))))),
+        React.createElement("button", { onClick: () => setSheet('new'), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043F\u043B\u0430\u0442\u0451\u0436", className: "fab" },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        sheet && (React.createElement(PaymentSheet, { payment: sheet === 'new' ? null : sheet, categories: categories, onClose: () => setSheet(null), onSave: async (p) => { await saveDoc('payments', p); setSheet(null); }, onDelete: async (id) => { await removeDoc('payments', id); setSheet(null); } }))));
+}
+// ---- pages/Debts.jsx
+const repaidOf = (d) => (d.repayments || []).reduce((s, r) => s + r.amount, 0);
+function DebtSheet({ debt, defaultDir, onSave, onDelete, onClose }) {
+    const [direction, setDirection] = useState(debt?.direction || defaultDir || 'owe');
+    const [person, setPerson] = useState(debt?.person || '');
+    const [amount, setAmount] = useState(debt?.amount ?? '');
+    const [dueDate, setDueDate] = useState(debt?.dueDate || '');
+    const [note, setNote] = useState(debt?.note || '');
+    const [confirmDel, setConfirmDel] = useState(false);
+    const submit = (e) => {
+        e.preventDefault();
+        if (!person.trim() || !amount)
+            return;
+        onSave({ repayments: [], createdAt: todayYmd(), ...(debt || {}), direction, person: person.trim(), amount: parseFloat(amount), dueDate, note: note.trim() });
+    };
+    return (React.createElement(Sheet, { title: debt ? 'Долг' : 'Новый долг', onClose: onClose },
+        React.createElement("form", { onSubmit: submit, className: "space-y-5" },
+            React.createElement(Segmented, { value: direction, onChange: setDirection, options: [['owe', 'Мы должны'], ['owed', 'Нам должны']] }),
+            React.createElement(Field, { label: direction === 'owe' ? 'Кому' : 'Кто' },
+                React.createElement("input", { id: "debt-person", className: "input", value: person, onChange: (e) => setPerson(e.target.value), placeholder: "\u0418\u043C\u044F \u0438\u043B\u0438 \u0431\u0430\u043D\u043A" })),
+            React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                React.createElement(Field, { label: "\u0421\u0443\u043C\u043C\u0430, \u20BD" },
+                    React.createElement("input", { id: "debt-amount", className: "input input-num", type: "number", inputMode: "decimal", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0" })),
+                React.createElement(Field, { label: "\u0412\u0435\u0440\u043D\u0443\u0442\u044C \u0434\u043E" },
+                    React.createElement("input", { id: "debt-date", className: "input", type: "date", value: dueDate, onChange: (e) => setDueDate(e.target.value) }))),
+            React.createElement(Field, { label: "\u0417\u0430\u043C\u0435\u0442\u043A\u0430" },
+                React.createElement("input", { id: "debt-note", className: "input", value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u041D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E" })),
+            React.createElement("div", { className: "flex gap-3 pt-2" },
+                React.createElement("button", { type: "button", onClick: onClose, className: "btn-ghost flex-1 py-3" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { type: "submit", className: "btn-primary flex-1 py-3" }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")),
+            debt && (confirmDel ? (React.createElement("div", { className: "flex gap-2 items-center justify-center text-sm" },
+                React.createElement("span", { className: "text-gray-600" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0434\u043E\u043B\u0433?"),
+                React.createElement("button", { type: "button", className: "link-danger", onClick: () => onDelete(debt.id) }, "\u0414\u0430, \u0443\u0434\u0430\u043B\u0438\u0442\u044C"),
+                React.createElement("button", { type: "button", className: "text-gray-500 underline", onClick: () => setConfirmDel(false) }, "\u041D\u0435\u0442"))) : (React.createElement("button", { type: "button", className: "link-danger w-full text-center", onClick: () => setConfirmDel(true) }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0434\u043E\u043B\u0433"))))));
+}
+function RepaySheet({ debt, onSave, onClose }) {
+    const left = Math.max(0, debt.amount - repaidOf(debt));
+    const [amount, setAmount] = useState(String(left));
+    const submit = (e) => {
+        e.preventDefault();
+        const v = parseFloat(amount);
+        if (!v || v <= 0)
+            return;
+        const repayments = [...(debt.repayments || []), { amount: Math.min(v, left), date: todayYmd() }];
+        const closed = repayments.reduce((s, r) => s + r.amount, 0) >= debt.amount - 0.001;
+        onSave({ ...debt, repayments, closed, closedAt: closed ? todayYmd() : null });
+    };
+    return (React.createElement(Sheet, { title: debt.direction === 'owe' ? 'Мы вернули' : 'Нам вернули', onClose: onClose },
+        React.createElement("form", { onSubmit: submit, className: "space-y-5" },
+            React.createElement("p", { className: "text-sm text-gray-600" },
+                debt.person,
+                " \u00B7 \u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C ",
+                money(left)),
+            React.createElement(Field, { label: "\u0421\u0443\u043C\u043C\u0430, \u20BD" },
+                React.createElement("input", { id: "repay-amount", className: "input input-num", type: "number", inputMode: "decimal", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value) })),
+            React.createElement("div", { className: "flex gap-2" }, [0.25, 0.5, 1].map(f => (React.createElement("button", { key: f, type: "button", className: "mini-btn flex-1 py-2", onClick: () => setAmount(String(Math.round(left * f * 100) / 100)) }, f === 1 ? 'Всё' : `${f * 100}%`)))),
+            React.createElement("div", { className: "flex gap-3 pt-2" },
+                React.createElement("button", { type: "button", onClick: onClose, className: "btn-ghost flex-1 py-3" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { type: "submit", className: "btn-primary flex-1 py-3" }, "\u0417\u0430\u043F\u0438\u0441\u0430\u0442\u044C")))));
+}
+function DebtRow({ d, onOpen, onRepay }) {
+    const repaid = repaidOf(d);
+    const left = Math.max(0, d.amount - repaid);
+    const pct = Math.min(100, Math.round((repaid / d.amount) * 100)) || 0;
+    const w = d.dueDate ? whenLabel(d.dueDate) : null;
+    return (React.createElement("div", { className: "px-4 py-4" },
+        React.createElement("div", { className: "flex items-start gap-3" },
+            React.createElement("button", { type: "button", onClick: onOpen, className: "flex-1 min-w-0 text-left" },
+                React.createElement("p", { className: "font-medium text-gray-800 truncate" }, d.person),
+                React.createElement("p", { className: "flex items-center gap-2 mt-1 flex-wrap" },
+                    w ? React.createElement(Chip, { tone: w.tone },
+                        "\u0434\u043E ",
+                        fmtDay(d.dueDate),
+                        w.tone === 'late' ? ' · просрочен' : '') : React.createElement("span", { className: "text-xs text-gray-400" }, "\u0431\u0435\u0437 \u0441\u0440\u043E\u043A\u0430"),
+                    d.note && React.createElement("span", { className: "text-xs text-gray-400 truncate" }, d.note))),
+            React.createElement("div", { className: "text-right shrink-0" },
+                React.createElement("p", { className: "display text-2xl text-gray-800 tabular-nums leading-none" }, money(left)),
+                repaid > 0 && React.createElement("p", { className: "text-xs text-gray-400 mt-1" },
+                    "\u0438\u0437 ",
+                    money(d.amount)))),
+        React.createElement("div", { className: "flex items-center gap-3 mt-3" },
+            React.createElement("div", { className: "progress flex-1", "aria-label": `Возвращено ${pct}%` },
+                React.createElement("span", { style: { width: pct + '%' } })),
+            React.createElement("button", { type: "button", className: "mini-btn", onClick: onRepay }, d.direction === 'owe' ? 'Вернули' : 'Получили'))));
+}
+function Debts() {
+    const { debts, saveDoc, removeDoc, error } = useStore();
+    const [tab, setTab] = useState('owe');
+    const [sheet, setSheet] = useState(null); // null | 'new' | debt
+    const [repay, setRepay] = useState(null);
+    const leftOf = (d) => Math.max(0, d.amount - repaidOf(d));
+    const open = debts.filter(d => !d.closed);
+    const totalOwe = open.filter(d => d.direction === 'owe').reduce((s, d) => s + leftOf(d), 0);
+    const totalOwed = open.filter(d => d.direction === 'owed').reduce((s, d) => s + leftOf(d), 0);
+    const list = open.filter(d => d.direction === tab)
+        .sort((a, b) => (a.dueDate || '9999').localeCompare(b.dueDate || '9999'));
+    const closed = debts.filter(d => d.closed && d.direction === tab).slice(0, 10);
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageHeader, { title: "\u0414\u043E\u043B\u0433\u0438" }),
+        React.createElement(Stripes, { className: "-mx-4 mb-6" },
+            React.createElement("div", { className: "hero-card hero-split" },
+                React.createElement("button", { type: "button", className: `split ${tab === 'owe' ? 'split-on' : ''}`, onClick: () => setTab('owe') },
+                    React.createElement("span", { className: "eyebrow" }, "\u041C\u044B \u0434\u043E\u043B\u0436\u043D\u044B"),
+                    React.createElement("span", { className: "display split-sum" }, money(totalOwe))),
+                React.createElement("span", { className: "split-rule" }),
+                React.createElement("button", { type: "button", className: `split ${tab === 'owed' ? 'split-on' : ''}`, onClick: () => setTab('owed') },
+                    React.createElement("span", { className: "eyebrow" }, "\u041D\u0430\u043C \u0434\u043E\u043B\u0436\u043D\u044B"),
+                    React.createElement("span", { className: "display split-sum" }, money(totalOwed))))),
+        error && React.createElement("p", { className: "note mb-5" }, error),
+        React.createElement(SectionLabel, { right: list.length ? `${list.length}` : null }, tab === 'owe' ? 'Кому мы должны' : 'Кто должен нам'),
+        list.length === 0 ? (React.createElement("div", { className: "paper p-8 text-center text-gray-500 mb-7" },
+            React.createElement("p", { className: "title-mark mb-2" }, "\u2726"),
+            React.createElement("p", { className: "display text-2xl text-gray-700 mb-1" }, tab === 'owe' ? 'Долгов нет' : 'Никто не должен'),
+            React.createElement("p", { className: "text-sm" }, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 +, \u0447\u0442\u043E\u0431\u044B \u0437\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u0434\u043E\u043B\u0433 \u0438 \u0441\u0440\u043E\u043A \u0432\u043E\u0437\u0432\u0440\u0430\u0442\u0430."))) : (React.createElement("div", { className: "paper divide-y divide-[color:var(--line)] mb-7" }, list.map(d => React.createElement(DebtRow, { key: d.id, d: d, onOpen: () => setSheet(d), onRepay: () => setRepay(d) })))),
+        closed.length > 0 && (React.createElement("section", { className: "mb-7 opacity-70" },
+            React.createElement(SectionLabel, null, "\u0417\u0430\u043A\u0440\u044B\u0442\u044B\u0435"),
+            React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" }, closed.map(d => (React.createElement("div", { key: d.id, className: "px-4 py-3 flex items-center justify-between gap-3" },
+                React.createElement("span", { className: "text-gray-600 line-through truncate" }, d.person),
+                React.createElement("span", { className: "flex items-center gap-3 shrink-0" },
+                    React.createElement("span", { className: "text-gray-500 tabular-nums" }, money(d.amount)),
+                    React.createElement("button", { type: "button", "aria-label": "\u0423\u0431\u0440\u0430\u0442\u044C \u0438\u0437 \u0441\u043F\u0438\u0441\u043A\u0430", className: "text-gray-300 px-1", onClick: () => removeDoc('debts', d.id) }, "\u2715")))))))),
+        React.createElement("button", { onClick: () => setSheet('new'), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0434\u043E\u043B\u0433", className: "fab" },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        sheet && (React.createElement(DebtSheet, { debt: sheet === 'new' ? null : sheet, defaultDir: tab, onClose: () => setSheet(null), onSave: async (d) => { await saveDoc('debts', d); setTab(d.direction); setSheet(null); }, onDelete: async (id) => { await removeDoc('debts', id); setSheet(null); } })),
+        repay && React.createElement(RepaySheet, { debt: repay, onClose: () => setRepay(null), onSave: async (d) => { await saveDoc('debts', d); setRepay(null); } })));
+}
+// Быстрые ссылки для виджетов: #add, #payments, #debts, #report
+const START_HASH = (location.hash || '').replace('#', '');
+const HASH_PATHS = { add: '/', payments: '/payments', debts: '/debts', report: '/reports' };
+window.__START_ADD = START_HASH === 'add';
+function App() {
+    const [showSplash, setShowSplash] = useState(!HASH_PATHS[START_HASH]);
+    const [path, setPath] = useState(HASH_PATHS[START_HASH] || '/');
+    useEffect(() => { const t = setTimeout(() => setShowSplash(false), 2500); return () => clearTimeout(t); }, []);
+    if (showSplash)
+        return React.createElement(Splash, null);
+    const pages = { '/': Dashboard, '/payments': Payments, '/debts': Debts, '/reports': Reports, '/categories': Categories, '/settings': Settings };
+    const Page = pages[path] || Dashboard;
+    const go = (p) => { setPath(p); window.scrollTo(0, 0); };
+    return (React.createElement(StoreProvider, null,
+        React.createElement(NavContext.Provider, { value: { path, go } },
+            React.createElement("div", { className: "min-h-screen" },
+                React.createElement(Page, null),
+                React.createElement(Navigation, null)))));
+}
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+
+</script>
+</body>
+</html>
