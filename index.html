@@ -718,8 +718,45 @@ const ICON_SET = [
     ['Tv', 'Подписки'], ['Book', 'Книги'], ['GraduationCap', 'Учёба'], ['Palette', 'Хобби'],
     ['Camera', 'Фото'], ['Laptop', 'Техника'], ['Briefcase', 'Работа'], ['CreditCard', 'Карта'],
     ['Receipt', 'Счета'], ['Landmark', 'Налоги'], ['Wallet', 'Наличные'], ['Leaf', 'Разное'],
+    // ещё еда
+    ['Goose', 'Гусь'], ['Croissant', 'Выпечка'], ['Pasta', 'Паста'], ['Cake', 'Торт'],
+    ['CakeSlice', 'Десерт'], ['Donut', 'Пончик'], ['Cookie', 'Печенье'], ['IceCreamCone', 'Мороженое'],
+    ['Candy', 'Сладкое'], ['Lollipop', 'Конфеты'], ['Sandwich', 'Сэндвич'], ['Soup', 'Суп'],
+    ['Salad', 'Салат'], ['Fish', 'Рыба'], ['Beef', 'Мясо'], ['Drumstick', 'Курица'],
+    ['Egg', 'Яйца'], ['Milk', 'Молочка'], ['Wheat', 'Хлеб'], ['Carrot', 'Овощи'],
+    ['Cherry', 'Ягоды'], ['Grape', 'Виноград'], ['Citrus', 'Цитрусы'], ['CupSoda', 'Напитки'],
+    ['Martini', 'Коктейли'], ['CookingPot', 'Готовка'], ['ShoppingBasket', 'Рынок'], ['Store', 'Магазин'],
+    // жизнь и дом
+    ['CarTaxiFront', 'Такси'], ['Ship', 'Круиз'], ['Tent', 'Поход'], ['Mountain', 'Горы'],
+    ['TreePine', 'Природа'], ['Sun', 'Лето'], ['Snowflake', 'Зима'], ['Bed', 'Спальня'],
+    ['Lamp', 'Свет в доме'], ['WashingMachine', 'Стирка'], ['Key', 'Аренда'], ['Sprout', 'Растения'],
+    ['Dog', 'Собака'], ['Cat', 'Кошка'], ['Bird', 'Птица'], ['Rabbit', 'Кролик'],
+    ['Glasses', 'Очки'], ['Watch', 'Часы'], ['Brush', 'Уход'], ['Backpack', 'Сумки'],
+    ['Headphones', 'Аудио'], ['ToyBrick', 'Игрушки'], ['Puzzle', 'Развлечения'], ['Drama', 'Театр'],
+    ['Syringe', 'Анализы'], ['HandHeart', 'Благотворит.'], ['PiggyBank', 'Копилка'], ['Coins', 'Мелочь'],
+    ['Banknote', 'Зарплата'], ['Flame', 'Отопление'], ['Ribbon', 'Важное'], ['Moon', 'Ночь'],
 ];
+// Свои контурные рисунки в стиле Lucide (их нет в библиотеке)
+const CUSTOM_ICONS = {
+    Goose: [
+        ['path', { d: 'M7 12.5V5a2 2 0 0 1 4 0v8.2c3 0 5.6.8 7.4 2.6L21 14.5c-.2 3.7-2.6 6-6.5 6h-4c-3.2 0-5.4-1.4-5.9-3.6-.3-1.6.6-3.3 2.4-4.4' }],
+        ['path', { d: 'M7 4.6 3.6 5.6 7 6.6' }],
+        ['path', { d: 'M11.5 16.2c1.9 0 3.6.6 4.9 1.8' }],
+        ['circle', { cx: '9.1', cy: '4.8', r: '.3', fill: 'currentColor' }],
+    ],
+    Pasta: [
+        ['path', { d: 'M2 15h20' }],
+        ['path', { d: 'M3.5 15c1.2 3 4.4 5 8.5 5s7.3-2 8.5-5' }],
+        ['path', { d: 'M5 15c.5-3.5 3.2-6 7-6s6.5 2.5 7 6' }],
+        ['path', { d: 'M7.5 15c.3-2 2-3.5 4.5-3.5s4.2 1.5 4.5 3.5' }],
+        ['path', { d: 'M10 15c.2-.8.9-1.3 2-1.3s1.8.5 2 1.3' }],
+        ['path', { d: 'M12 9V2.5' }],
+        ['path', { d: 'M10.5 2.5v2a1.5 1.5 0 0 0 3 0v-2' }],
+    ],
+};
 function iconNode(name) {
+    if (CUSTOM_ICONS[name])
+        return CUSTOM_ICONS[name];
     const icons = (window.lucide && window.lucide.icons) || {};
     const ALIASES = { CircleCheck: 'CheckCircle', CalendarDays: 'Calendar', ListChecks: 'CheckSquare', CalendarPlus: 'Calendar', House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
     const node = icons[name] || icons[ALIASES[name]];
@@ -1386,7 +1423,7 @@ function Categories() {
                     React.createElement("input", { type: "text", value: name, onChange: (e) => setName(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041F\u0440\u043E\u0434\u0443\u043A\u0442\u044B", className: "w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none", autoFocus: true })),
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0418\u043A\u043E\u043D\u043A\u0430"),
-                    React.createElement("div", { className: "grid grid-cols-6 gap-2 max-h-64 overflow-y-auto p-1 -m-1" }, ICON_SET.map(([key, label]) => (React.createElement("button", { key: key, type: "button", title: label, "aria-label": label, onClick: () => setIcon(key), className: `aspect-square flex items-center justify-center rounded-xl border transition-all ${icon === key ? 'border-pink-400 bg-pink-50' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`, style: icon === key ? { color } : undefined },
+                    React.createElement("div", { className: "grid grid-cols-6 gap-2 max-h-80 overflow-y-auto p-1 -m-1" }, ICON_SET.map(([key, label]) => (React.createElement("button", { key: key, type: "button", title: label, "aria-label": label, onClick: () => setIcon(key), className: `aspect-square flex items-center justify-center rounded-xl border transition-all ${icon === key ? 'border-pink-400 bg-pink-50' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`, style: icon === key ? { color } : undefined },
                         React.createElement(Icon, { name: key, size: 22 })))))),
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0426\u0432\u0435\u0442"),
