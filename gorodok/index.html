@@ -1,0 +1,1212 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Городок знаний</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Городок">
+<meta name="theme-color" content="#F6E9EF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
+<style>
+/* Layout: full-screen isometric town on a canvas; floating HUD cards at the corners; a sheet slides up for houses and panels */
+:root{
+  --bg:#f6e9ef;--surface:#fff;--surface-2:#fdf5f8;--fg:#3a3135;--muted:#7d7075;--accent:#e08aa1;--accent-ink:#a8426a;--accent-soft:#f9e1e8;
+  --line:#efd6dd;--ok:#2f7d5b;--ok-soft:#e3f3ea;--err:#b23a48;--err-soft:#fbe4e7;--energy:#7cc4a4;--mood:#f0a8bf;--xp:#e7b55d;
+  --btn-bg:#a8426a;--btn-fg:#fff;--shadow:0 8px 28px rgba(120,50,80,.18);--scrim:rgba(40,25,35,.42);
+  --font-display:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --font-body:Manrope,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1e191c;--surface:#2a2327;--surface-2:#241e21;--fg:#f4e8ec;--muted:#bfaeb5;--accent:#e99ab0;--accent-ink:#f2a9c0;--accent-soft:#3a2b32;
+  --line:#463840;--ok:#7fd1a8;--ok-soft:#1f3329;--err:#f19aa5;--err-soft:#3d2228;--energy:#6fb896;--mood:#e993ad;--xp:#d9a64f;
+  --btn-bg:#e99ab0;--btn-fg:#1e191c;--shadow:0 8px 28px rgba(0,0,0,.45);--scrim:rgba(0,0,0,.55);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1e191c;--surface:#2a2327;--surface-2:#241e21;--fg:#f4e8ec;--muted:#bfaeb5;--accent:#e99ab0;--accent-ink:#f2a9c0;--accent-soft:#3a2b32;
+  --line:#463840;--ok:#7fd1a8;--ok-soft:#1f3329;--err:#f19aa5;--err-soft:#3d2228;--energy:#6fb896;--mood:#e993ad;--xp:#d9a64f;
+  --btn-bg:#e99ab0;--btn-fg:#1e191c;--shadow:0 8px 28px rgba(0,0,0,.45);--scrim:rgba(0,0,0,.55);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--font-body);-webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none}
+button,input{font:inherit;color:inherit}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+h2,h3{font-family:var(--font-display);font-weight:600;line-height:1.12;margin:0;text-wrap:balance}
+p{margin:0}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+#world{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:pointer}
+
+.hud{position:fixed;inset:0;pointer-events:none;z-index:2;padding:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-right,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 12px) calc(env(safe-area-inset-left,0px) + 12px)}
+.hud > *{pointer-events:auto}
+.card{background:var(--surface);background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tl{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);left:calc(env(safe-area-inset-left,0px) + 12px);display:flex;flex-direction:column;gap:8px;width:min(270px,calc(100vw - 24px - 120px))}
+.me{display:flex;gap:10px;align-items:center;padding:10px 12px}
+.ava{width:42px;height:42px;border-radius:50%;background:var(--accent-soft);flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.ava canvas{width:42px;height:42px}
+.me-t{min-width:0;flex:1}
+.me-t b{display:block;font-family:var(--font-display);font-style:italic;font-size:21px;line-height:1;color:var(--accent-ink)}
+.me-t span{font-size:12px;color:var(--muted);font-weight:600}
+.bar{height:7px;border-radius:99px;background:var(--accent-soft);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:99px;transition:width .4s}
+.needs{padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.need{display:grid;grid-template-columns:82px 1fr 30px;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.need .bar{margin:0;height:9px}
+.need em{font-style:normal;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent-ink);width:max-content}
+.tr{position:absolute;top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px);display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.clock{padding:9px 13px;text-align:right}
+.clock b{display:block;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.1}
+.clock span{font-size:12px;color:var(--muted);font-weight:700}
+.stars{padding:7px 12px;font-weight:800;font-variant-numeric:tabular-nums;display:flex;gap:6px;align-items:center}
+.stars i{font-style:normal;color:var(--xp)}
+.bottom{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 12px);display:flex;gap:4px;padding:6px}
+.bottom button,.zoom button{border:0;background:none;border-radius:14px;padding:9px 14px;font-weight:800;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px;cursor:pointer;color:var(--fg)}
+.bottom button svg{width:24px;height:24px;stroke:var(--accent-ink);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bottom button:active,.zoom button:active{background:var(--accent-soft)}
+.dot{position:absolute;top:6px;right:12px;width:9px;height:9px;border-radius:50%;background:var(--err)}
+.bottom button{position:relative}
+.zoom{position:absolute;right:calc(env(safe-area-inset-right,0px) + 12px);bottom:calc(env(safe-area-inset-bottom,0px) + 92px);display:flex;flex-direction:column;padding:4px}
+.zoom button{min-width:46px;padding:8px;font-size:20px;line-height:1}
+.zoom button svg{width:20px;height:20px;stroke:var(--fg);fill:none;stroke-width:1.8}
+.hint{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 96px);padding:8px 14px;font-size:13px;font-weight:700;white-space:nowrap;max-width:calc(100vw - 140px);overflow:hidden;text-overflow:ellipsis}
+@media (max-width:600px){
+  .tl{width:min(230px,calc(100vw - 24px - 108px))}
+  .me-t b{font-size:18px}.ava,.ava canvas{width:36px;height:36px}
+  .need{grid-template-columns:70px 1fr 26px;font-size:11px}
+  .bottom{left:12px;right:12px;transform:none;justify-content:space-between}
+  .bottom button{min-width:0;flex:1;padding:8px 4px;font-size:12px}
+  .clock b{font-size:17px}
+}
+
+#sheet{position:fixed;inset:0;z-index:10;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 0}
+.sheet{background:var(--surface);width:100%;max-width:760px;max-height:100%;border-radius:24px 24px 0 0;display:flex;flex-direction:column;box-shadow:var(--shadow);overflow:hidden}
+@media (min-width:700px){#sheet{align-items:center;padding:32px}.sheet{border-radius:24px;max-height:88%}}
+.sh-head{padding:20px 20px 14px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.sh-head .sw{width:46px;height:46px;border-radius:14px;flex:none}
+.sh-head .t{flex:1;min-width:0}
+.sh-head h2{font-size:30px;font-style:italic;color:var(--accent-ink)}
+.sh-head p{font-size:13px;color:var(--muted);margin-top:3px}
+.x{border:0;background:var(--accent-soft);color:var(--accent-ink);width:40px;height:40px;border-radius:50%;font-size:22px;line-height:1;cursor:pointer;flex:none}
+.sh-body{padding:18px 20px calc(env(safe-area-inset-bottom,0px) + 22px);overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:14px;-webkit-user-select:text;user-select:text}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800}
+.skill{display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px}
+.seg5{display:flex;gap:4px}
+.seg5 i{width:22px;height:9px;border-radius:3px;background:var(--accent-soft)}
+.seg5 i.on{background:var(--accent)}
+.rows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.rowb{display:flex;gap:12px;align-items:center;padding:14px 16px;background:var(--surface);border:0;border-bottom:1px solid var(--line);text-align:left;cursor:pointer;width:100%}
+.rowb:last-child{border-bottom:0}
+.rowb:active{background:var(--accent-soft)}
+.rowb .n{width:32px;height:32px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none;font-size:14px}
+.rowb .n.ok{background:var(--ok-soft);color:var(--ok)}
+.rowb .t{flex:1;min-width:0}
+.rowb .t b{display:block;font-size:15px}
+.rowb .t span{font-size:12px;color:var(--muted)}
+.rowb .go{color:var(--muted);font-size:20px}
+.btn{appearance:none;border:0;border-radius:14px;padding:13px 18px;font-weight:800;background:var(--btn-bg);color:var(--btn-fg);cursor:pointer;font-size:15px}
+.btn.ghost{background:var(--accent-soft);color:var(--accent-ink)}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--fg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.lesson p{font-size:16px;line-height:1.6;max-width:62ch}
+.keys{background:var(--accent-soft);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.keys b{font-size:13px;color:var(--accent-ink)}
+.keys li{margin-left:18px;font-size:15px}
+.keys ul{margin:0;padding:0}
+.src{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.opt{display:block;width:100%;text-align:left;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2);cursor:pointer;font-size:15px;line-height:1.45}
+.opt.right{background:var(--ok-soft);border-color:var(--ok)}
+.opt.wrong{background:var(--err-soft);border-color:var(--err)}
+.note{border-radius:14px;padding:12px 14px;font-size:14px}
+.note.ok{background:var(--ok-soft)}.note.err{background:var(--err-soft)}.note.pink{background:var(--accent-soft)}
+.note b:first-child{display:block}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tile{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--surface-2)}
+.tile b{font-size:15px}
+.tile span{font-size:13px;color:var(--muted)}
+.tile.lock{opacity:.5}
+.tile .badge{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent-ink);font-family:var(--font-display);font-size:22px;font-style:italic;font-weight:600}
+.tile.got .badge{background:var(--xp);color:#3a2a10}
+.links{display:flex;flex-direction:column;gap:8px}
+.links a{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:14px;text-decoration:none;font-weight:700;background:var(--surface-2)}
+.links a span{color:var(--muted);font-weight:600;font-size:12px}
+.field label{display:block;font-size:13px;color:var(--muted);font-weight:700;margin-bottom:5px}
+.field input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.quest{display:flex;gap:12px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
+.quest .t{flex:1;min-width:0}
+.quest .bar{margin-top:6px}
+.menu-item{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--surface-2)}
+.menu-item .t b{display:block}
+.menu-item .t span{font-size:13px;color:var(--muted)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 14px);z-index:20;max-width:min(520px,calc(100vw - 32px));padding:12px 16px;border-radius:16px;background:var(--fg);color:var(--bg);font-weight:700;font-size:14px;box-shadow:var(--shadow);pointer-events:none}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .22s ease-out}@keyframes up{from{transform:translateY(16px);opacity:.5}to{transform:none;opacity:1}}#toast{animation:drop .2s ease-out}@keyframes drop{from{transform:translate(-50%,-8px);opacity:0}to{transform:translate(-50%,0);opacity:1}}}
+</style>
+<style>
+[hidden]{display:none!important}
+body{margin:0}
+.auth{position:fixed;inset:0;z-index:30;background:linear-gradient(180deg,var(--bg),var(--surface-2));display:flex;align-items:center;justify-content:center;padding:calc(env(safe-area-inset-top,0px) + 24px) 20px calc(env(safe-area-inset-bottom,0px) + 24px);overflow-y:auto;-webkit-user-select:text;user-select:text}
+.auth-card{width:100%;max-width:400px;display:flex;flex-direction:column;gap:14px;text-align:center}
+.auth-card img{width:112px;height:112px;border-radius:26px;align-self:center;box-shadow:var(--shadow)}
+.auth-card h1{font-family:var(--font-display);font-style:italic;font-weight:600;font-size:44px;line-height:1;margin:6px 0 0;color:var(--accent-ink)}
+.auth-card p{color:var(--muted);font-size:15px}
+.auth-card form{display:flex;flex-direction:column;gap:10px;text-align:left}
+.auth-card label{font-size:13px;font-weight:700;color:var(--muted)}
+.auth-card input{width:100%;padding:14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);font-size:16px;color:var(--fg)}
+.auth-msg{min-height:20px;font-size:14px;color:var(--err);text-align:left}
+.auth-link{background:none;border:0;color:var(--accent-ink);font-weight:700;font-size:14px;cursor:pointer;padding:6px;align-self:center}
+.auth-state{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;font-size:15px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="auth" class="auth" role="dialog" aria-label="Вход">
+  <div class="auth-card">
+    <img src="icon-192.png" alt="">
+    <h1>Городок знаний</h1>
+    <p>Личная игра. Войди тем же аккаунтом, что и в Money.</p>
+    <form id="authForm" hidden>
+      <label for="authEmail">Почта</label>
+      <input id="authEmail" type="email" autocomplete="username" inputmode="email" required>
+      <label for="authPass">Пароль</label>
+      <input id="authPass" type="password" autocomplete="current-password" required>
+      <div class="auth-msg" id="authMsg" aria-live="polite"></div>
+      <button class="btn" id="authBtn" type="submit">Войти</button>
+      <button class="auth-link" id="authReset" type="button">Забыла пароль</button>
+    </form>
+    <div class="auth-state" id="authBusy">Проверяю доступ…</div>
+    <div class="auth-state" id="authLocked" hidden><b>Это личная игра.</b><br>Вход открыт только для владелицы.<br><br><button class="btn line" id="authOther" type="button">Войти другим аккаунтом</button></div>
+    <div class="auth-state" id="authErr" hidden><b>Не загрузилось подключение к облаку.</b><br>Проверь интернет и попробуй ещё раз.<br><br><button class="btn" id="authRetry" type="button">Обновить</button></div>
+  </div>
+</div>
+<canvas id="world" aria-label="Город: нажми на дом или на дорожку, чтобы пойти туда"></canvas>
+<div class="hud">
+  <div class="tl">
+    <div class="card me"><div class="ava" id="ava"></div><div class="me-t"><b id="pname">Катя</b><span id="plevel">Уровень 1</span><div class="bar"><i id="xpbar" style="background:var(--xp);width:0"></i></div></div></div>
+    <div class="card needs">
+      <div class="need"><span>Энергия</span><div class="bar"><i id="enbar" style="background:var(--energy)"></i></div><em id="enval">100</em></div>
+      <div class="need"><span>Настроение</span><div class="bar"><i id="mobar" style="background:var(--mood)"></i></div><em id="moval">70</em></div>
+      <span class="chip" id="insp" hidden>Вдохновение ×1,5 опыта</span>
+    </div>
+  </div>
+  <div class="tr">
+    <div class="card clock"><b id="clock">08:00</b><span id="dayl">День 1</span></div>
+    <div class="card stars"><i>★</i><span id="stars">20</span></div>
+  </div>
+  <div class="card hint" id="hint">Нажми на дом, чтобы дойти до него</div>
+  <div class="card zoom">
+    <button data-ui="zoomin" aria-label="Приблизить">+</button>
+    <button data-ui="zoomout" aria-label="Отдалить">−</button>
+    <button data-ui="center" aria-label="К персонажу"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button>
+  </div>
+  <div class="card bottom">
+    <button data-ui="map"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/></svg>Карта</button>
+    <button data-ui="skills"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Навыки</button>
+    <button data-ui="quests" id="qbtn"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Задания</button>
+    <button data-ui="badges"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/></svg>Значки</button>
+  </div>
+</div>
+<div id="sheet" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+/* =================== CONTENT =================== */
+const L={
+  guide:['Гайд по Честному знаку','https://claude.ai/artifact/1eWv8kMpHtXg9yeyECvjTc'],
+  trainer:['Тренажёр маркировки','https://claude.ai/artifact/EoJovxVYCH7icX8ZhW8rBx'],
+  shift:['Смена по маркировке','https://claude.ai/artifact/H9tCMXzVptBPGwGXuxkCkA'],
+  cards:['Карточки и документы','https://claude.ai/artifact/DYrt6AcdK4rXfRH43bpV4q'],
+  tax:['Налоги для маркировки','https://claude.ai/artifact/QMsWBnursrKbgyiiZKrKTK']
+};
+const SRC={
+  legprom:['Честный знак: изменения с 1 марта 2026','https://markirovka.ru/community/shoes-and-clothes/izmeneniya-v-rabote-s-markirovkoy-po-legpromu-s-1-marta-2026-goda'],
+  nk:['Честный знак: Национальный каталог и статусы','https://markirovka.ru/knowledge/fast_start/start/nk-natsionalnyy-katalog-zachem-opisyvat-tovary-kak-sozdat-kartochku-tovara-i-chto-s-ney-delat'],
+  e41:['Честный знак: ошибка 41','https://markirovka.ru/knowledge/tovarnye-gruppy/badi/pri-vvode-v-oborot-voznikaet-oshibka-41-nedostatochnoe-opisanie-tovara'],
+  rd:['Честный знак: атрибуты разрешительных документов','https://markirovka.ru/knowledge/tovarnye-gruppy/obschie-voprosy-gis/zapolnenie-atributov-po-razreshitelnoy-dokumentatsii'],
+  kontur:['Контур: проверка документов расширена','https://kontur.ru/markirovka/news/83342-rasshirili_proverku_razreshitelnyh_dokumentov'],
+  selsup:['SelSup: что нельзя менять в карточке','https://selsup.ru/blog/redaktirovanie-kartochki-tovara-v-chestnom-znake/'],
+  mchd:['МойСклад: электронная подпись и МЧД','https://www.moysklad.ru/poleznoe/shkola-torgovli/elektronnaya-cifrovaya-podpis/'],
+  usn:['Saby: лимиты и ставки УСН 2026','https://saby.ru/articles/accounting/limity_i_stavki_usn'],
+  npd:['«Упрощёнка»: лимит НПД 2026','https://spmag.ru/articles/kakoj-u-ip-na-npd-limit-dohoda-v-2026-godu'],
+  vzn:['Контур.Эльба: взносы ИП 2026','https://kontur.ru/elba/spravka/55378-straxovye_vznosy_ip_gajd_po_oplate_i_raschetam'],
+  vych:['Харант: налоговые вычеты 2026','https://harant.ru/blog/nalogi/nalogovye-vychety-v-2026-godu-skolko-mozhno-vernut-i-kak-oformit/'],
+  ndfl:['СберБизнес: прогрессивная шкала НДФЛ','https://sberbusiness.live/publications/progressivnaya-shkala-ndfl'],
+  prompt:['Anthropic: как писать запросы','https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview']
+};
+
+const HOUSES=[
+ {id:'chz',name:'Дом маркировки',skill:'Маркировка',x:2,y:6,door:'y',roof:'#e7a1b5',wall:'#fbf3f2',mentor:'Вера, специалист по маркировке',
+  hello:'Здесь учат, как устроен «Честный знак» и как на нём зарабатывать.',
+  links:[L.guide,L.trainer,L.shift],
+  lessons:[
+   {t:'Что такое маркировка',p:['Каждой единице товара присваивают свой код Data Matrix — квадратик из точек. По коду видно весь путь товара: кто сделал, кому продал, где пробили на кассе.','Данные хранит система «Честный знак». Если товар входит в обязательный перечень — одежда, обувь, косметика, БАДы и другие группы, — продавать его без кода нельзя.'],k:['Код уникален для каждой штуки, а не для артикула.','Без кода маркированный товар не примут ни маркетплейс, ни касса.'],s:[L.guide]},
+   {t:'Регистрация участника',p:['Компания или ИП регистрируются в «Честном знаке» с квалифицированной подписью руководителя (УКЭП). Налоговая выпускает её бесплатно, носитель-токен покупают отдельно.','Зарегистрироваться нужно в течение 7 дней с начала работы с маркированным товаром. С 1 марта 2026 система проверяет уведомление о начале предпринимательской деятельности: без него в регистрации откажут.'],k:['Самозанятым маркированный товар продавать нельзя — нужен ИП на УСН или патенте.'],s:[L.guide,SRC.legprom]},
+   {t:'Сколько стоит и чем грозит',p:['Один код стоит 0,50 ₽ плюс НДС 22%, то есть 0,61 ₽. Новый код при перемаркировке оплачивают так же.','За продажу без маркировки — штрафы по ст. 15.12 КоАП: ИП — от 2 до 10 тысяч ₽, компании — от 50 до 300 тысяч ₽ и конфискация товара.'],k:['200 кодов = 122 ₽. Считай эту сумму в стоимости своих услуг.'],s:[L.guide]},
+   {t:'Как на этом заработать',p:['Селлерам на Wildberries и Ozon часто некогда разбираться с маркировкой. Им нужна помощь: регистрация, карточки товаров, заказ кодов, ввод в оборот, настройка ЭДО.','Онлайн-часть делают из дома с компьютера. Для работы в кабинете клиента нужна твоя электронная подпись физлица и машиночитаемая доверенность (МЧД) от клиента. Клеит этикетки тот, у кого товар под рукой.'],k:['Начни с одной товарной группы и одного маркетплейса.'],s:[L.guide,SRC.mchd]}
+  ],
+  quiz:[
+   {q:'Сколько дней даётся на регистрацию после начала работы с маркированным товаром?',o:['7 дней','30 дней','3 месяца','Регистрация не нужна'],a:0,e:'Зарегистрироваться нужно в течение 7 дней.'},
+   {q:'Сколько стоит один код с НДС?',o:['0,50 ₽','0,61 ₽','1 ₽','Бесплатно'],a:1,e:'0,50 ₽ + НДС 22% = 0,61 ₽.'},
+   {q:'Может ли самозанятая продавать маркированный товар?',o:['Да, если доход до 2,4 млн в год','Нет, нужен ИП на УСН или патенте','Да, если выдаёт чеки','Только через маркетплейсы'],a:1,e:'Закон о самозанятых прямо запрещает продажу маркированных товаров.'},
+   {q:'Что нужно, чтобы работать в кабинете клиента?',o:['Пароль и токен клиента','Своя подпись физлица и МЧД от клиента','Только логин','Ничего не нужно'],a:1,e:'Работаешь под своей подписью, а право действовать за клиента даёт МЧД.'}
+  ]},
+ {id:'edo',name:'Почта ЭДО',skill:'ЭДО',x:6,y:6,door:'y',roof:'#9fc3e6',wall:'#f6f8fb',mentor:'Олег, оператор ЭДО',
+  hello:'Здесь разбираются, как документы с кодами ходят между компаниями.',
+  links:[L.guide,L.trainer],
+  lessons:[
+   {t:'Что такое ЭДО',p:['ЭДО — обмен документами в электронном виде с подписью. Когда товар с кодами переходит от одной компании к другой, это оформляют универсальным передаточным документом (УПД) через оператора ЭДО, и данные уходят в «Честный знак».','Входящие документы обычно бесплатны, за исходящий коммерческие операторы берут около 8 ₽. Есть бесплатный ЭДО Лайт: только УПД и УКД с кодами маркировки и только между участниками системы.'],k:['Платит отправитель, получатель обычно нет.'],s:[L.guide]},
+   {t:'Роуминг',p:['Если у тебя и у партнёра разные операторы, настраивают роуминг: отправляют приглашение, статус сначала «Ожидает подтверждения», потом «Активен».','Оператора узнают по началу ID: 2BM — Контур.Диадок, 2BE — СБИС (Saby), 2AE — Астрал, 2AL — Такском.'],k:['Пока роуминг не активен, документ до партнёра не дойдёт.'],s:[L.guide]},
+   {t:'Машиночитаемая доверенность',p:['МЧД — доверенность в электронном виде. Она даёт право подписывать документы от имени компании. С 1 сентября 2024 года её обязательно прикладывают к документам, которые подписывает доверенное лицо.','МЧД регистрируют в реестре налоговой (это занимает до суток) и добавляют в кабинет. Исправить её нельзя: отзывают и выпускают новую.'],k:['Ошибка в МЧД — значит, отозвать и выпустить заново.'],s:[SRC.mchd,L.guide]},
+   {t:'Сроки и статусы',p:['Полученный УПД нужно подписать в течение 3 рабочих дней. Передача данных из ЭДО в систему тоже может занять до 3 рабочих дней.','Если документ «висит», не отправляй его повторно: получится дубликат, и его придётся отзывать.'],k:['Подожди 3 рабочих дня, прежде чем бить тревогу.'],s:[L.guide]}
+  ],
+  quiz:[
+   {q:'ID партнёра начинается на 2BE. Какой у него оператор?',o:['Контур.Диадок','СБИС (Saby)','Астрал','Такском'],a:1,e:'2BE — это СБИС (Saby).'},
+   {q:'Сколько рабочих дней есть, чтобы подписать полученный УПД?',o:['1','3','10','30'],a:1,e:'3 рабочих дня с момента получения.'},
+   {q:'В МЧД нашлась ошибка. Что делать?',o:['Исправить в кабинете','Отозвать и выпустить новую','Позвонить в налоговую','Ничего, и так сойдёт'],a:1,e:'МЧД не редактируют: только отзыв и новая доверенность.'},
+   {q:'Что можно отправлять через бесплатный ЭДО Лайт?',o:['Любые документы','Только УПД и УКД с кодами маркировки','Только договоры','Счета на оплату'],a:1,e:'ЭДО Лайт — только документы с кодами маркировки.'}
+  ]},
+ {id:'cat',name:'Каталог',skill:'Карточки',x:7,y:1,door:'x',roof:'#c5b3e6',wall:'#f8f5fb',mentor:'Ника, контент-менеджер',
+  hello:'Здесь учат делать карточки товаров и разбираться с документами.',
+  links:[L.cards],
+  lessons:[
+   {t:'Карточка и GTIN',p:['Прежде чем заказать коды, товар описывают в Национальном каталоге. После публикации у карточки есть GTIN — по нему заказывают коды.','Для GTIN в российском диапазоне 460–469 нужна регистрация в GS1 RUS. Через Национальный каталог дают 100 GTIN бесплатно. Технические карточки — для розницы и опта.'],k:['GTIN не меняют ни сами, ни через поддержку: другой GTIN — другая карточка.'],s:[SRC.nk,SRC.selsup]},
+   {t:'Статусы карточки',p:['Путь карточки: Черновик → На модерации → Ожидает подписания → Опубликована. Модерация — до 3 рабочих дней. Если модератор нашёл ошибку, статус «Требует изменений», и в комментарии написано, что исправить.','Опубликованную карточку правят через «Открыть черновик». Пока новая версия не опубликована, действует старая.'],k:['Ошибка 41 «Недостаточное описание товара» — карточка не опубликована, часто висит в «Ожидает подписания».'],s:[SRC.nk,SRC.e41]},
+   {t:'Разрешительные документы',p:['В карточке указывают декларацию, сертификат или свидетельство о госрегистрации. Если обязательного подтверждения нет, заполняют атрибут «Требования подтверждения соответствия отсутствуют» с основанием. Оба варианта сразу не заполняют.','Номер должен совпадать с реестром символ в символ. С 1 марта 2026 карточку не зарегистрируют, если документ недействителен, приостановлен, прекращён или не на этот товар. С 1 сентября 2026 в лёгкой промышленности без документа в карточке откажут во вводе в оборот.'],k:['Номер копируй из реестра, а не из сообщения клиента.'],s:[SRC.rd,SRC.legprom,SRC.kontur]}
+  ],
+  quiz:[
+   {q:'Можно ли поменять GTIN в опубликованной карточке?',o:['Да, через черновик','Да, через поддержку','Нет, нужна новая карточка','Да, если товар не продавался'],a:2,e:'Другой GTIN — это другая карточка.'},
+   {q:'Что значит ошибка 41 при вводе в оборот?',o:['Нет денег на счёте','Карточка не опубликована','Неверный ИНН','Сломался сканер'],a:1,e:'Ввод в оборот возможен только по опубликованной карточке.'},
+   {q:'Сколько обычно длится модерация карточки?',o:['Мгновенно','До 3 рабочих дней','2 недели','Месяц'],a:1,e:'До 3 рабочих дней, потом карточку подписывают.'},
+   {q:'В реестре декларация «Прекращена». Что будет с карточкой?',o:['Ничего','Её не зарегистрируют','Её опубликуют с пометкой','Выпишут штраф, но опубликуют'],a:1,e:'С 1 марта 2026 с таким документом карточку не регистрируют.'}
+  ]},
+ {id:'tax',name:'Налоговая',skill:'Налоги',x:14,y:6,door:'y',roof:'#9dcfb6',wall:'#f4f9f6',mentor:'Инна Петровна, налоговый консультант',
+  hello:'Здесь объясняют налоги простыми словами — для тебя и для твоего дела.',
+  links:[L.tax],
+  lessons:[
+   {t:'Самозанятость',p:['Налог на профессиональный доход: 4% с денег от людей и 6% от ИП и компаний. Лимит — 2,4 млн ₽ в год. Отчётов нет: выдаёшь чеки в приложении «Мой налог».','Нельзя нанимать работников, перепродавать чужие товары и продавать маркированные. Если превысила лимит, у тебя 20 дней, чтобы выбрать новый режим, иначе переведут на общую систему.'],k:['Для услуг селлерам самозанятости хватает.'],s:[SRC.npd]},
+   {t:'ИП на УСН',p:['УСН «доходы» — 6% со всего, что пришло. УСН «доходы минус расходы» — 15% с прибыли. Лимит в 2026 году — 490,5 млн ₽.','Взносы ИП за себя в 2026 году — 57 390 ₽ плюс 1% с дохода выше 300 000 ₽. На УСН 6% без работников налог уменьшается на взносы целиком. До 20 млн ₽ дохода в год НДС нет.'],k:['Режим УСН меняют только с 1 января — считай заранее.'],s:[SRC.usn,SRC.vzn]},
+   {t:'Личные налоги и вычеты',p:['С зарплаты удерживают НДФЛ: 13% с дохода до 2,4 млн ₽ в год, дальше ставка растёт ступеньками до 22%. Повышенный процент берут только с части выше ступеньки.','За лечение, учёбу и спорт можно вернуть 13% от трат до 150 000 ₽ в год — до 19 500 ₽. Налоги на квартиру и машину платят до 1 декабря по уведомлению.'],k:['Вычеты получают только с НДФЛ 13%, не с самозанятости и не с УСН.'],s:[SRC.ndfl,SRC.vych]}
+  ],
+  quiz:[
+   {q:'Какой лимит дохода у самозанятых в год?',o:['1 млн ₽','2,4 млн ₽','10 млн ₽','Лимита нет'],a:1,e:'2,4 млн ₽ в год.'},
+   {q:'Сколько фиксированных взносов платит ИП за 2026 год?',o:['36 238 ₽','57 390 ₽','100 000 ₽','Ничего'],a:1,e:'57 390 ₽ до 28 декабря, плюс 1% с дохода выше 300 000 ₽.'},
+   {q:'До какого дохода в год на УСН нет НДС?',o:['2,4 млн ₽','20 млн ₽','60 млн ₽','НДС есть всегда'],a:1,e:'До 20 млн ₽ — освобождение. Порог сохранили до 2029 года.'},
+   {q:'До какого числа платят налог на квартиру и машину?',o:['1 апреля','15 июля','1 декабря','31 декабря'],a:2,e:'До 1 декабря за прошлый год.'}
+  ]},
+ {id:'office',name:'Офис',skill:'Ассистент',x:17,y:6,door:'y',roof:'#e9c08e',wall:'#fbf7f1',mentor:'Елена, бизнес-ассистент',
+  hello:'Здесь прокачивают навыки ассистента руководителя.',
+  links:[],
+  lessons:[
+   {t:'Приоритеты',p:['Раскладывай задачи по двум вопросам: важно ли это и срочно ли это. Важно и срочно — делай сразу. Важно, но не срочно — запланируй время.','Срочно, но не важно — делегируй или сделай быстро. Ни то ни другое — убери из списка.'],k:['Самые ценные задачи обычно «важные, но не срочные». Их чаще всего откладывают.'],s:[]},
+   {t:'Календарь руководителя',p:['Оставляй 10–15 минут между встречами: на дорогу, звонок или кофе. Подтверждай встречи накануне.','Повестку отправляй участникам заранее. Если участники в разных городах, проверяй часовые пояса.'],k:['Пустое окно в календаре — тоже план, если оно защищено.'],s:[]},
+   {t:'Деловое письмо',p:['Тема письма должна сразу говорить, о чём оно: «Перенос встречи 14.10 на 15.10». В первом предложении — суть или просьба.','Одна просьба — один срок: «Пришлите договор до четверга, 12:00». Перед отправкой проверь вложения и получателей.'],k:['Если письмо не помещается на экран телефона — сократи.'],s:[]},
+   {t:'Протокол встречи',p:['В протоколе: дата, участники, принятые решения и задачи в формате «кто — что — до когда».','Разошли протокол в тот же день, пока все помнят договорённости. Через неделю проверь, что задачи сделаны.'],k:['Задача без ответственного и срока не будет выполнена.'],s:[]}
+  ],
+  quiz:[
+   {q:'Задача важная, но не срочная. Что с ней делать?',o:['Сделать сразу','Запланировать время','Делегировать','Удалить'],a:1,e:'Запланировать — иначе её вытеснят срочные дела.'},
+   {q:'Сколько времени оставлять между встречами?',o:['Ничего','10–15 минут','2 часа','Полдня'],a:1,e:'10–15 минут на переход и подготовку.'},
+   {q:'Что писать в первом предложении делового письма?',o:['Приветствие на абзац','Суть или просьбу','Историю вопроса','Подпись'],a:1,e:'Суть сразу — читатель решает, читать ли дальше.'},
+   {q:'Как записывать задачи в протоколе?',o:['Общими словами','Кто — что — до когда','Только решения','Не записывать'],a:1,e:'У задачи должен быть ответственный и срок.'}
+  ]},
+ {id:'ai',name:'Студия нейросетей',skill:'Нейросети',x:15,y:1,door:'x',roof:'#a7d3d6',wall:'#f3f9f9',mentor:'Макс, промпт-инженер',
+  hello:'Здесь учат работать с нейросетями так, чтобы они реально помогали.',
+  links:[SRC.prompt],
+  lessons:[
+   {t:'Как написать запрос',p:['Нейросеть не знает твоей ситуации, пока ты её не расскажешь. Хороший запрос: кто ты и для кого результат, что нужно сделать, в каком виде ответ, какие ограничения.','Плохо: «Напиши письмо». Хорошо: «Я ассистент руководителя. Напиши короткое вежливое письмо партнёру о переносе встречи с четверга на пятницу, 3–4 предложения, без канцелярита».'],k:['Пример нужного результата работает лучше длинных объяснений.'],s:[SRC.prompt]},
+   {t:'Проверяй, что она пишет',p:['Нейросеть может уверенно ошибаться: путать цифры, даты и законы, придумывать ссылки. Всё, от чего зависят деньги и решения, проверяй по первоисточнику.','Проси указать источники и открывай их сама. Ссылки нет или она не открывается — считай факт непроверенным.'],k:['Не отправляй в открытые сервисы паспортные данные, пароли и чужие персональные данные.'],s:[]},
+   {t:'В работе ассистента',p:['Черновики писем и ответов, протоколы встреч из заметок, таблицы из текста, сравнение предложений подрядчиков, план поездки.','Работай по шагам: получила черновик — попроси «короче», «официальнее», «добавь сроки». Так быстрее, чем пытаться написать идеальный запрос с первого раза.'],k:['Первый ответ — черновик, а не финал.'],s:[]},
+   {t:'Сайт за вечер',p:['Опиши, что это за страница, кто ей будет пользоваться, какие разделы нужны и какой стиль. Приложи пример, который нравится.','Проси правки по одной: «сделай кнопку больше», «добавь раздел с ценами». После каждой правки открывай результат на телефоне.'],k:['Одна правка за раз — меньше путаницы.'],s:[]}
+  ],
+  quiz:[
+   {q:'Что важнее всего добавить в запрос?',o:['Побольше вежливых слов','Контекст и нужный формат ответа','Восклицательные знаки','Ничего, она сама поймёт'],a:1,e:'Контекст и формат делают ответ точным.'},
+   {q:'Нейросеть назвала сумму штрафа. Что делаешь?',o:['Сразу отправляю клиенту','Проверяю по закону или надёжному источнику','Спрашиваю её же ещё раз','Округляю'],a:1,e:'Цифры, законы и даты — только после проверки.'},
+   {q:'Можно ли вставить в открытый чат паспортные данные кандидата?',o:['Да, если удобно','Нет, убираю персональные данные','Да, если потом удалить чат','Только номер паспорта'],a:1,e:'Персональные данные не отправляют в открытые сервисы.'},
+   {q:'Ответ получился не тем, что нужно. Лучший шаг?',o:['Начать заново без объяснений','Сказать, что не так, и дать пример','Сдаться','Повторить то же самое'],a:1,e:'Уточнение и пример — самый быстрый путь к нужному ответу.'}
+  ]},
+ {id:'hr',name:'Кадровое агентство',skill:'Рекрутинг',x:7,y:14,door:'x',roof:'#f0b6a0',wall:'#fcf6f3',mentor:'Алина, рекрутер',
+  hello:'Здесь учат подбирать людей — твоё второе направление.',
+  links:[],
+  lessons:[
+   {t:'Воронка подбора',p:['Путь вакансии: заявка → профиль вакансии → поиск → первичный отбор → интервью → предложение о работе (оффер) → выход на работу.','Считай, сколько кандидатов переходит с этапа на этап. Так видно, где теряются люди: мало откликов — проблема в тексте вакансии, много отказов после интервью — в требованиях или условиях.'],k:['Цифры по этапам — главный аргумент в разговоре с заказчиком.'],s:[]},
+   {t:'Профиль вакансии',p:['До поиска согласуй с нанимающим руководителем: задачи на первые 3 месяца, обязательные и желательные требования, условия и вилку зарплаты.','Обязательных требований должно быть немного. Каждое лишнее «обязательно» отсекает хороших кандидатов.'],k:['Без согласованного профиля поиск идёт по кругу.'],s:[]},
+   {t:'Структурированное интервью',p:['Задавай всем кандидатам одни и те же вопросы о прошлом опыте: «Расскажите о случае, когда…». Так кандидатов можно честно сравнить.','Слушай ответ по схеме STAR: ситуация, задача, действие, результат. Оценку ставь сразу после интервью, пока помнишь детали.'],k:['Одинаковые вопросы — честное сравнение.'],s:[]},
+   {t:'Нейросети в рекрутинге',p:['Нейросеть поможет написать текст вакансии, составить вопросы для интервью, сравнить резюме с профилем.','Решение о найме принимает человек. Персональные данные кандидатов защищает закон № 152-ФЗ: не загружай резюме в открытые сервисы без согласия и обезличивания.'],k:['Нейросеть — помощник, а не судья.'],s:[]}
+  ],
+  quiz:[
+   {q:'Что значит STAR?',o:['Стаж, таланты, амбиции, рост','Ситуация, задача, действие, результат','Старт, тест, анализ, решение','Это название сайта вакансий'],a:1,e:'Ситуация, задача, действие, результат.'},
+   {q:'Что согласовать с руководителем до поиска?',o:['Цвет офиса','Профиль вакансии','Дату корпоратива','Ничего'],a:1,e:'Профиль: задачи, требования, условия, вилка.'},
+   {q:'Зачем задавать всем кандидатам одинаковые вопросы?',o:['Чтобы быстрее','Чтобы честно сравнить кандидатов','Так красивее','Это не нужно'],a:1,e:'Одинаковые вопросы позволяют сравнить ответы.'},
+   {q:'Кто принимает решение о найме?',o:['Нейросеть','Человек','Сайт вакансий','Кандидат'],a:1,e:'Нейросеть помогает, решает человек.'}
+  ]},
+ {id:'cafe',name:'Кафе «Пион»',kind:'cafe',x:2,y:16,door:'y',roof:'#f2d38c',wall:'#fdf8ef',mentor:'Бариста Соня',hello:'Здесь восстанавливают силы и настроение.'},
+ {id:'home',name:'Мой дом',kind:'home',x:14,y:15,door:'y',roof:'#e58fa8',wall:'#fff6f8',mentor:'',hello:'Здесь можно отдохнуть, лечь спать и открыть все свои материалы.'}
+];
+
+HOUSES.push(
+ {id:'lib',name:'Библиотека',skill:'Таблицы',roof:'#d9b8a0',wall:'#fbf4ec',mentor:'Тамара Ивановна, библиотекарь',
+  hello:'Здесь учат работать с таблицами: Excel и Google Таблицы пригодятся и в маркировке, и в офисе.',
+  links:[],
+  lessons:[
+   {t:'Таблица — это база',p:['Одна строка — одна запись: один товар, одна трата, один кандидат. Один столбец — один тип данных: только даты, только суммы, только названия.','Заголовки пишут в первой строке. Не объединяй ячейки и не оставляй пустых строк внутри таблицы — иначе фильтры и формулы начнут ошибаться.'],k:['Аккуратная таблица сразу готова к фильтрам, формулам и загрузке в сервисы.'],s:[]},
+   {t:'Функция ВПР',p:['ВПР находит значение в первом столбце диапазона и возвращает данные из нужного столбца той же строки. Пример: =ВПР(A2;Каталог!A:D;3;ЛОЖЬ) — найдёт артикул из A2 на листе «Каталог» и вернёт значение из 3-го столбца.','ЛОЖЬ в конце означает точное совпадение. Если функция вернула #Н/Д, значение не нашлось: проверь лишние пробелы и формат ячеек. В Google Таблицах и английском Excel функция называется VLOOKUP.'],k:['В русском Excel аргументы разделяют точкой с запятой.'],s:[]},
+   {t:'Фильтры и сводные таблицы',p:['Фильтр (Данные → Фильтр) показывает только нужные строки: например, только карточки в статусе «Черновик» или только траты за октябрь.','Сводная таблица (Вставка → Сводная таблица) за пару кликов считает суммы и количество по категориям: сколько потрачено на каждую категорию или сколько кандидатов на каждом этапе.'],k:['Сводная таблица ничего не меняет в исходных данных.'],s:[]},
+   {t:'CSV и коды маркировки',p:['CSV — текстовый файл, где значения разделены запятыми или точкой с запятой. Коды маркировки и списки товаров часто выгружают именно так.','Excel может принять GTIN за число и убрать ведущий ноль или превратить длинное число в вид 4,6E+12. Поэтому CSV открывают через импорт данных и ставят для таких столбцов формат «Текстовый».'],k:['Перед загрузкой проверь, что коды и GTIN не изменились.'],s:[]}
+  ],
+  quiz:[
+   {q:'Что означает ЛОЖЬ в конце функции ВПР?',o:['Ошибку в формуле','Точное совпадение','Поиск снизу вверх','Пропуск пустых ячеек'],a:1,e:'ЛОЖЬ — искать точное совпадение.'},
+   {q:'ВПР вернула #Н/Д. Что это значит?',o:['Нет интернета','Значение не найдено','Файл повреждён','Таблица слишком большая'],a:1,e:'Значение не нашлось — проверь пробелы и формат.'},
+   {q:'Как быстрее всего посчитать траты по категориям?',o:['Калькулятором','Сводной таблицей','Переписать вручную','Удалить лишние строки'],a:1,e:'Сводная таблица считает суммы по категориям за пару кликов.'},
+   {q:'GTIN 04601234567893 превратился в 4601234567893. Почему?',o:['Код неправильный','Excel принял его за число и убрал ведущий ноль','Сломался файл','Так и должно быть'],a:1,e:'Нужен текстовый формат столбца при импорте.'}
+  ]},
+ {id:'hall',name:'Ратуша',kind:'hall',roof:'#c98fa3',wall:'#fbf1f4',mentor:'Секретарь мэрии',hello:'Здесь висят задания дня и доска почёта города.'}
+);
+const PLACE={
+ chz:{x:1,y:3,w:3,d:3,door:'y',floors:1,style:'house'},
+ edo:{x:8,y:3,w:3,d:3,door:'y',floors:1,style:'house'},
+ cat:{x:2,y:9,w:3,d:3,door:'x',floors:2,style:'house'},
+ tax:{x:18,y:2,w:4,d:3,door:'y',floors:3,style:'office',wall:'#eef6f1',sign:'Налоговая'},
+ ai:{x:24,y:2,w:3,d:3,door:'y',floors:5,style:'glass'},
+ office:{x:18,y:9,w:4,d:3,door:'y',floors:4,style:'office',wall:'#fbf5ee',sign:'Офис'},
+ hr:{x:33,y:2,w:4,d:3,door:'y',floors:2,style:'office',wall:'#fcf3ef',sign:'Кадры'},
+ lib:{x:38,y:2,w:4,d:3,door:'y',floors:2,style:'library'},
+ hall:{x:20,y:17,w:5,d:3,door:'y',floors:2,style:'hall'},
+ cafe:{x:32,y:18,w:3,d:3,door:'y',floors:1,style:'shop',sign:'Пион',awn:'#e88aa5'},
+ home:{x:3,y:32,w:3,d:3,door:'y',floors:1,style:'house'}
+};
+HOUSES.forEach(h=>Object.assign(h,PLACE[h.id]));
+const HB={};HOUSES.forEach(h=>HB[h.id]=h);
+const LEARN=HOUSES.filter(h=>!h.kind);
+const DECO=[
+ {x:8,y:9,w:3,d:3,floors:2,style:'house',roof:'#f0c9a0',wall:'#fdf7f0',door:'y'},
+ {x:24,y:9,w:3,d:3,floors:6,style:'glass',roof:'#c9c3e8',door:'y'},
+ {x:33,y:9,w:4,d:3,floors:4,style:'apart',roof:'#d9b3c0',wall:'#f7e3ea',door:'y'},
+ {x:38,y:9,w:4,d:3,floors:3,style:'apart',roof:'#b8c6dd',wall:'#e8eef7',door:'y'},
+ {x:35,y:18,w:3,d:3,floors:1,style:'shop',roof:'#e9c08e',wall:'#fdf6ea',sign:'Пекарня',awn:'#e9b44c',door:'y'},
+ {x:38,y:18,w:3,d:3,floors:1,style:'shop',roof:'#9dcfb6',wall:'#f2f9f5',sign:'Цветы',awn:'#6fb896',door:'y'},
+ {x:41,y:18,w:2,d:3,floors:1,style:'shop',roof:'#c5b3e6',wall:'#f7f3fc',sign:'Книги',awn:'#9a86d0',door:'y'},
+ {x:33,y:24,w:4,d:3,floors:3,style:'apart',roof:'#e7a1b5',wall:'#fbeef2',door:'y'},
+ {x:38,y:24,w:4,d:3,floors:4,style:'apart',roof:'#a7d3d6',wall:'#eef7f7',door:'y'},
+ {x:8,y:32,w:3,d:3,floors:2,style:'house',roof:'#a8c8e8',wall:'#f5f8fc',door:'y'},
+ {x:18,y:32,w:5,d:3,floors:2,style:'school',roof:'#f2c4a8',wall:'#fdf3ec',door:'y',sign:'Школа'},
+ {x:33,y:32,w:4,d:3,floors:3,style:'apart',roof:'#c9b6d6',wall:'#f5eff8',door:'y'},
+ {x:38,y:32,w:4,d:3,floors:2,style:'apart',roof:'#f0b6a0',wall:'#fcf1ec',door:'y'}
+];
+DECO.forEach((d,i)=>{d.id='deco'+i;d.kind='deco';d.wall=d.wall||'#fbf6f1'});
+const BUILD=HOUSES.concat(DECO);
+const NPCS_DEF=[
+ {name:'Соседка Лиза',dress:'#7fb3d5',hair:'#e8c27a',st:[13,20],tips:['Я продаю пижамы на Wildberries. Без маркировки мою поставку бы просто не приняли!','Совет от селлера: держи все декларации в одной папке — карточки делаются в разы быстрее.','Когда ищешь клиентов, загляни в чаты селлеров. Там всё время спрашивают про маркировку.']},
+ {name:'Почтальон Гриша',dress:'#8fbf8f',hair:'#6b4a3a',hat:'#4f7f6f',st:[16,6],tips:['Входящие документы в ЭДО обычно бесплатные, а за исходящие платит отправитель.','Документ «висит»? Подожди 3 рабочих дня, прежде чем отправлять повторно.','У партнёра другой оператор? Значит, нужен роуминг — без него письмо не дойдёт.']},
+ {name:'Студентка Даша',dress:'#c9a7e8',hair:'#3a2a30',st:[22,21],tips:['В Библиотеке научили ВПР — теперь сверяю таблицы за минуту!','Сводная таблица — моя любимая кнопка.']},
+ {name:'Бухгалтер Пётр',dress:'#9aa7b8',hair:'#8a8a8a',st:[28,10],tips:['Взносы ИП за 2026 год — 57 390 ₽, до 28 декабря. Не забудь!','Налоги на квартиру и машину — до 1 декабря.']},
+ {name:'Рекрутер Алина',dress:'#f0b6a0',hair:'#7a4a3a',st:[31,22],tips:['Одинаковые вопросы всем кандидатам — и сравнивать их честно.','Сначала профиль вакансии, потом поиск.']},
+ {name:'Бегун Тимур',dress:'#6fb896',hair:'#2a2a2a',st:[4,36],tips:['Утренняя пробежка вдоль реки — лучший старт дня!','Энергия кончилась? В «Пионе» отличный кофе.']},
+ {name:'Мама с коляской',dress:'#e7a1b5',hair:'#a0603a',st:[9,26],tips:['В парке новая площадка — дети в восторге.','Если есть дети и работаешь по договору — не забудь про детский вычет.']},
+ {name:'Художник Лёва',dress:'#e9c08e',hair:'#c0603a',hat:'#7a5ab0',st:[26,40],tips:['Рисую реку каждый вечер — фонари на мосту как гирлянда.','Хороший запрос к нейросети похож на хорошее ТЗ художнику.']}
+];
+const BADGES=[
+ {id:'first',t:'Первый шаг',d:'Изучи первый урок'},
+ {id:'neighbor',t:'Соседка',d:'Загляни во все места города'},
+ {id:'perfect',t:'Отличница',d:'Пройди тест без ошибок'},
+ {id:'pro',t:'Профи',d:'Прокачай любой навык до 5'},
+ {id:'early',t:'Ранняя пташка',d:'Позанимайся до 9:00'},
+ {id:'coffee',t:'Кофеманка',d:'Выпей 3 кофе в «Пионе»'},
+ {id:'wide',t:'Широкий кругозор',d:'Получи хотя бы 1 уровень во всех навыках'},
+ {id:'master',t:'Мастер',d:'Прокачай все навыки до 5'}
+];
+const QUESTS=[
+ {id:'l2',t:'Изучи 2 урока',n:2,k:'lessons'},
+ {id:'q1',t:'Сдай любой тест на 3 из 4 и выше',n:1,k:'quizzes'},
+ {id:'v3',t:'Зайди в 3 разных дома',n:3,k:'visits'},
+ {id:'c1',t:'Выпей кофе в «Пионе»',n:1,k:'coffee'},
+ {id:'t1',t:'Поговори с соседом',n:1,k:'talks'},
+ {id:'w60',t:'Пройди 60 шагов по городку',n:60,k:'walk'}
+];
+
+
+
+/* =================== STATE =================== */
+const KEY='gorodok-v1';
+function freshState(){return {v:1,map:2,name:'Катя',day:1,min:8*60,energy:100,mood:70,stars:20,xp:0,skill:{},lessons:{},best:{},visited:{},badges:{},coffees:0,px:4.5,py:36.5,intro:false,today:{lessons:0,quizzes:0,visits:{},coffee:0,talks:0,walk:0},claimed:{},moodAcc:0,stepAcc:0}}
+let S=null;
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s&&s.v===1)S=s}catch(e){}
+if(!S)S=freshState();
+if(S.map!==2){S.map=2;S.px=4.5;S.py=36.5;S.newcity=true}
+let saveT=0;
+function save(){S.savedAt=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(typeof cloudSoon==='function')cloudSoon()}
+function saveSoon(){clearTimeout(saveT);saveT=setTimeout(save,400)}
+
+/* =================== MAP =================== */
+const W=44,H=44;
+const T=[];for(let y=0;y<H;y++){T.push(new Array(W).fill('g'))}
+const WOOD={};
+function set(x,y,t){if(x>=0&&y>=0&&x<W&&y<H)T[y][x]=t}
+function rect(x0,y0,x1,y1,t){for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,t)}
+const AVX=[14,29],AVY=[14,29];
+rect(0,37,W-1,39,'w');rect(0,36,W-1,36,'k');rect(0,40,W-1,40,'k');
+AVX.forEach(x=>{rect(x-1,0,x-1,H-1,'k');rect(x+2,0,x+2,H-1,'k')});
+AVY.forEach(y=>{rect(0,y-1,W-1,y-1,'k');rect(0,y+2,W-1,y+2,'k')});
+AVX.forEach(x=>rect(x,0,x+1,H-1,'a'));
+AVY.forEach(y=>rect(0,y,W-1,y+1,'a'));
+AVX.forEach(x=>{for(let y=37;y<=39;y++){set(x-1,y,'b');set(x+2,y,'b');set(x,y,'B');set(x+1,y,'B')}});
+[[6,7],[22,22],[37,38]].forEach(([a,b])=>{for(let x=a;x<=b;x++)for(let y=37;y<=39;y++){set(x,y,'b');WOOD[x+','+y]=1}});
+// block lanes
+rect(1,7,12,7,'p');rect(6,1,6,12,'p');
+rect(17,7,27,7,'p');rect(32,7,42,7,'p');
+// park
+rect(2,18,10,18,'p');rect(2,26,10,26,'p');rect(2,18,2,26,'p');rect(10,18,10,26,'p');rect(11,22,12,22,'p');rect(6,17,6,17,'p');
+rect(4,20,8,24,'w');for(let x=3;x<=9;x++){if(T[22][x]==='w'){set(x,22,'b');WOOD[x+',22']=1}else set(x,22,'p')}
+rect(11,24,12,26,'d');
+// plaza
+rect(17,17,27,27,'s');
+// shopping street
+rect(32,22,42,22,'s');
+// playground near school
+rect(24,32,26,35,'d');
+// buildings + door paths
+const blocked=[];for(let y=0;y<H;y++)blocked.push(new Uint8Array(W));
+BUILD.forEach(b=>{
+  for(let y=b.y;y<b.y+b.d;y++)for(let x=b.x;x<b.x+b.w;x++)blocked[y][x]=1;
+  if(!b.door)return;
+  b.dx=b.door==='y'?b.x+Math.floor(b.w/2):b.x+b.w;b.dy=b.door==='y'?b.y+b.d:b.y+Math.floor(b.d/2);
+  let x=b.dx,y=b.dy;
+  for(let i=0;i<10;i++){const t=T[y]&&T[y][x];if(t&&t!=='g'&&t!=='d')break;set(x,y,'p');if(b.door==='y')y++;else x++}
+});
+for(let y=23;y<=24;y++)for(let x=22;x<=23;x++)blocked[y][x]=1;
+let seed=20261011;
+function rnd(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+const OBJ=[];
+function put(k,x,y,extra){if(x<0||y<0||x>=W||y>=H||blocked[y][x])return false;OBJ.push(Object.assign({k,x,y},extra||{}));blocked[y][x]=1;return true}
+function nearDoor(x,y){return BUILD.some(b=>b.door&&Math.abs(b.dx-x)<=1&&Math.abs(b.dy-y)<=1)}
+const isWalkT=t=>t==='k'||t==='p'||t==='s'||t==='b';
+function nextTo(x,y,fn){return [[1,0],[-1,0],[0,1],[0,-1]].some(d=>{const t=(T[y+d[1]]||[])[x+d[0]];return fn(t)})}
+// fixed props
+OBJ.push({k:'fountain',x:22,y:23});
+[[18,22],[18,25],[26,22],[26,25]].forEach((p,i)=>put('stall',p[0],p[1],{c:['#e88aa5','#e9b44c','#6fb896','#9fc3e6'][i]}));
+[[17,17],[27,17],[17,27],[27,27],[17,21],[27,21]].forEach(p=>put('planter',p[0],p[1]));
+[[19,23],[25,23],[22,26],[23,26]].forEach(p=>put('bench',p[0],p[1]));
+[[19,21],[25,21],[19,26],[25,26],[33,23],[36,23],[39,23],[42,23]].forEach(p=>put('lamp',p[0],p[1]));
+[[11,25],[12,25]].forEach((p,i)=>put(i?'slide':'swing',p[0],p[1]));
+[[25,33],[25,34]].forEach((p,i)=>put(i?'slide':'swing',p[0],p[1]));
+[[12,19],[12,33],[27,12]].forEach(p=>put('busstop',p[0],p[1]));
+// lamps along avenues on grass next to sidewalks
+for(let i=2;i<H;i+=5){[[12,i],[17,i],[27,i],[32,i]].forEach(p=>{if(T[p[1]][p[0]]==='g'&&!nearDoor(p[0],p[1]))put('lamp',p[0],p[1])});[[i,12],[i,17],[i,27],[i,32]].forEach(p=>{if(T[p[1]]&&T[p[1]][p[0]]==='g'&&!nearDoor(p[0],p[1]))put('lamp',p[0],p[1])})}
+// river benches & lamps
+for(let x=2;x<W;x+=4){if(T[41][x]==='g')put(x%8===2?'lamp':'bench',x,41)}
+// park benches + beds
+[[3,19],[9,19],[3,25],[9,25]].forEach(p=>put('bed',p[0],p[1]));
+// home garden
+[[1,32],[1,33],[2,35],[6,35],[7,33]].forEach(p=>put('bed',p[0],p[1]));
+[[1,34],[7,32],[7,34]].forEach(p=>put('hedge',p[0],p[1]));
+// business hedges
+for(let x=17;x<=27;x++){if(T[12][x]==='g'&&!nearDoor(x,12)&&x%2)put('hedge',x,12)}
+const FLOW=[];
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+  if(T[y][x]!=='g'||blocked[y][x]||nearDoor(x,y))continue;
+  const edge=x<=0||y<=0||x>=W-1||y>=H-1||y>=42;
+  const park=x>=1&&x<=12&&y>=17&&y<=27;
+  const south=y>=41;
+  const biz=x>=17&&x<=27&&y<=12;
+  const nearRoad=nextTo(x,y,t=>t==='k'||t==='a');
+  const r=rnd();
+  let p=edge?.7:park?.32:south?.34:biz?.06:.13;
+  if(nearRoad)p*=.5;
+  if(r<p){const r2=rnd();let k;
+    if(park)k=r2<.35?'tree':r2<.65?'blossom':r2<.8?'birch':'bush';
+    else if(edge)k=r2<.45?'pine':r2<.75?'tree':'birch';
+    else k=r2<.35?'tree':r2<.6?'blossom':r2<.75?'pine':r2<.85?'birch':'bush';
+    put(k,x,y,{s:.85+rnd()*.35})}
+  else if(rnd()<(park?.4:.2))FLOW.push([x,y,Math.floor(rnd()*4)]);
+}
+function walk(x,y){return x>=0&&y>=0&&x<W&&y<H&&T[y][x]!=='w'&&!blocked[y][x]}
+function cost(x,y){const t=T[y][x];return t==='a'||t==='B'?2:t==='g'?1.35:t==='d'?1.2:1}
+
+/* =================== PATHFINDING (binary heap A*) =================== */
+function astar(sx,sy,tx,ty){
+  if(!walk(tx,ty))return null;
+  const N=W*H,s=sy*W+sx,t=ty*W+tx;if(s===t)return [];
+  const g=new Float32Array(N).fill(1e9),came=new Int32Array(N).fill(-1),cl=new Uint8Array(N);
+  const heap=[],hf=new Float32Array(N);
+  const push=n=>{heap.push(n);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(hf[heap[p]]<=hf[heap[i]])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p}};
+  const pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<heap.length&&hf[heap[l]]<hf[heap[m]])m=l;if(r<heap.length&&hf[heap[r]]<hf[heap[m]])m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m}}return top};
+  const hh=(x,y)=>{const dx=Math.abs(x-tx),dy=Math.abs(y-ty);return Math.max(dx,dy)+.414*Math.min(dx,dy)};
+  g[s]=0;hf[s]=hh(sx,sy);push(s);
+  while(heap.length){
+    const cur=pop();if(cl[cur])continue;if(cur===t)break;cl[cur]=1;
+    const cx=cur%W,cy=(cur/W)|0;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      if(!dx&&!dy)continue;const nx=cx+dx,ny=cy+dy;if(!walk(nx,ny))continue;
+      if(dx&&dy&&(!walk(cx+dx,cy)||!walk(cx,cy+dy)))continue;
+      const n=ny*W+nx;if(cl[n])continue;const ng=g[cur]+(dx&&dy?1.414:1)*cost(nx,ny);
+      if(ng<g[n]){g[n]=ng;came[n]=cur;hf[n]=ng+hh(nx,ny);push(n)}
+    }
+  }
+  if(came[t]<0)return null;
+  const path=[];let c=t;while(c!==s){path.push([c%W,(c/W)|0]);c=came[c]}
+  return path.reverse();
+}
+function nearestWalk(x,y){if(walk(x,y))return [x,y];for(let r=1;r<=2;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++)if(walk(x+dx,y+dy))return [x+dx,y+dy];return null}
+
+/* =================== ACTORS =================== */
+if(!walk(Math.floor(S.px),Math.floor(S.py))){S.px=4.5;S.py=36.5}
+const P={x:S.px,y:S.py,path:[],target:null,facing:1,phase:0,moving:false,dress:'#e07a9a',hair:'#5a3a2e',me:true};
+const strollTiles=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(isWalkT(T[y][x])&&walk(x,y))strollTiles.push([x,y]);
+const NPCS=NPCS_DEF.map((d,i)=>Object.assign({},d,{x:d.st[0]+.5,y:d.st[1]+.5,path:[],wait:1+i*.4,facing:1,phase:0,moving:false,tip:0}));
+const CAR_COL=['#e88aa5','#9fc3e6','#f2d38c','#ffffff','#9dcfb6','#c5b3e6','#e9a27a','#7f8fa8','#f4b6c8','#a7d3d6'];
+const CARS=[];
+[[14.5,1],[15.5,-1],[29.5,1],[30.5,-1]].forEach((l,i)=>{for(let k=0;k<2;k++)CARS.push({ax:'y',lane:l[0],dir:l[1],pos:(k*22+i*7)%H,sp:2.2+((i+k)%3)*.5,c:CAR_COL[(i*2+k)%10]})});
+[[14.5,-1],[15.5,1],[29.5,-1],[30.5,1]].forEach((l,i)=>{CARS.push({ax:'x',lane:l[0],dir:l[1],pos:(i*11+5)%W,sp:2+(i%3)*.6,c:CAR_COL[(i*3+1)%10]})});
+const BOAT={x:3,dir:1};
+const DUCKS=[0,1,2].map(i=>({a:i*2.1,r:.9+i*.25}));
+const CLOUDS=[0,1,2,3].map(i=>({x:i*12-6,y:i*9-4,s:1+i%2*.5}));
+
+/* =================== RENDER SETUP =================== */
+const cv=document.getElementById('world'),ctx=cv.getContext('2d');
+let cw=0,ch=0,dpr=1,zoom=1,HW=32,HH=16;
+const cam={x:P.x,y:P.y,follow:true};
+let ox=0,oy=0;
+function Pt(x,y,z){return [ox+(x-y)*HW,oy+(x+y)*HH-(z||0)*zoom]}
+const GRASS=['#cfe7c3','#c8e2bb','#d4ebc9','#cbe5bf'];
+function hash(x,y){let h=(x*374761393+y*668265263)|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)%997}
+let dprCap=2,perfAcc=0,perfN=0;
+function resize(){cw=window.innerWidth;ch=window.innerHeight;dpr=Math.min(window.devicePixelRatio||1,dprCap);sprZoom=-1;cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr)}
+function defaultZoom(){return Math.max(.7,Math.min(1.35,Math.min(window.innerWidth,window.innerHeight)/640))}
+function setZoom(z){zoom=Math.max(.42,Math.min(1.9,z));HW=32*zoom;HH=16*zoom}
+
+/* =================== DRAW HELPERS =================== */
+function poly(pts,fill,stroke,lw){ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();if(fill){ctx.fillStyle=fill;ctx.fill()}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1;ctx.stroke()}}
+function line(a,b,col,lw){ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.stroke()}
+const shadeC={};
+function shade(hex,amt){const key=hex+amt;if(shadeC[key])return shadeC[key];let c=hex.replace('#','');let r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);const f=amt<0?0:255,p=Math.abs(amt);r=Math.round((f-r)*p+r);g=Math.round((f-g)*p+g);b=Math.round((f-b)*p+b);return shadeC[key]='#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1)}
+function ellipse(x,y,rx,ry,fill){ctx.beginPath();ctx.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill()}
+function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+let night=0,time=0;
+function nightFactor(m){const h=m/60;if(h>=7&&h<18)return 0;if(h>=18&&h<21)return (h-18)/3;if(h>=21||h<5)return 1;return 1-(h-5)/2}
+const lights=[];
+const GLOW=(()=>{const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d');const gr=g.createRadialGradient(48,48,0,48,48,48);gr.addColorStop(0,'rgba(255,214,140,1)');gr.addColorStop(1,'rgba(255,214,140,0)');g.fillStyle=gr;g.fillRect(0,0,96,96);return c})();
+const lerp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
+
+/* =================== GROUND =================== */
+function tileFill(x,y){const t=T[y][x];
+  if(t==='g')return GRASS[hash(x,y)%4];
+  if(t==='a'||t==='B')return (hash(x,y)%2)?'#cfc6cb':'#cbc2c8';
+  if(t==='k')return (x+y)%2?'#ece3e6':'#e7dde1';
+  if(t==='p')return '#f2e7db';
+  if(t==='s')return (x+y)%2?'#f6e7ee':'#f0dce6';
+  if(t==='d')return '#f3e2b8';
+  if(t==='b')return WOOD[x+','+y]?'#cfa47f':'#e5dcd8';
+  return '#a9d4ea'}
+function drawGround(){
+  const inv=(sx,sy)=>{const dx=(sx-ox)/HW,dy=(sy-oy)/HH;return [(dx+dy)/2,(dy-dx)/2]};
+  const cs=[inv(0,0),inv(cw,0),inv(0,ch),inv(cw,ch)];
+  const x0=Math.max(0,Math.floor(Math.min(cs[0][0],cs[1][0],cs[2][0],cs[3][0]))-1),x1=Math.min(W-1,Math.ceil(Math.max(cs[0][0],cs[1][0],cs[2][0],cs[3][0]))+1);
+  const y0=Math.max(0,Math.floor(Math.min(cs[0][1],cs[1][1],cs[2][1],cs[3][1]))-1),y1=Math.min(H-1,Math.ceil(Math.max(cs[0][1],cs[1][1],cs[2][1],cs[3][1]))+1);
+  const side=20*zoom;
+  poly([Pt(0,H),Pt(W,H),[Pt(W,H)[0],Pt(W,H)[1]+side],[Pt(0,H)[0],Pt(0,H)[1]+side]],'#d5b79c');
+  poly([Pt(W,0),Pt(W,H),[Pt(W,H)[0],Pt(W,H)[1]+side],[Pt(W,0)[0],Pt(W,0)[1]+side]],'#c4a385');
+  const fills=new Map();const F=c=>{let p=fills.get(c);if(!p){p=new Path2D();fills.set(c,p)}return p};
+  const dash=new Path2D(),zebra=new Path2D(),curbD=new Path2D(),curbL=new Path2D(),grid=new Path2D(),plank=new Path2D(),tuft=new Path2D(),bank=new Path2D(),sand=new Path2D();
+  const spark=[new Path2D(),new Path2D(),new Path2D()];
+  const seg=(p,a,b)=>{p.moveTo(a[0],a[1]);p.lineTo(b[0],b[1])};
+  const det=zoom>.5,fine=zoom>.7;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const a=Pt(x,y),c=Pt(x+1,y+1);if(c[1]<-4||a[1]>ch+4)continue;const b=Pt(x+1,y),d=Pt(x,y+1);if(b[0]<-4||d[0]>cw+4)continue;
+    const t=T[y][x],p=F(tileFill(x,y));
+    p.moveTo(a[0],a[1]-.6);p.lineTo(b[0]+.6,b[1]);p.lineTo(c[0],c[1]+.6);p.lineTo(d[0]-.6,d[1]);p.closePath();
+    if(t==='g'){if(fine&&hash(x,y)%5===0){const m=Pt(x+.5,y+.5),z=zoom;tuft.moveTo(m[0]-3*z,m[1]+1*z);tuft.lineTo(m[0]-2*z,m[1]-3*z);tuft.moveTo(m[0]+2*z,m[1]+2*z);tuft.lineTo(m[0]+3*z,m[1]-2*z)}}
+    else if(t==='a'||t==='B'){
+      if(det){const vx=AVX.indexOf(x-1)>=0,hy=AVY.indexOf(y-1)>=0;const inX=AVY.some(v=>y===v||y===v+1),inY=AVX.some(v=>x===v||x===v+1);
+        if(vx&&!inX&&y%2===0)seg(dash,Pt(x,y+.2),Pt(x,y+.8));
+        if(hy&&!inY&&x%2===0)seg(dash,Pt(x+.2,y),Pt(x+.8,y));
+        if(inY&&AVY.some(v=>y===v-1||y===v+2))for(let i=1;i<5;i++){const tt=i/5;seg(zebra,Pt(x+tt-.06,y+.15),Pt(x+tt-.06,y+.85))}
+        if(inX&&AVX.some(v=>x===v-1||x===v+2))for(let i=1;i<5;i++){const tt=i/5;seg(zebra,Pt(x+.15,y+tt-.06),Pt(x+.85,y+tt-.06))}}}
+    else if(t==='k'){if(det){grid.moveTo(a[0],a[1]);grid.lineTo(b[0],b[1]);grid.lineTo(c[0],c[1]);grid.lineTo(d[0],d[1]);grid.closePath();seg(grid,lerp(a,b,.5),lerp(d,c,.5))}
+      if(T[y][x+1]==='a')seg(curbD,b,c);if(T[y+1]&&T[y+1][x]==='a')seg(curbD,d,c);
+      if(x>0&&T[y][x-1]==='a')seg(curbL,a,d);if(y>0&&T[y-1][x]==='a')seg(curbL,a,b)}
+    else if(t==='s'){if(det){grid.moveTo(a[0],a[1]);grid.lineTo(b[0],b[1]);grid.lineTo(c[0],c[1]);grid.lineTo(d[0],d[1]);grid.closePath()}}
+    else if(t==='b'&&WOOD[x+','+y]){if(det)for(let i=1;i<4;i++)seg(plank,lerp(a,d,i/4),lerp(b,c,i/4))}
+    else if(t==='w'){
+      if(y>0&&T[y-1][x]!=='w'&&T[y-1][x]!=='b'&&T[y-1][x]!=='B')seg(bank,a,b);
+      if(x>0&&T[y][x-1]!=='w'&&T[y][x-1]!=='b'&&T[y][x-1]!=='B')seg(bank,a,d);
+      if(det){const ph=(time*.5+(hash(x,y)%10)/10)%1,al=Math.sin(ph*Math.PI);if(al>.25){const m=Pt(x+.5,y+.5);seg(spark[al>.75?2:al>.5?1:0],[m[0]-6*zoom,m[1]],[m[0]+6*zoom,m[1]])}}}
+    else if(t==='d'&&fine){const m=Pt(x+.5,y+.5);sand.rect(m[0]-4*zoom,m[1],1.5*zoom,1.5*zoom);sand.rect(m[0]+3*zoom,m[1]-2*zoom,1.5*zoom,1.5*zoom)}
+  }
+  fills.forEach((p,c)=>{ctx.fillStyle=c;ctx.fill(p)});
+  const st=(p,c,w)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke(p)};
+  st(grid,'rgba(120,90,100,.08)',1);st(tuft,'#a9d29b',1*zoom);st(dash,'#f7f3f5',1.6*zoom);st(zebra,'#fbf8f9',3*zoom);
+  st(curbD,'#bfb3ba',2*zoom);st(curbL,'#d9cfd4',1.5*zoom);st(plank,'rgba(120,80,50,.25)',1);st(bank,'#e5d8cc',2.5*zoom);
+  spark.forEach((p,i)=>st(p,'rgba(255,255,255,'+[.35,.55,.75][i]+')',1.2*zoom));
+  if(fine){ctx.fillStyle='#e2cd98';ctx.fill(sand)}
+  // bridge railings
+  const railW=new Path2D(),railS=new Path2D();
+  for(let y=37;y<=39;y++)for(let x=x0;x<=x1;x++){const t=T[y][x];if(t!=='b'&&t!=='B')continue;const P2=WOOD[x+','+y]?railW:railS;
+    const rl=(xx)=>{const z=9;seg(P2,Pt(xx,y,z),Pt(xx,y+1,z));const p0=Pt(xx,y);seg(P2,p0,[p0[0],p0[1]-z*zoom])};
+    if(x>0&&T[y][x-1]==='w')rl(x);if(x<W-1&&T[y][x+1]==='w')rl(x+1)}
+  st(railW,'#a87a55',2*zoom);st(railS,'#bfb3ba',2*zoom);
+  if(zoom>.55){const FC=['#f4a7bd','#ffffff','#f7d27a','#c9a7e8'],fp=FC.map(()=>new Path2D()),r=1.8*zoom;
+    for(const f of FLOW){if(f[0]<x0||f[0]>x1||f[1]<y0||f[1]>y1)continue;const c=Pt(f[0]+.5,f[1]+.5);for(let i=0;i<4;i++){const ang=i*1.7+f[0];const px=c[0]+Math.cos(ang)*HW*.4,py=c[1]+Math.sin(ang)*HH*.4;const p=fp[(f[2]+i)%4];p.moveTo(px+r,py);p.arc(px,py,r,0,6.2832)}}
+    fp.forEach((p,i)=>{ctx.fillStyle=FC[i];ctx.fill(p)})}
+  return [x0,x1,y0,y1];
+}
+
+/* =================== BUILDINGS =================== */
+function faceQuad(b,face,u0,u1,z0,z1){
+  const x0=b.x,y0=b.y,x1=b.x+b.w,y1=b.y+b.d;
+  if(face==='y')return [Pt(x0+u0,y1,z0),Pt(x0+u1,y1,z0),Pt(x0+u1,y1,z1),Pt(x0+u0,y1,z1)];
+  return [Pt(x1,y0+u0,z0),Pt(x1,y0+u1,z0),Pt(x1,y0+u1,z1),Pt(x1,y0+u0,z1)];
+}
+function signText(b,face,u,z,txt,col,size){
+  const p=face==='y'?Pt(b.x+u,b.y+b.d,z):Pt(b.x+b.w,b.y+u,z);
+  ctx.save();ctx.translate(p[0],p[1]);ctx.transform(1,face==='y'?.5:-.5,0,1,0,0);
+  ctx.font='800 '+Math.round(size*zoom)+'px Manrope, system-ui, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=col;ctx.fillText(txt,0,0);ctx.restore();
+}
+function drawBuilding(b){
+  const x0=b.x,y0=b.y,x1=b.x+b.w,y1=b.y+b.d,xm=(x0+x1)/2,ym=(y0+y1)/2;
+  const base=6,fh=b.style==='glass'?30:34,wh=base+b.floors*fh;
+  const L=b.wall,R=shade(b.wall,-.1),st=b.style;
+  // shadow
+  poly([Pt(x0+.25,y1+.35),Pt(x1+.35,y1+.35),Pt(x1+.35,y0+.25),Pt(x1,y0),Pt(x0,y1)],'rgba(60,40,50,.13)');
+  // walls
+  const wallL=st==='glass'?shade(b.roof,.35):L,wallR=st==='glass'?shade(b.roof,.15):R;
+  poly(faceQuad(b,'y',0,b.w,0,base),shade(L,-.2));poly(faceQuad(b,'x',0,b.d,0,base),shade(L,-.28));
+  poly(faceQuad(b,'y',0,b.w,base,wh),wallL);poly(faceQuad(b,'x',0,b.d,base,wh),wallR);
+  const lit=night>.25;
+  const doorU=b.door==='y'?b.w/2:b.door==='x'?b.d/2:-9;
+  // windows
+  const winCol=(f,i,face)=>{if(lit&&(hash(b.x*7+f*13+i,b.y*5+(face==='y'?1:2))%10)<(b.kind==='deco'?6:8))return '#ffe3a1';return st==='glass'?shade(b.roof,-.05):'#d7ebf5'};
+  if(st==='glass'){
+    for(const face of ['y','x']){const Ln=face==='y'?b.w:b.d;const n=Math.max(2,Math.round(Ln/.5));
+      for(let f=0;f<b.floors;f++)for(let i=0;i<n;i++){const u0=i*Ln/n+.04,u1=(i+1)*Ln/n-.04,z0=base+f*fh+4,z1=base+(f+1)*fh-3;if(f===0&&face===b.door&&Math.abs((u0+u1)/2-doorU)<.4)continue;poly(faceQuad(b,face,u0,u1,z0,z1),winCol(f,i,face))}
+    }
+  }else{
+    for(const face of ['y','x']){const Ln=face==='y'?b.w:b.d;const n=Math.max(1,Math.round(Ln/(st==='office'?.62:.8)));
+      for(let f=0;f<b.floors;f++)for(let i=0;i<n;i++){const uc=(i+.5)*Ln/n;if(f===0&&face===b.door&&Math.abs(uc-doorU)<(st==='shop'?9:.5))continue;
+        const ww=st==='office'?.22:.2,z0=base+f*fh+(st==='office'?8:11),z1=z0+(st==='office'?19:15);
+        const q=faceQuad(b,face,uc-ww,uc+ww,z0,z1);poly(q,winCol(f,i,face),'#ffffff',1.4*zoom);
+        if(st==='house'&&zoom>.6){poly(faceQuad(b,face,uc-ww-.1,uc-ww-.02,z0,z1),shade(b.roof,-.1));poly(faceQuad(b,face,uc+ww+.02,uc+ww+.1,z0,z1),shade(b.roof,-.1))}
+        if(st==='apart'&&f>0&&face==='y'){const s0=Pt(x0+uc-.32,y1,z0-3),s1=Pt(x0+uc+.32,y1,z0-3),s2=Pt(x0+uc+.32,y1+.22,z0-3),s3=Pt(x0+uc-.32,y1+.22,z0-3);poly([s0,s1,s2,s3],shade(L,-.15));const r0=Pt(x0+uc-.32,y1+.22,z0+5),r1=Pt(x0+uc+.32,y1+.22,z0+5);line(r0,r1,'#ffffff',1.4*zoom);line(s3,r0,'#ffffff',1.2*zoom);line(s2,r1,'#ffffff',1.2*zoom)}
+      }
+      // floor lines
+      if(st==='office'||st==='apart'){for(let f=1;f<b.floors;f++){const q=faceQuad(b,face,0,Ln,base+f*fh,base+f*fh);line(q[0],q[1],shade(L,-.12),1)}}
+    }
+  }
+  // door
+  if(b.door){const dw=st==='shop'?.45:.3,dz=st==='office'||st==='library'||st==='hall'?30:28;
+    poly(faceQuad(b,b.door,doorU-dw,doorU+dw,base,base+dz),st==='glass'||st==='office'?'#bfe0ea':shade(b.roof,-.35),shade(b.roof,-.5),1);
+    const k=b.door==='y'?Pt(x0+doorU+dw*.55,y1,base+13):Pt(x1,y0+doorU+dw*.55,base+13);ellipse(k[0],k[1],1.5*zoom,1.5*zoom,'#f7d27a');
+    if(lit&&b.kind!=='deco'){const c=b.door==='y'?Pt(x0+doorU,y1,base+dz+6):Pt(x1,y0+doorU,base+dz+6);lights.push([c[0],c[1],30*zoom,.65*night])}
+  }
+  // shop extras
+  if(st==='shop'){const f=b.door||'y',Ln=f==='y'?b.w:b.d;
+    poly(faceQuad(b,f,.15,Ln-.15,base+4,base+24),lit?'#ffe3a1':'#e3f1f7','#ffffff',1.5*zoom);
+    const a0=faceQuad(b,f,.05,Ln-.05,base+27,base+27),out=f==='y'?[0,.5]:[.5,0];
+    const A=a0[0],B2=a0[1],C=f==='y'?Pt(x0+Ln-.05,y1+.5,base+19):Pt(x1+.5,y0+Ln-.05,base+19),D=f==='y'?Pt(x0+.05,y1+.5,base+19):Pt(x1+.5,y0+.05,base+19);
+    for(let i=0;i<8;i++){poly([lerp(A,B2,i/8),lerp(A,B2,(i+1)/8),lerp(D,C,(i+1)/8),lerp(D,C,i/8)],i%2?'#ffffff':b.awn)}
+    poly(faceQuad(b,f,.2,Ln-.2,base+29,base+38),'#ffffff');if(zoom>.55)signText(b,f,Ln/2,base+33.5,b.sign,shade(b.awn,-.35),8);
+  }
+  if(st==='school'&&zoom>.55){poly(faceQuad(b,'y',b.w/2-.9,b.w/2+.9,wh-12,wh-3),'#ffffff');signText(b,'y',b.w/2,wh-7.5,b.sign,'#a8426a',8)}
+  if(st==='library'){for(let i=0;i<5;i++){const u=.35+i*(b.w-.7)/4;if(Math.abs(u-doorU)<.35)continue;poly(faceQuad(b,'y',u-.07,u+.07,base,wh-4),'#ffffff')}}
+  // roofs
+  const Rf=b.roof,Rd=shade(Rf,-.18),Rl=shade(Rf,.2);
+  if(st==='house'||st==='shop'){
+    const rh=st==='shop'?18:30,o=.2,top=wh+rh;
+    poly([Pt(x0-o,y0-o,wh-5),Pt(x1+o,y0-o,wh-5),Pt(x1+o,ym,top),Pt(x0-o,ym,top)],Rd);
+    poly([Pt(x1,y0,wh),Pt(x1,y1,wh),Pt(x1,ym,top-2)],wallR);
+    poly([Pt(x0-o,y1+o,wh-5),Pt(x1+o,y1+o,wh-5),Pt(x1+o,ym,top),Pt(x0-o,ym,top)],Rf);
+    if(zoom>.55){ctx.globalAlpha=.45;for(let i=1;i<b.w*2;i++){const tx=x0-o+(b.w+2*o)*i/(b.w*2);line(Pt(tx,y1+o,wh-5),Pt(tx,ym,top),Rl,1*zoom)}ctx.globalAlpha=1}
+    line(Pt(x0-o,ym,top),Pt(x1+o,ym,top),Rl,2.2*zoom);
+    if(st==='house'&&b.kind!=='deco'||b.id==='home'){const cx=x0+.7,cy=ym-.6;poly([Pt(cx,cy+.3,top-8),Pt(cx+.3,cy+.3,top-8),Pt(cx+.3,cy+.3,top+12),Pt(cx,cy+.3,top+12)],shade(Rf,-.3));poly([Pt(cx+.3,cy,top-8),Pt(cx+.3,cy+.3,top-8),Pt(cx+.3,cy+.3,top+12),Pt(cx+.3,cy,top+12)],shade(Rf,-.42));
+      if(night>.2||b.id==='home'){const sm=Pt(cx+.15,cy+.15,top+18+((time*8)%10));ctx.globalAlpha=.25;ellipse(sm[0],sm[1],4*zoom,3*zoom,'#ffffff');ctx.globalAlpha=1}}
+  }else if(st==='hall'){
+    const o=.15,rh=24,top=wh+rh,i=b.d/2;
+    poly([Pt(x0-o,y1+o,wh),Pt(x1+o,y1+o,wh),Pt(x1-i,ym,top),Pt(x0+i,ym,top)],Rf);
+    poly([Pt(x1+o,y0-o,wh),Pt(x1+o,y1+o,wh),Pt(x1-i,ym,top)],Rd);
+    // clock tower
+    const tx0=xm-.5,tx1=xm+.5,ty0=ym-.5,ty1=ym+.5,tb=top-8,tt=top+34;
+    poly([Pt(tx0,ty1,tb),Pt(tx1,ty1,tb),Pt(tx1,ty1,tt),Pt(tx0,ty1,tt)],L);poly([Pt(tx1,ty0,tb),Pt(tx1,ty1,tb),Pt(tx1,ty1,tt),Pt(tx1,ty0,tt)],R);
+    const cc=Pt(xm,ty1,tt-14);ellipse(cc[0],cc[1],7*zoom,8*zoom,'#ffffff');ctx.strokeStyle='#5a4a52';ctx.lineWidth=1.2*zoom;const hr=(S.min/60)%12/12*Math.PI*2,mn=(S.min%60)/60*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cc[0],cc[1]);ctx.lineTo(cc[0]+Math.sin(hr)*3.5*zoom,cc[1]-Math.cos(hr)*3.5*zoom);ctx.moveTo(cc[0],cc[1]);ctx.lineTo(cc[0]+Math.sin(mn)*5.5*zoom,cc[1]-Math.cos(mn)*5.5*zoom);ctx.stroke();
+    poly([Pt(tx0-.1,ty1+.1,tt),Pt(tx1+.1,ty1+.1,tt),Pt(xm,ym,tt+22)],Rf);poly([Pt(tx1+.1,ty0-.1,tt),Pt(tx1+.1,ty1+.1,tt),Pt(xm,ym,tt+22)],Rd);
+    const fl=Pt(xm,ym,tt+22);line(fl,[fl[0],fl[1]-12*zoom],'#6f6470',1.2*zoom);poly([[fl[0],fl[1]-12*zoom],[fl[0]+8*zoom,fl[1]-9*zoom+Math.sin(time*4)*1.5*zoom],[fl[0],fl[1]-6*zoom]],'#e08aa1');
+    for(let k=0;k<4;k++){const u=.5+k*(b.w-1)/3;if(Math.abs(u-doorU)<.4)continue;poly(faceQuad(b,'y',u-.08,u+.08,base,base+fh),'#ffffff')}
+  }else{
+    // flat roof with parapet
+    poly([Pt(x0,y0,wh),Pt(x1,y0,wh),Pt(x1,y1,wh),Pt(x0,y1,wh)],shade(Rf,.1));
+    const ins=.14;poly([Pt(x0+ins,y0+ins,wh),Pt(x1-ins,y0+ins,wh),Pt(x1-ins,y1-ins,wh),Pt(x0+ins,y1-ins,wh)],st==='glass'?shade(Rf,-.05):'#d9d0d4');
+    if(st==='library'){const p0=Pt(x0,y1,wh),p1=Pt(x1,y1,wh),pt=Pt(xm,y1,wh+16);poly([p0,p1,pt],shade(b.roof,.25),'#ffffff',1.2*zoom);if(zoom>.55)signText(b,'y',b.w/2,wh+5,'БИБЛИОТЕКА',shade(b.roof,-.45),6.5)}
+    // rooftop units
+    if(st!=='library'){const ux=x0+.5,uy=y0+.5;poly([Pt(ux,uy+.6,wh),Pt(ux+.6,uy+.6,wh),Pt(ux+.6,uy+.6,wh+8),Pt(ux,uy+.6,wh+8)],'#e9e4e6');poly([Pt(ux+.6,uy,wh),Pt(ux+.6,uy+.6,wh),Pt(ux+.6,uy+.6,wh+8),Pt(ux+.6,uy,wh+8)],'#d6d0d3');poly([Pt(ux,uy,wh+8),Pt(ux+.6,uy,wh+8),Pt(ux+.6,uy+.6,wh+8),Pt(ux,uy+.6,wh+8)],'#f3eff1')}
+    if(st==='glass'){const a=Pt(x1-.6,y0+.6,wh);line(a,[a[0],a[1]-26*zoom],'#8a8090',1.4*zoom);ellipse(a[0],a[1]-26*zoom,2*zoom,2*zoom,night>.2?'#ff6b8a':'#c9c0c6');if(night>.2)lights.push([a[0],a[1]-26*zoom,14*zoom,.9*night])}
+    if(st==='office'&&b.kind!=='deco'&&zoom>.5){const n=(b.sign||b.name).toUpperCase();poly(faceQuad(b,'y',.25,b.w-.25,wh-9,wh-1),shade(b.roof,-.05));signText(b,'y',b.w/2,wh-5,n,'#ffffff',6.5)}
+  }
+}
+function bTop(b){const base=6,fh=b.style==='glass'?30:34;const wh=base+b.floors*fh;return wh+(b.style==='house'?30:b.style==='shop'?18:b.style==='hall'?80:b.style==='library'?16:b.style==='glass'?26:8)}
+
+/* =================== PROPS =================== */
+function treeArt(g,cx,cy,k,z){
+  const el=(x,y,rx,ry,f)=>{g.beginPath();g.ellipse(x,y,rx,ry,0,0,6.2832);g.fillStyle=f;g.fill()};
+  el(cx,cy,13*z,6*z,'rgba(60,70,40,.16)');
+  if(k==='bush'){el(cx-5*z,cy-6*z,9*z,7*z,'#8fc48a');el(cx+5*z,cy-7*z,9*z,7.5*z,'#9fd09a');el(cx,cy-11*z,8*z,6*z,'#b0d9a9');return}
+  if(k==='pine'){g.fillStyle='#8a6a52';g.fillRect(cx-2*z,cy-10*z,4*z,10*z);[[0,'#5f9f78',16,12],[10,'#6fb088',13,11],[19,'#82bf98',10,10]].forEach(l=>{g.beginPath();g.moveTo(cx-l[2]*z,cy-(10+l[0])*z);g.lineTo(cx+l[2]*z,cy-(10+l[0])*z);g.lineTo(cx,cy-(10+l[0]+l[3]*1.6)*z);g.closePath();g.fillStyle=l[1];g.fill()});return}
+  const birch=k==='birch';
+  g.fillStyle=birch?'#f4f0ec':'#9b7357';g.fillRect(cx-2.4*z,cy-17*z,4.8*z,17*z);
+  if(birch){g.fillStyle='#4a4048';g.fillRect(cx-2.4*z,cy-12*z,2.4*z,1.2*z);g.fillRect(cx,cy-7*z,2.4*z,1.2*z)}
+  const cols=k==='blossom'?['#eea3b9','#f4b6c8','#fbd0dc']:birch?['#a9cf7c','#b8d98c','#cbe4a2']:['#7fbf7a','#92ca8b','#a9d8a0'];
+  el(cx-7*z,cy-24*z,11*z,10*z,cols[0]);el(cx+7*z,cy-25*z,11*z,10*z,cols[0]);el(cx,cy-31*z,13*z,12*z,cols[1]);el(cx-2*z,cy-36*z,8*z,6*z,cols[2]);
+  if(k==='blossom'){g.fillStyle='#ffffff';[[-6,-28],[5,-33],[8,-22],[-3,-20]].forEach(d=>{g.beginPath();g.arc(cx+d[0]*z,cy+d[1]*z,1.4*z,0,6.2832);g.fill()})}
+}
+let sprZoom=-1;const SPR={};
+function treeSprite(k,s){
+  if(sprZoom!==zoom){for(const key in SPR)delete SPR[key];sprZoom=zoom}
+  const sb=Math.round(s*10)/10,key=k+sb;let sp=SPR[key];if(sp)return sp;
+  const z=zoom*sb,w=Math.ceil(36*z),h=Math.ceil(56*z),c=document.createElement('canvas'),q=Math.min(dpr,2);
+  c.width=Math.max(1,Math.ceil(w*q));c.height=Math.max(1,Math.ceil(h*q));const g=c.getContext('2d');g.scale(q,q);treeArt(g,w/2,h-8*z,k,z);
+  return SPR[key]={c,w,h,ox:w/2,oy:h-8*z};
+}
+function drawTree(o){const c=Pt(o.x+.5,o.y+.5),sp=treeSprite(o.k,o.s||1);ctx.drawImage(sp.c,c[0]-sp.ox,c[1]-sp.oy,sp.w,sp.h)}
+function box(x,y,w,d,z0,z1,top,left,right){poly([Pt(x,y+d,z0),Pt(x+w,y+d,z0),Pt(x+w,y+d,z1),Pt(x,y+d,z1)],left);poly([Pt(x+w,y,z0),Pt(x+w,y+d,z0),Pt(x+w,y+d,z1),Pt(x+w,y,z1)],right);poly([Pt(x,y,z1),Pt(x+w,y,z1),Pt(x+w,y+d,z1),Pt(x,y+d,z1)],top)}
+function drawProp(o){
+  const x=o.x,y=o.y,z=zoom;
+  if(o.k==='lamp'){const c=Pt(x+.5,y+.5);ellipse(c[0],c[1],5*z,2.5*z,'rgba(0,0,0,.12)');ctx.fillStyle='#6f6470';ctx.fillRect(c[0]-1.3*z,c[1]-34*z,2.6*z,34*z);ellipse(c[0],c[1]-36*z,4.5*z,4.5*z,night>.2?'#ffe9a8':'#f4efe9');ctx.fillRect(c[0]-4*z,c[1]-41*z,8*z,2*z);if(night>.15)lights.push([c[0],c[1]-36*z,48*z,.85*night]);return}
+  if(o.k==='bench'){box(x+.15,y+.35,.7,.3,7,9,'#d4a684','#c99a78','#b98b68');box(x+.15,y+.3,.7,.06,9,17,'#c99a78','#b5845f','#a87a55');return}
+  if(o.k==='bed'){box(x+.08,y+.08,.84,.84,0,6,'#8fc48a','#c9b2a3','#b9a293');const cols=['#f4a7bd','#f7d27a','#ffffff','#c9a7e8'];for(let i=0;i<7;i++){const c=Pt(x+.2+((i*37)%60)/100,y+.2+((i*53)%60)/100,7);ctx.fillStyle=cols[i%4];ctx.beginPath();ctx.arc(c[0],c[1],2.2*z,0,7);ctx.fill()}return}
+  if(o.k==='hedge'){box(x+.06,y+.06,.88,.88,0,12,'#9fd09a','#7fbf7a','#6fae6a');return}
+  if(o.k==='planter'){box(x+.2,y+.2,.6,.6,0,9,'#bfa596','#e7d6cf','#d6c3ba');drawTree({k:'blossom',x:x,y:y-.0,s:.7});return}
+  if(o.k==='stall'){box(x+.12,y+.12,.76,.76,0,12,'#e9d8cc','#d9c4b5','#c9b2a3');const t=13,tt=28;const A=Pt(x+.02,y+.98,t+8),B2=Pt(x+.98,y+.98,t+8),C=Pt(x+.98,y+.02,t+8),D=Pt(x+.5,y+.5,tt+8);
+    [[0,.5,1],[.5,1,1]];for(let i=0;i<4;i++){poly([lerp(A,B2,i/4),lerp(A,B2,(i+1)/4),D],i%2?'#ffffff':o.c)}for(let i=0;i<4;i++){poly([lerp(B2,C,i/4),lerp(B2,C,(i+1)/4),D],i%2?'#f1ebe7':shade(o.c,-.12))}
+    [[x+.14,y+.86],[x+.86,y+.86],[x+.86,y+.14]].forEach(p=>line(Pt(p[0],p[1],0),Pt(p[0],p[1],t+8),'#8a7a70',1.2*z));return}
+  if(o.k==='swing'){const a=Pt(x+.15,y+.5,0),b=Pt(x+.15,y+.5,26),c=Pt(x+.85,y+.5,0),d=Pt(x+.85,y+.5,26);line(a,b,'#e08aa1',2*z);line(c,d,'#e08aa1',2*z);line(b,d,'#e08aa1',2*z);const sw=Math.sin(time*2)*.12;const s=Pt(x+.5+sw,y+.5+sw,8);line(lerp(b,d,.5),s,'#6f6470',1*z);ctx.fillStyle='#9fc3e6';ctx.fillRect(s[0]-4*z,s[1]-1*z,8*z,2.5*z);return}
+  if(o.k==='slide'){box(x+.2,y+.3,.25,.25,0,22,'#9fc3e6','#7fa8d0','#6f98c0');poly([Pt(x+.45,y+.3,22),Pt(x+.45,y+.55,22),Pt(x+.95,y+.55,2),Pt(x+.95,y+.3,2)],'#f2d38c');return}
+  if(o.k==='busstop'){box(x+.1,y+.35,.8,.3,0,2,'#d9d0d4','#c9c0c4','#bab0b5');[[.12,.38],[.88,.38]].forEach(p=>line(Pt(x+p[0],y+p[1],0),Pt(x+p[0],y+p[1],26),'#6f6470',1.4*z));poly([Pt(x+.1,y+.36,26),Pt(x+.9,y+.36,26),Pt(x+.9,y+.36,10),Pt(x+.1,y+.36,10)],'rgba(200,225,240,.55)','#ffffff',1);box(x+.05,y+.25,.9,.45,26,29,'#e08aa1','#c96f8a','#b9607a');return}
+}
+function drawFountain(){const c=Pt(23,24);const z=zoom;ellipse(c[0],c[1]+2*z,52*z,26*z,'#dcc9d3');ellipse(c[0],c[1],48*z,23*z,'#efe2e8');ellipse(c[0],c[1]+1*z,40*z,18*z,'#a9d6ea');
+  for(let i=0;i<3;i++){const ph=(time*.8+i/3)%1;ctx.strokeStyle='rgba(255,255,255,'+(.6*(1-ph))+')';ctx.lineWidth=1.4*z;ctx.beginPath();ctx.ellipse(c[0],c[1]+1*z,10*z+ph*28*z,5*z+ph*12*z,0,0,7);ctx.stroke()}
+  ctx.fillStyle='#e7d6de';ctx.fillRect(c[0]-4*z,c[1]-24*z,8*z,24*z);ellipse(c[0],c[1]-24*z,13*z,5*z,'#efe2e8');
+  for(let i=0;i<10;i++){const a=i/10*Math.PI*2,ph=(time*1.4+i*.13)%1;ctx.fillStyle='rgba(190,230,245,'+(1-ph)+')';ctx.beginPath();ctx.arc(c[0]+Math.cos(a)*16*z*ph,c[1]-26*z+(-18*ph+30*ph*ph)*z+Math.sin(a)*5*z*ph,1.8*z,0,7);ctx.fill()}}
+function drawPerson(a){
+  const c=Pt(a.x,a.y),z=zoom;const sw=a.moving?Math.sin(a.phase)*3*z:0,bob=a.moving?Math.abs(Math.sin(a.phase))*1.5*z:0;
+  if(a.me){ctx.globalAlpha=.5+.25*Math.sin(time*3);ctx.strokeStyle='#e08aa1';ctx.lineWidth=1.6*z;ctx.beginPath();ctx.ellipse(c[0],c[1],12*z,6*z,0,0,7);ctx.stroke();ctx.globalAlpha=1}
+  ellipse(c[0],c[1],9*z,4*z,'rgba(50,30,40,.2)');
+  ctx.strokeStyle='#5c4a52';ctx.lineWidth=2.8*z;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(c[0]-2.5*z,c[1]-10*z-bob);ctx.lineTo(c[0]-2.5*z+sw,c[1]-1*z);ctx.moveTo(c[0]+2.5*z,c[1]-10*z-bob);ctx.lineTo(c[0]+2.5*z-sw,c[1]-1*z);ctx.stroke();
+  const by=c[1]-bob;
+  poly([[c[0]-4.5*z,by-24*z],[c[0]+4.5*z,by-24*z],[c[0]+8*z,by-9*z],[c[0]-8*z,by-9*z]],a.dress);
+  ctx.strokeStyle='#f3d2bf';ctx.lineWidth=2.4*z;ctx.beginPath();ctx.moveTo(c[0]-5*z,by-21*z);ctx.lineTo(c[0]-7*z-sw*.6,by-12*z);ctx.moveTo(c[0]+5*z,by-21*z);ctx.lineTo(c[0]+7*z+sw*.6,by-12*z);ctx.stroke();
+  const hy=by-31*z;ellipse(c[0],hy,7*z,7.5*z,'#f6d8c6');
+  ctx.fillStyle=a.hair;ctx.beginPath();ctx.ellipse(c[0]-a.facing*1*z,hy-2.5*z,7.6*z,6*z,0,Math.PI,Math.PI*2);ctx.fill();
+  if(a.hat){ctx.fillStyle=a.hat;ctx.fillRect(c[0]-7*z,hy-7*z,14*z,3*z);ctx.fillRect(c[0]-5*z,hy-11*z,10*z,5*z)}else ellipse(c[0]-a.facing*5*z,hy-6*z,3.6*z,3.6*z,a.hair);
+  ctx.fillStyle='#3a2a30';ctx.beginPath();ctx.arc(c[0]+a.facing*2.6*z,hy+.5*z,.95*z,0,7);ctx.arc(c[0]+a.facing*-.6*z,hy+.5*z,.95*z,0,7);ctx.fill();
+  ctx.fillStyle='rgba(240,140,160,.45)';ctx.beginPath();ctx.arc(c[0]+a.facing*3.6*z,hy+2.8*z,1.5*z,0,7);ctx.fill();
+}
+function carBox(car){const L=1.15,Wd=.5;const p=car.pos;return car.ax==='y'?{x0:car.lane-Wd/2,y0:p-L/2,x1:car.lane+Wd/2,y1:p+L/2}:{x0:p-L/2,y0:car.lane-Wd/2,x1:p+L/2,y1:car.lane+Wd/2}}
+function drawCar(car){const b=carBox(car),w=b.x1-b.x0,d=b.y1-b.y0;
+  ellipse(...Pt((b.x0+b.x1)/2,(b.y0+b.y1)/2),18*zoom,8*zoom,'rgba(40,30,40,.15)');
+  box(b.x0,b.y0,w,d,3,11,shade(car.c,.15),car.c,shade(car.c,-.15));
+  const cx0=car.ax==='y'?b.x0+.06:b.x0+w*.25,cy0=car.ax==='y'?b.y0+d*.25:b.y0+.06,cww=car.ax==='y'?w-.12:w*.5,cdd=car.ax==='y'?d*.5:d-.12;
+  box(cx0,cy0,cww,cdd,11,18,shade(car.c,.25),'#bcd8e6','#a6c6d8');
+  const wl=car.ax==='y'?[[b.x0,b.y0+.2],[b.x0,b.y1-.2]]:[[b.x0+.2,b.y1],[b.x1-.2,b.y1]];wl.forEach(q=>{const c=Pt(q[0],q[1],3);ellipse(c[0],c[1],2.6*zoom,2.6*zoom,'#3a3135')});
+  if(night>.2){const f=car.ax==='y'?(car.dir>0?Pt(car.lane,b.y1,7):Pt(car.lane,b.y0,7)):(car.dir>0?Pt(b.x1,car.lane,7):Pt(b.x0,car.lane,7));lights.push([f[0],f[1],22*zoom,.8*night])}}
+function drawBoat(){const x=BOAT.x,y=38.5;const a=Pt(x-.6,y-.2,1),b=Pt(x+.6,y-.2,1),c=Pt(x+.5,y+.2,1),d=Pt(x-.5,y+.2,1);poly([a,b,c,d],'#ffffff','#c9b2a3',1);poly([Pt(x-.5,y+.2,1),Pt(x+.5,y+.2,1),Pt(x+.4,y+.2,-4),Pt(x-.4,y+.2,-4)],'#e08aa1');const m=Pt(x,y,1);line(m,[m[0],m[1]-26*zoom],'#8a7a70',1.4*zoom);poly([[m[0],m[1]-25*zoom],[m[0]+BOAT.dir*12*zoom,m[1]-6*zoom],[m[0],m[1]-6*zoom]],'#fbf0f3','#e8cfd8',1)}
+function drawDuck(dk){const cx=6.5+Math.cos(dk.a)*dk.r*1.2,cy=21+Math.sin(dk.a)*dk.r*.7;const c=Pt(cx,cy,0);const f=Math.cos(dk.a+Math.PI/2)>0?1:-1;ellipse(c[0],c[1],5*zoom,3*zoom,'#ffffff');ellipse(c[0]+f*4*zoom,c[1]-4*zoom,2.6*zoom,2.6*zoom,'#ffffff');ctx.fillStyle='#f7b84c';ctx.fillRect(c[0]+f*(6*zoom)-(f<0?2*zoom:0),c[1]-4.5*zoom,2*zoom,1.2*zoom)}
+function drawLabel(h){
+  const c=Pt(h.x+h.w/2,h.y+h.d/2,bTop(h)+16);const lz=Math.max(zoom,.8);
+  if(c[0]<-200||c[0]>cw+200||c[1]<-40||c[1]>ch+60)return;
+  const lvl=h.kind?'':' · ур. '+skillLevel(h);
+  const txt=h.name+lvl;ctx.font='700 '+Math.round(12*lz)+'px Manrope, system-ui, sans-serif';
+  const w=ctx.measureText(txt).width+22*lz,hh=22*lz;
+  ctx.globalAlpha=.95;rrect(c[0]-w/2,c[1]-hh,w,hh,hh/2);ctx.fillStyle='#ffffff';ctx.fill();ctx.globalAlpha=1;
+  ctx.fillStyle=h.roof;ctx.beginPath();ctx.arc(c[0]-w/2+11*lz,c[1]-hh/2,4*lz,0,7);ctx.fill();
+  ctx.fillStyle='#3a3135';ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(txt,c[0]-w/2+19*lz,c[1]-hh/2+.5);
+}
+
+/* =================== FRAME =================== */
+let last=performance.now(),hudT=0,fadeA=0,pnow=performance.now();
+function behind(a,b){return a.x1<=b.x0+1e-3||a.y1<=b.y0+1e-3}
+function sortItems(items){
+  for(const it of items){it.l=Pt(it.x0,it.y1)[0];it.r=Pt(it.x1,it.y0)[0];it.b=Pt(it.x1,it.y1)[1];it.t=Pt(it.x0,it.y0,it.h)[1];it.bef=null;it.st=0}
+  const byL=items.slice().sort((a,b)=>a.l-b.l);
+  for(let i=0;i<byL.length;i++){const A=byL[i];for(let j=i+1;j<byL.length;j++){const B2=byL[j];if(B2.l>A.r)break;if(B2.t>A.b||A.t>B2.b)continue;
+    if(behind(A,B2))(B2.bef||(B2.bef=[])).push(A);else if(behind(B2,A))(A.bef||(A.bef=[])).push(B2)}}
+  items.sort((a,b)=>(a.x0+a.y0)-(b.x0+b.y0));
+  const out=[];const visit=it=>{it.st=1;if(it.bef)for(const p of it.bef)if(!p.st)visit(p);out.push(it)};
+  for(const it of items)if(!it.st)visit(it);
+  return out;
+}
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;time+=dt;
+  update(dt);
+  if(cam.follow){let tx=P.x,ty=P.y;if(zoom<.65){const m=Math.min(1,(.65-zoom)/.2);tx+=(W/2-tx)*m;ty+=(H/2-ty)*m}const k=1-Math.exp(-dt*5);cam.x+=(tx-cam.x)*k;cam.y+=(ty-cam.y)*k}
+  ox=cw/2-(cam.x-cam.y)*HW;oy=ch/2-(cam.x+cam.y)*HH+40*zoom;
+  night=nightFactor(S.min);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const sky=ctx.createLinearGradient(0,0,0,ch);sky.addColorStop(0,'#f7e3ec');sky.addColorStop(1,'#e6eef6');ctx.fillStyle=sky;ctx.fillRect(0,0,cw,ch);
+  const vb=drawGround();
+  if(P.path.length){const tt=P.path[P.path.length-1];const pulse=.5+.5*Math.sin(time*6);poly([Pt(tt[0]+.15,tt[1]+.5),Pt(tt[0]+.5,tt[1]+.15),Pt(tt[0]+.85,tt[1]+.5),Pt(tt[0]+.5,tt[1]+.85)],'rgba(224,138,161,'+(.25+.25*pulse)+')','#e08aa1',1.5*zoom)}
+  if(P.target){const h=P.target;const c=Pt(h.dx+.5,h.dy+.5);ellipse(c[0],c[1],20*zoom,10*zoom,'rgba(247,210,122,.4)')}
+  lights.length=0;
+  const items=[];const inV=(x0,y0,x1,y1)=>x1>=vb[0]-1&&x0<=vb[1]+2&&y1>=vb[2]-1&&y0<=vb[3]+2;
+  BUILD.forEach(b=>{if(inV(b.x,b.y,b.x+b.w,b.y+b.d))items.push({k:'bld',x0:b.x,y0:b.y,x1:b.x+b.w,y1:b.y+b.d,h:bTop(b),d:()=>drawBuilding(b)})});
+  OBJ.forEach(o=>{if(!inV(o.x,o.y,o.x+1,o.y+1))return;if(o.k==='fountain')items.push({x0:22,y0:23,x1:24,y1:25,h:40,d:drawFountain});else{const tree=['tree','blossom','pine','birch','bush'].indexOf(o.k)>=0;items.push({k:tree?'tree':'prop',x0:o.x+.1,y0:o.y+.1,x1:o.x+.9,y1:o.y+.9,h:tree?50:40,d:tree?()=>drawTree(o):()=>drawProp(o)})}});
+  [P].concat(NPCS).forEach(a=>{if(inV(a.x-1,a.y-1,a.x+1,a.y+1))items.push({x0:a.x-.25,y0:a.y-.25,x1:a.x+.25,y1:a.y+.25,h:44,d:()=>drawPerson(a)})});
+  CARS.forEach(c=>{const b=carBox(c);if(inV(b.x0,b.y0,b.x1,b.y1))items.push(Object.assign(b,{h:20,d:()=>drawCar(c)}))});
+  if(inV(BOAT.x-1,38,BOAT.x+1,39))items.push({x0:BOAT.x-.6,y0:38.3,x1:BOAT.x+.6,y1:38.7,h:30,d:drawBoat});
+  if(inV(4,20,9,24))DUCKS.forEach(dk=>{const cx=6.5+Math.cos(dk.a)*dk.r*1.2,cy=21+Math.sin(dk.a)*dk.r*.7;items.push({x0:cx-.15,y0:cy-.15,x1:cx+.15,y1:cy+.15,h:8,d:()=>drawDuck(dk)})});
+  sortItems(items).forEach(it=>it.d());
+  // cloud shadows
+  ctx.save();ctx.beginPath();{const a=Pt(0,0),b=Pt(W,0),c=Pt(W,H),d=Pt(0,H);ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.lineTo(c[0],c[1]);ctx.lineTo(d[0],d[1]);ctx.closePath()}ctx.clip();ctx.globalAlpha=.06;CLOUDS.forEach(c=>{const p=Pt(c.x,c.y);ellipse(p[0],p[1],140*zoom*c.s,60*zoom*c.s,'#3a3045')});ctx.globalAlpha=1;ctx.restore();
+  if(night>0){ctx.fillStyle='rgba(38,30,72,'+(.42*night)+')';ctx.fillRect(0,0,cw,ch);
+    ctx.globalCompositeOperation='lighter';lights.forEach(l=>{ctx.globalAlpha=Math.min(1,l[3]*.55);ctx.drawImage(GLOW,l[0]-l[2],l[1]-l[2],l[2]*2,l[2]*2)});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
+  HOUSES.forEach(drawLabel);
+  if(fadeA>0){ctx.fillStyle='rgba(253,242,245,'+fadeA+')';ctx.fillRect(0,0,cw,ch);fadeA=Math.max(0,fadeA-dt*2)}
+  hudT+=dt;if(hudT>.3){hudT=0;hud()}
+  if(!document.hidden&&time>2){perfAcc+=(now-pnow);perfN++;if(perfAcc>3000){const fps=perfN*1000/perfAcc;if(fps<45&&dprCap>1.25&&dpr>1.25){dprCap=Math.max(1.25,dpr-.5);resize()}perfAcc=0;perfN=0}}
+  pnow=now;
+  requestAnimationFrame(frame);
+}
+
+/* =================== UPDATE =================== */
+const SPEED=3.6;
+function moveActor(a,dt,onStep){
+  if(!a.path.length){a.moving=false;return false}
+  const t=a.path[0],cx=t[0]+.5,cy=t[1]+.5,dx=cx-a.x,dy=cy-a.y,d=Math.hypot(dx,dy),step=(a.speed||SPEED)*dt;
+  if(Math.abs(dx-dy)>.01)a.facing=(dx-dy)>0?1:-1;
+  a.moving=true;a.phase+=dt*11;
+  if(d<=step){a.x=cx;a.y=cy;a.path.shift();if(onStep)onStep();if(!a.path.length){a.moving=false;return true}}
+  else{a.x+=dx/d*step;a.y+=dy/d*step}
+  return false;
+}
+let npcI=0;
+function update(dt){
+  const arrived=moveActor(P,dt,()=>{S.energy=Math.max(0,S.energy-.15);S.today.walk++;S.stepAcc++;if(S.stepAcc>=2){S.stepAcc=0;addMinutes(1)}});
+  if(arrived){S.px=P.x;S.py=P.y;saveSoon();if(P.target){const h=P.target;P.target=null;setTimeout(()=>openHouse(h),120)}}
+  // one NPC re-plans per frame at most
+  NPCS.forEach((n,i)=>{n.speed=1.5;if(n.path.length)moveActor(n,dt);else n.wait-=dt});
+  for(let k=0;k<NPCS.length;k++){const n=NPCS[(npcI+k)%NPCS.length];if(!n.path.length&&n.wait<=0){const near=strollTiles.filter(t=>Math.abs(t[0]-n.x)+Math.abs(t[1]-n.y)<12);const tg=near[Math.floor(Math.random()*near.length)];const p=tg&&astar(Math.floor(n.x),Math.floor(n.y),tg[0],tg[1]);if(p)n.path=p;n.wait=2+Math.random()*4;npcI=(npcI+k+1)%NPCS.length;break}}
+  CARS.forEach(c=>{c.pos+=c.dir*c.sp*dt;const lim=c.ax==='y'?H:W;if(c.pos>lim+2)c.pos=-2;if(c.pos<-2)c.pos=lim+2});
+  BOAT.x+=BOAT.dir*.6*dt;if(BOAT.x>W-2){BOAT.dir=-1}if(BOAT.x<1.5){BOAT.dir=1}
+  DUCKS.forEach(d=>d.a+=dt*.35);
+  CLOUDS.forEach(c=>{c.x+=dt*.35;c.y+=dt*.15;if(c.x>W+12){c.x=-12;c.y=Math.random()*W-8}});
+}
+function goTo(tx,ty,house){
+  const sx=Math.floor(P.x),sy=Math.floor(P.y);const p=astar(sx,sy,tx,ty);
+  if(p===null){toast('Туда не пройти');return}
+  P.path=p;P.target=house||null;cam.follow=true;
+  if(!p.length&&house){P.target=null;openHouse(house)}
+  if(house)hint('Иду: '+house.name);
+}
+function taxi(h){if(S.stars<3){toast('Не хватает звёзд на такси');return}S.stars-=3;addMinutes(10);fadeA=1;P.path=[];P.target=null;P.x=h.dx+.5;P.y=h.dy+.5;cam.x=P.x;cam.y=P.y;cam.follow=true;S.px=P.x;S.py=P.y;save();setTimeout(()=>openHouse(h),350)}
+
+/* =================== GAME LOGIC =================== */
+function addMinutes(m){S.min+=m;S.moodAcc=(S.moodAcc||0)+m;while(S.moodAcc>=30){S.moodAcc-=30;S.mood=Math.max(0,S.mood-1)}if(S.min>=24*60)S.min=23*60+59}
+function mult(){return S.mood>=70?1.5:1}
+function maxPts(h){return h.lessons.length+h.quiz.length+1}
+function skillLevel(h){const p=S.skill[h.id]||0;return Math.floor(p*5/maxPts(h)+1e-9)}
+function level(){return 1+Math.floor(S.xp/150)}
+function gain(xp,stars){const before=level();S.xp+=Math.round(xp*mult());S.stars+=stars||0;if(level()>before)setTimeout(()=>toast('Новый уровень: '+level()+'!'),700)}
+function badge(id){if(S.badges[id])return;S.badges[id]=true;const b=BADGES.find(x=>x.id===id);setTimeout(()=>toast('Новый значок: «'+b.t+'»'),1200)}
+function checkBadges(){
+  if(Object.keys(S.lessons).length)badge('first');
+  if(HOUSES.every(h=>S.visited[h.id]))badge('neighbor');
+  if(LEARN.some(h=>skillLevel(h)>=5))badge('pro');
+  if(LEARN.every(h=>skillLevel(h)>=1))badge('wide');
+  if(LEARN.every(h=>skillLevel(h)>=5))badge('master');
+  if(S.coffees>=3)badge('coffee');
+}
+function questsToday(){const start=((S.day-1)*2)%QUESTS.length;return [0,1,2].map(i=>QUESTS[(start+i)%QUESTS.length])}
+function qprog(q){const v=S.today[q.k];return q.k==='visits'?Object.keys(v).length:v}
+function sleep(){S.day++;S.min=8*60;S.energy=100;S.mood=Math.max(S.mood,60);S.today={lessons:0,quizzes:0,visits:{},coffee:0,talks:0,walk:0};S.claimed={};save()}
+function clockStr(){const h=Math.floor(S.min/60),m=S.min%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')}
+
+/* =================== HUD =================== */
+const $=id=>document.getElementById(id);
+function hud(){
+  $('pname').textContent=S.name||'Я';$('plevel').textContent='Уровень '+level()+' · '+S.xp+' опыта';
+  $('xpbar').style.width=((S.xp%150)/150*100)+'%';
+  $('enbar').style.width=S.energy+'%';$('enval').textContent=Math.round(S.energy);
+  $('mobar').style.width=S.mood+'%';$('moval').textContent=Math.round(S.mood);
+  $('insp').hidden=S.mood<70;
+  $('clock').textContent=clockStr();$('dayl').textContent='День '+S.day+(S.min>=22*60?' · пора спать':'');
+  $('stars').textContent=S.stars;
+  const ready=questsToday().some(q=>qprog(q)>=q.n&&!S.claimed[q.id]);
+  let dot=$('qbtn').querySelector('.dot');if(ready&&!dot){dot=document.createElement('span');dot.className='dot';$('qbtn').appendChild(dot)}if(!ready&&dot)dot.remove();
+}
+let toastT=0;
+function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3000)}
+let hintT=0;
+function hint(m){const h=$('hint');if(!m)return;h.textContent=m;h.hidden=false;clearTimeout(hintT);hintT=setTimeout(()=>{h.hidden=true},2600)}
+setTimeout(()=>{$('hint').hidden=true},6000);
+(function(){const c=document.createElement('canvas');c.width=84;c.height=84;const g=c.getContext('2d');g.scale(2,2);g.fillStyle='#f9e1e8';g.fillRect(0,0,42,42);g.fillStyle='#e07a9a';g.beginPath();g.moveTo(13,42);g.lineTo(29,42);g.lineTo(26,30);g.lineTo(16,30);g.closePath();g.fill();g.fillStyle='#f6d8c6';g.beginPath();g.ellipse(21,20,9,10,0,0,7);g.fill();g.fillStyle='#5a3a2e';g.beginPath();g.ellipse(21,16,10,8,0,Math.PI,Math.PI*2);g.fill();g.beginPath();g.arc(13,10,4.5,0,7);g.fill();g.fillStyle='#3a2a30';g.beginPath();g.arc(18,21,1.2,0,7);g.arc(24,21,1.2,0,7);g.fill();$('ava').appendChild(c)})();
+
+/* =================== SHEETS =================== */
+const sheet=$('sheet');
+let view=null,quiz=null;
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function seg(n){let s='<span class="seg5">';for(let i=0;i<5;i++)s+='<i class="'+(i<n?'on':'')+'"></i>';return s+'</span>'}
+function head(title,sub,color){return '<div class="sh-head">'+(color?'<span class="sw" style="background:'+color+'"></span>':'')+'<div class="t"><h2>'+esc(title)+'</h2>'+(sub?'<p>'+esc(sub)+'</p>':'')+'</div><button class="x" data-ui="close" aria-label="Закрыть">×</button></div>'}
+function show(html){sheet.innerHTML='<div class="sheet" role="dialog" aria-modal="true">'+html+'</div>';sheet.hidden=false;const b=sheet.querySelector('.sh-body');if(b)b.scrollTop=0}
+function close(){sheet.hidden=true;sheet.innerHTML='';view=null;quiz=null;saveSoon()}
+function linksHtml(arr){if(!arr||!arr.length)return '';return '<div class="eyebrow">Тренажёры и материалы</div><div class="links">'+arr.map(l=>'<a href="'+l[1]+'" target="_blank" rel="noopener">'+esc(l[0])+'<span>открыть ↗</span></a>').join('')+'</div>'}
+function openHouse(h){
+  S.visited[h.id]=true;S.today.visits[h.id]=true;checkBadges();
+  view={k:'house',h:h.id};
+  if(h.kind==='cafe')return showCafe(h);
+  if(h.kind==='home')return showHome(h);
+  if(h.kind==='hall')return showHall(h);
+  const lv=skillLevel(h),pts=S.skill[h.id]||0;
+  let b='<div class="sh-body"><p>'+esc(h.hello)+'</p><div class="skill">Навык «'+esc(h.skill)+'» '+seg(lv)+'<span class="muted" style="font-size:12px">'+pts+' из '+maxPts(h)+' очков</span></div>';
+  b+='<div class="eyebrow">Уроки</div><div class="rows">';
+  h.lessons.forEach((l,i)=>{const done=S.lessons[h.id+'.'+i];b+='<button class="rowb" data-ui="lesson" data-h="'+h.id+'" data-i="'+i+'"><span class="n'+(done?' ok':'')+'">'+(done?'✓':(i+1))+'</span><span class="t"><b>'+esc(l.t)+'</b><span>'+(done?'Изучено':'≈ 30 минут · −6 энергии')+'</span></span><span class="go">›</span></button>'});
+  b+='</div><div class="eyebrow">Тест</div>';
+  const best=S.best[h.id];
+  b+='<div class="rows"><button class="rowb" data-ui="quiz" data-h="'+h.id+'"><span class="n'+(best===h.quiz.length?' ok':'')+'">?</span><span class="t"><b>Проверь себя: '+h.quiz.length+' вопроса</b><span>'+(best!=null?'Лучший результат: '+best+' из '+h.quiz.length:'Ещё не проходила')+' · −10 энергии</span></span><span class="go">›</span></button></div>';
+  b+=linksHtml(h.links)+'<div class="btns"><button class="btn line" data-ui="close">Выйти на улицу</button></div></div>';
+  show(head(h.name,'Наставник: '+h.mentor,h.roof)+b);
+}
+function lessonView(h,i){
+  const l=h.lessons[i],done=S.lessons[h.id+'.'+i];view={k:'lesson',h:h.id,i};
+  let b='<div class="sh-body lesson"><button class="btn line" data-ui="back" data-h="'+h.id+'" style="align-self:flex-start">‹ К урокам</button>';
+  l.p.forEach(p=>b+='<p>'+esc(p)+'</p>');
+  if(l.k&&l.k.length)b+='<div class="keys"><b>Запомни</b><ul>'+l.k.map(k=>'<li>'+esc(k)+'</li>').join('')+'</ul></div>';
+  if(l.s&&l.s.length)b+='<div class="src"><span class="eyebrow">Источники</span>'+l.s.map(s=>'<a href="'+s[1]+'" target="_blank" rel="noopener">'+esc(s[0])+'</a>').join('')+'</div>';
+  b+=done?'<div class="note ok"><b>Урок изучен</b>Можно перечитывать сколько угодно.</div>':'<div class="btns"><button class="btn" data-ui="learn" data-h="'+h.id+'" data-i="'+i+'">Изучено · +20 опыта, +5 ★</button></div>';
+  b+='</div>';
+  show(head(l.t,h.name+' · урок '+(i+1)+' из '+h.lessons.length,h.roof)+b);
+}
+function learn(h,i){
+  const key=h.id+'.'+i;if(S.lessons[key])return;
+  if(S.energy<6){toast('Сил нет. Загляни в кафе «Пион» или отдохни дома');return}
+  S.lessons[key]=true;S.energy=Math.max(0,S.energy-6);S.mood=Math.min(100,S.mood+3);addMinutes(30);
+  if(S.min<9*60)badge('early');
+  S.skill[h.id]=(S.skill[h.id]||0)+1;S.today.lessons++;gain(20,5);checkBadges();save();
+  toast('Урок изучен: +'+Math.round(20*mult())+' опыта, +5 ★');lessonView(h,i);
+}
+function startQuiz(h){
+  if(S.energy<10){toast('Для теста нужно 10 энергии. Выпей кофе в «Пионе» или отдохни дома');return}
+  S.energy-=10;addMinutes(40);if(S.min<9*60)badge('early');
+  quiz={h:h.id,i:0,right:0,ans:null};view={k:'quiz',h:h.id};quizView();
+}
+function quizView(){
+  const h=HB[quiz.h],q=h.quiz[quiz.i];
+  let b='<div class="sh-body"><div class="eyebrow">Вопрос '+(quiz.i+1)+' из '+h.quiz.length+'</div><h3 style="font-size:24px">'+esc(q.q)+'</h3><div style="display:flex;flex-direction:column;gap:8px">';
+  q.o.forEach((o,i)=>{let cls='';if(quiz.ans!=null){if(i===q.a)cls=' right';else if(i===quiz.ans)cls=' wrong'}b+='<button class="opt'+cls+'" data-ui="qa" data-i="'+i+'"'+(quiz.ans!=null?' disabled':'')+'>'+esc(o)+'</button>'});
+  b+='</div>';
+  if(quiz.ans!=null){const ok=quiz.ans===q.a;b+='<div class="note '+(ok?'ok':'err')+'"><b>'+(ok?'Верно!':'Не совсем.')+'</b>'+esc(q.e)+'</div><div class="btns"><button class="btn" data-ui="qnext">'+(quiz.i+1<h.quiz.length?'Следующий вопрос':'Посмотреть результат')+'</button></div>'}
+  b+='</div>';
+  show(head('Тест: '+h.skill,h.name,h.roof)+b);
+}
+function quizEnd(){
+  const h=HB[quiz.h],n=h.quiz.length,r=quiz.right,prev=S.best[h.id]||0;
+  const add=Math.max(0,r-prev)+(r===n&&prev<n?1:0);
+  S.skill[h.id]=Math.min(maxPts(h),(S.skill[h.id]||0)+add);
+  if(r>prev)S.best[h.id]=r;else if(S.best[h.id]==null)S.best[h.id]=r;
+  const passed=r>=3;if(passed)S.today.quizzes++;
+  S.mood=Math.min(100,S.mood+(r===n?10:(passed?5:1)));
+  const stars=passed&&prev<3?10:(passed?3:0);gain(10*r,stars);
+  if(r===n)badge('perfect');checkBadges();save();
+  let b='<div class="sh-body"><h3 style="font-size:28px">'+r+' из '+n+'</h3><p>'+(r===n?'Идеально! Навык растёт.':(passed?'Хороший результат.':'Перечитай уроки и попробуй ещё раз.'))+'</p>';
+  b+='<div class="note pink"><b>Награда</b>+'+Math.round(10*r*mult())+' опыта'+(stars?', +'+stars+' ★':'')+(add?', +'+add+' к навыку':'')+'</div>';
+  b+='<div class="skill">Навык «'+esc(h.skill)+'» '+seg(skillLevel(h))+'</div>';
+  b+='<div class="btns"><button class="btn" data-ui="back" data-h="'+h.id+'">Вернуться в дом</button><button class="btn line" data-ui="close">На улицу</button></div></div>';
+  quiz=null;view={k:'qend',h:h.id};
+  show(head('Результат теста',h.name,h.roof)+b);
+}
+const MENU=[
+ {id:'coffee',t:'Кофе с собой',d:'+35 энергии · 15 минут',cost:5,en:35,mo:2,min:15},
+ {id:'cake',t:'Чай и пирожное',d:'+15 энергии, +15 настроения · 30 минут',cost:8,en:15,mo:15,min:30},
+ {id:'talk',t:'Поболтать с бариста',d:'Совет дня · 10 минут',cost:0,en:0,mo:4,min:10}
+];
+function showCafe(h,msg){
+  view={k:'house',h:h.id};
+  let b='<div class="sh-body"><p>'+esc(h.hello)+'</p>'+(msg?'<div class="note pink">'+esc(msg)+'</div>':'')+'<div class="eyebrow">Меню</div>';
+  MENU.forEach(m=>{b+='<div class="menu-item"><span class="t"><b>'+m.t+'</b><span>'+m.d+'</span></span><button class="btn'+(m.cost?'':' ghost')+'" data-ui="buy" data-m="'+m.id+'"'+(S.stars<m.cost?' disabled':'')+'>'+(m.cost?m.cost+' ★':'Бесплатно')+'</button></div>'});
+  b+='<div class="btns"><button class="btn line" data-ui="close">Выйти на улицу</button></div></div>';
+  show(head(h.name,'Бариста Соня',h.roof)+b);
+}
+function buy(id){
+  const m=MENU.find(x=>x.id===id),h=HB.cafe;if(S.stars<m.cost)return;
+  S.stars-=m.cost;S.energy=Math.min(100,S.energy+m.en);S.mood=Math.min(100,S.mood+m.mo);addMinutes(m.min);
+  let msg='';
+  if(id==='coffee'){S.coffees++;S.today.coffee++;msg='Кофе горячий, силы вернулись.'}
+  else if(id==='cake')msg='Пирожное с малиной — настроение лучше.';
+  else{const all=[];LEARN.forEach(hh=>hh.lessons.forEach(l=>(l.k||[]).forEach(k=>all.push(k))));msg='Соня: «'+all[Math.floor(Math.random()*all.length)]+'»'}
+  checkBadges();save();showCafe(h,msg);
+}
+function showHome(h,msg){
+  view={k:'house',h:h.id};
+  let b='<div class="sh-body"><p>'+esc(h.hello)+'</p>'+(msg?'<div class="note pink">'+esc(msg)+'</div>':'');
+  b+='<div class="menu-item"><span class="t"><b>Отдохнуть на диване</b><span>+25 энергии · 1 час</span></span><button class="btn ghost" data-ui="rest">Отдохнуть</button></div>';
+  b+='<div class="menu-item"><span class="t"><b>Лечь спать</b><span>Наступит утро, энергия 100, новые задания</span></span><button class="btn" data-ui="sleep">Спать</button></div>';
+  b+='<div class="eyebrow">Аккаунт</div><div class="menu-item"><span class="t"><b>'+esc(CLOUD.email||'Вход не выполнен')+'</b><span>'+(CLOUD.ok?'Прогресс сохраняется в облаке и виден только тебе':'Облако не подключено — прогресс хранится только на этом устройстве')+'</span></span><button class="btn line" data-ui="logout">Выйти</button></div>';
+  b+=linksHtml([L.guide,L.trainer,L.shift,L.cards,L.tax]);
+  b+='<div class="eyebrow">Настройки</div><div class="field"><label for="pn">Имя персонажа</label><input id="pn" maxlength="16" value="'+esc(S.name)+'" autocomplete="off"></div><div class="btns"><button class="btn ghost" data-ui="rename">Сохранить имя</button><button class="btn line" data-ui="askreset">Начать игру заново</button></div>';
+  b+='<div class="btns"><button class="btn line" data-ui="close">Выйти на улицу</button></div></div>';
+  show(head(h.name,'Тёплый уголок',h.roof)+b);
+}
+function questsHtml(){let b='';questsToday().forEach(q=>{const p=Math.min(q.n,qprog(q)),done=p>=q.n,cl=S.claimed[q.id];b+='<div class="quest"><span class="t"><b>'+esc(q.t)+'</b><div class="bar"><i style="width:'+(p/q.n*100)+'%;background:var(--accent)"></i></div><span class="muted" style="font-size:12px">'+p+' из '+q.n+'</span></span>'+(cl?'<span class="chip">Получено</span>':'<button class="btn'+(done?'':' ghost')+'" data-ui="claim" data-q="'+q.id+'"'+(done?'':' disabled')+'>Забрать</button>')+'</div>'});return b}
+function showHall(h){
+  view={k:'hall'};
+  let b='<div class="sh-body"><p>'+esc(h.hello)+'</p><div class="eyebrow">Задания дня · день '+S.day+'</div>'+questsHtml();
+  b+='<div class="eyebrow">Доска почёта</div><div class="rows">';
+  LEARN.forEach(x=>{b+='<div class="rowb"><span class="t"><b>'+esc(x.skill)+'</b><span>'+esc(x.name)+'</span></span>'+seg(skillLevel(x))+'</div>'});
+  b+='</div><div class="note pink"><b>Значки: '+Object.keys(S.badges).length+' из '+BADGES.length+'</b>Загляни во все места города, чтобы получить «Соседку».</div><div class="btns"><button class="btn line" data-ui="close">Выйти на площадь</button></div></div>';
+  show(head(h.name,'Центральная площадь',h.roof)+b);
+}
+function drawMinimap(c){
+  const g=c.getContext('2d'),s=c.width/(W+H),hw=s,hh=s/2;g.clearRect(0,0,c.width,c.height);
+  const Q=(x,y)=>[(x-y)*hw+H*hw,(x+y)*hh+4];
+  const col=t=>t==='g'?'#cfe7c3':t==='a'||t==='B'?'#bdb3b9':t==='w'?'#a9d4ea':t==='s'?'#f0dce6':t==='d'?'#f3e2b8':'#efe5e8';
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const a=Q(x,y),b=Q(x+1,y),cc=Q(x+1,y+1),d=Q(x,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.lineTo(cc[0],cc[1]);g.lineTo(d[0],d[1]);g.closePath();g.fillStyle=col(T[y][x]);g.fill()}
+  BUILD.forEach(b=>{const a=Q(b.x,b.y),bb=Q(b.x+b.w,b.y),cc=Q(b.x+b.w,b.y+b.d),d=Q(b.x,b.y+b.d);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(bb[0],bb[1]);g.lineTo(cc[0],cc[1]);g.lineTo(d[0],d[1]);g.closePath();g.fillStyle=b.kind==='deco'?'#ddd2d6':b.roof;g.fill();if(b.kind!=='deco'){g.strokeStyle='#ffffff';g.lineWidth=1.5;g.stroke()}});
+  const p=Q(P.x,P.y);g.fillStyle='#a8426a';g.beginPath();g.arc(p[0],p[1],5,0,7);g.fill();g.strokeStyle='#fff';g.lineWidth=2;g.stroke();
+}
+function mapView(){
+  view={k:'map'};
+  let b='<div class="sh-body"><canvas id="mini" width="704" height="360" style="width:100%;max-width:640px;align-self:center;aspect-ratio:704/360;border-radius:16px;background:var(--surface-2)" aria-label="Мини-карта: нажми на здание"></canvas><p class="muted" style="font-size:13px">Нажми на здание на карте или выбери из списка. Пешком — бесплатно, на такси — 3 ★ и сразу у двери.</p><div class="rows">';
+  HOUSES.forEach(h=>{const sub=h.kind?esc(h.hello):'Навык «'+esc(h.skill)+'» · уровень '+skillLevel(h)+' из 5';b+='<div class="rowb"><span class="n" style="background:'+h.roof+';color:#3a3135">'+(S.visited[h.id]?'✓':'·')+'</span><span class="t"><b>'+esc(h.name)+'</b><span>'+sub+'</span></span><span class="btns" style="flex-wrap:nowrap"><button class="btn ghost" data-ui="goto" data-h="'+h.id+'" style="padding:9px 12px">Идти</button><button class="btn line" data-ui="taxi" data-h="'+h.id+'" style="padding:9px 12px"'+(S.stars<3?' disabled':'')+'>Такси</button></span></div>'});
+  b+='</div></div>';show(head('Карта города','11 мест для учёбы и отдыха')+b);
+  const mc=$('mini');drawMinimap(mc);
+  mc.addEventListener('click',e=>{const r=mc.getBoundingClientRect(),sx=(e.clientX-r.left)*mc.width/r.width,sy=(e.clientY-r.top)*mc.height/r.height;const s=mc.width/(W+H);const dx=(sx-H*s)/s,dy=(sy-4)/(s/2);const wx=(dx+dy)/2,wy=(dy-dx)/2;
+    let best=null,bd=4;HOUSES.forEach(h=>{const d=Math.hypot(h.x+h.w/2-wx,h.y+h.d/2-wy);if(d<bd){bd=d;best=h}});
+    close();if(best)goTo(best.dx,best.dy,best);else{const t=nearestWalk(Math.floor(wx),Math.floor(wy));if(t)goTo(t[0],t[1])}});
+}
+function skillsView(){
+  view={k:'skills'};
+  let b='<div class="sh-body"><p class="muted">Уроки дают по очку навыка, тест — по очку за каждый новый правильный ответ и ещё одно за идеальный результат.</p><div class="rows">';
+  LEARN.forEach(h=>{b+='<button class="rowb" data-ui="goto" data-h="'+h.id+'"><span class="t"><b>'+esc(h.skill)+'</b><span>'+esc(h.name)+' · '+(S.skill[h.id]||0)+' из '+maxPts(h)+' очков</span></span>'+seg(skillLevel(h))+'</button>'});
+  b+='</div><div class="note pink"><b>Уровень '+level()+'</b>'+S.xp+' опыта. Когда настроение от 70, опыт идёт в 1,5 раза быстрее.</div></div>';
+  show(head('Навыки',S.name)+b);
+}
+function questsView(){view={k:'quests'};show(head('Задания дня','День '+S.day)+'<div class="sh-body"><p class="muted">Задания обновляются каждое утро. За каждое — 15 ★ и 30 опыта. Их же можно посмотреть в Ратуше.</p>'+questsHtml()+'</div>')}
+function badgesView(){
+  view={k:'badges'};
+  let b='<div class="sh-body"><div class="grid2">';
+  BADGES.forEach(x=>{const got=S.badges[x.id];b+='<div class="tile'+(got?' got':' lock')+'"><span class="badge">'+esc(x.t.charAt(0))+'</span><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></div>'});
+  b+='</div></div>';show(head('Значки',Object.keys(S.badges).length+' из '+BADGES.length)+b);
+}
+function introView(){
+  view={k:'intro'};
+  const again=S.newcity&&S.intro;
+  let b='<div class="sh-body"><p style="font-size:16px">'+(again?'Город вырос! Появились проспекты, река с мостами, парк с прудом, площадь с ратушей, деловой квартал, торговая улица и Библиотека с уроками по Excel. Твой прогресс сохранён.':'Это твой город. В каждом доме учат своему: маркировке, ЭДО, карточкам, налогам, нейросетям, рекрутингу, таблицам и работе ассистента.')+'</p>';
+  b+='<div class="rows"><div class="rowb"><span class="n">1</span><span class="t"><b>Нажми на дом</b><span>Героиня дойдёт до двери и зайдёт внутрь</span></span></div><div class="rowb"><span class="n">2</span><span class="t"><b>Далеко идти? Открой «Карту»</b><span>Там мини-карта и такси за 3 ★</span></span></div><div class="rowb"><span class="n">3</span><span class="t"><b>Учись и проходи тесты</b><span>Растут навыки, опыт и звёзды</span></span></div><div class="rowb"><span class="n">4</span><span class="t"><b>Следи за энергией</b><span>Кофе в «Пионе» или отдых дома вернут силы</span></span></div><div class="rowb"><span class="n">5</span><span class="t"><b>Двигай город</b><span>Проведи пальцем, раздвинь двумя пальцами для приближения</span></span></div></div>';
+  b+=(again?'':'<div class="field"><label for="pn0">Как зовут твою героиню?</label><input id="pn0" maxlength="16" value="'+esc(S.name)+'" autocomplete="off"></div>')+'<div class="btns"><button class="btn" data-ui="start">'+(again?'Гулять по городу':'Начать')+'</button></div></div>';
+  show(head(again?'Новый большой город':'Городок знаний','Учёба, похожая на игру')+b);
+}
+sheet.addEventListener('click',e=>{
+  if(e.target===sheet){if(view&&view.k!=='intro'&&!quiz)close();return}
+  const el=e.target.closest('[data-ui]');if(!el)return;const a=el.dataset.ui,h=HB[el.dataset.h];
+  if(a==='close'){quiz=null;close()}
+  else if(a==='lesson')lessonView(h,+el.dataset.i);
+  else if(a==='learn')learn(h,+el.dataset.i);
+  else if(a==='back')openHouse(h);
+  else if(a==='quiz')startQuiz(h);
+  else if(a==='qa'){if(quiz.ans!=null)return;quiz.ans=+el.dataset.i;if(quiz.ans===HB[quiz.h].quiz[quiz.i].a)quiz.right++;quizView()}
+  else if(a==='qnext'){quiz.i++;quiz.ans=null;if(quiz.i>=HB[quiz.h].quiz.length)quizEnd();else quizView()}
+  else if(a==='buy')buy(el.dataset.m);
+  else if(a==='rest'){S.energy=Math.min(100,S.energy+25);addMinutes(60);save();showHome(HB.home,'Отдохнула. Энергия +25.')}
+  else if(a==='sleep'){sleep();showHome(HB.home,'Доброе утро! Наступил день '+S.day+'. Новые задания уже ждут.')}
+  else if(a==='rename'){const v=$('pn').value.trim();if(v){S.name=v;save();toast('Имя сохранено')}}
+  else if(a==='askreset'){show(head('Начать заново?','Прогресс сотрётся')+'<div class="sh-body"><p>Уроки, навыки, звёзды и значки обнулятся.</p><div class="btns"><button class="btn" style="background:var(--err);color:var(--btn-fg)" data-ui="doreset">Начать заново</button><button class="btn line" data-ui="back" data-h="home">Отмена</button></div></div>')}
+  else if(a==='logout'){S.px=P.x;S.py=P.y;save();cloudPush();close();try{firebase.auth().signOut()}catch(_){location.reload()}}
+  else if(a==='doreset'){const n=S.name;S=freshState();S.name=n;S.intro=true;P.x=S.px;P.y=S.py;P.path=[];cam.x=P.x;cam.y=P.y;save();close();toast('Игра начата заново')}
+  else if(a==='goto'){close();goTo(h.dx,h.dy,h)}
+  else if(a==='taxi'){close();taxi(h)}
+  else if(a==='claim'){const q=QUESTS.find(x=>x.id===el.dataset.q);if(qprog(q)>=q.n&&!S.claimed[q.id]){S.claimed[q.id]=true;gain(30,15);save();toast('+15 ★ и опыт за задание');if(view&&view.k==='hall')showHall(HB.hall);else questsView()}}
+  else if(a==='start'){const i=$('pn0');if(i&&i.value.trim())S.name=i.value.trim();S.intro=true;S.newcity=false;save();close();hint('Нажми на любой дом')}
+  hud();
+});
+document.querySelector('.hud').addEventListener('click',e=>{
+  const el=e.target.closest('[data-ui]');if(!el)return;const a=el.dataset.ui;
+  if(a==='map')mapView();else if(a==='skills')skillsView();else if(a==='quests')questsView();else if(a==='badges')badgesView();
+  else if(a==='zoomin'){setZoom(zoom*1.2);cam.follow=true}else if(a==='zoomout'){setZoom(zoom/1.2);cam.follow=true}
+  else if(a==='center')cam.follow=true;
+});
+document.addEventListener('keydown',e=>{
+  if(!sheet.hidden){if(e.key==='Escape'&&view&&view.k!=='intro'){quiz=null;close()}return}
+  const k={ArrowUp:[-1,-1],ArrowDown:[1,1],ArrowLeft:[-1,1],ArrowRight:[1,-1],w:[-1,-1],s:[1,1],a:[-1,1],d:[1,-1]}[e.key];
+  if(k){e.preventDefault();const tx=Math.floor(P.x)+k[0],ty=Math.floor(P.y)+k[1];if(walk(tx,ty))goTo(tx,ty)}
+});
+
+/* =================== INPUT (touch, pen, mouse) =================== */
+const ptrs=new Map();let drag=false,pinch=null,downAt=null,moved=0;
+cv.addEventListener('pointerdown',e=>{try{cv.setPointerCapture(e.pointerId)}catch(_){}ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){drag=false;moved=0;downAt={x:e.clientX,y:e.clientY}}
+  if(ptrs.size===2){const p=[...ptrs.values()];pinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),z:zoom};drag=true}});
+cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;const prev=ptrs.get(e.pointerId);const cur={x:e.clientX,y:e.clientY};ptrs.set(e.pointerId,cur);
+  if(ptrs.size===2&&pinch){const p=[...ptrs.values()];const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);setZoom(pinch.z*d/pinch.d);return}
+  if(ptrs.size===1){const dx=cur.x-prev.x,dy=cur.y-prev.y;moved+=Math.abs(dx)+Math.abs(dy);if(moved>10)drag=true;
+    if(drag){cam.follow=false;cam.x-=(dx/HW+dy/HH)/2;cam.y-=(dy/HH-dx/HW)/2;cam.x=Math.max(0,Math.min(W,cam.x));cam.y=Math.max(0,Math.min(H,cam.y))}}});
+function endPtr(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;
+  if(ptrs.size===0){if(!drag&&downAt)tap(downAt.x,downAt.y);drag=false;downAt=null}}
+cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);if(!ptrs.size){drag=false;pinch=null;downAt=null}});
+cv.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom*(e.deltaY<0?1.1:1/1.1))},{passive:false});
+document.addEventListener('gesturestart',e=>e.preventDefault());
+function tap(sx,sy){
+  if(!sheet.hidden)return;
+  for(const n of NPCS){const c=Pt(n.x,n.y);if(Math.abs(sx-c[0])<16*zoom&&sy<c[1]+6*zoom&&sy>c[1]-46*zoom){talk(n);return}}
+  const hs=HOUSES.slice().sort((a,b)=>(b.x+b.w+b.y+b.d)-(a.x+a.w+a.y+a.d));
+  for(const h of hs){const l=Pt(h.x,h.y+h.d)[0],r=Pt(h.x+h.w,h.y)[0],top=Pt(h.x+h.w/2,h.y+h.d/2,bTop(h)+40)[1],bot=Pt(h.x+h.w,h.y+h.d)[1];if(sx>=l&&sx<=r&&sy>=top&&sy<=bot){const atDoor=Math.floor(P.x)===h.dx&&Math.floor(P.y)===h.dy;if(atDoor)openHouse(h);else goTo(h.dx,h.dy,h);return}}
+  const dx=(sx-ox)/HW,dy=(sy-oy)/HH,wx=(dx+dy)/2,wy=(dy-dx)/2;
+  const t=nearestWalk(Math.floor(wx),Math.floor(wy));if(t)goTo(t[0],t[1]);
+}
+function talk(n){const tip=n.tips[n.tip%n.tips.length];n.tip++;S.today.talks++;S.mood=Math.min(100,S.mood+2);saveSoon();toast(n.name+': «'+tip+'»')}
+
+/* =================== BOOT =================== */
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',()=>setTimeout(resize,200));
+document.addEventListener('visibilitychange',()=>{if(document.hidden){S.px=P.x;S.py=P.y;save();cloudPush()}});
+window.addEventListener('pagehide',()=>{S.px=P.x;S.py=P.y;save();cloudPush()});
+/* =================== CLOUD (Firebase, только владелица) =================== */
+const CLOUD={uid:null,email:'',ok:false,last:0,t:0};
+function encodeS(s){const c=JSON.parse(JSON.stringify(s));const o={};for(const k in (c.lessons||{}))o[k.replace(/\./g,'|')]=c.lessons[k];c.lessons=o;return c}
+function decodeS(r){const s=Object.assign(freshState(),r);s.today=Object.assign(freshState().today,r.today||{});s.today.visits=s.today.visits||{};['skill','lessons','best','visited','badges','claimed'].forEach(k=>{s[k]=s[k]||{}});const o={};for(const k in s.lessons)o[k.replace(/\|/g,'.')]=s.lessons[k];s.lessons=o;s.map=2;return s}
+function cloudPush(){if(!CLOUD.ok||!window.firebase)return;CLOUD.last=Date.now();clearTimeout(CLOUD.t);firebase.database().ref('gorodok/players/'+CLOUD.uid).set(encodeS(S)).catch(err=>{CLOUD.ok=false;toast('Не удалось сохранить в облако ('+(err&&err.code||'ошибка')+'). Прогресс остался на устройстве.')})}
+function cloudSoon(){if(!CLOUD.ok)return;clearTimeout(CLOUD.t);CLOUD.t=setTimeout(cloudPush,Math.max(800,5000-(Date.now()-CLOUD.last)))}
+function placePlayer(){if(!walk(Math.floor(S.px),Math.floor(S.py))){S.px=4.5;S.py=36.5}P.x=S.px;P.y=S.py;P.path=[];P.target=null;cam.x=P.x;cam.y=P.y}
+let started=false,locked=false;
+function startGame(){if(started)return;started=true;$('auth').hidden=true;setZoom(defaultZoom());resize();hud();if(!S.intro||S.newcity)introView();requestAnimationFrame(t=>{last=t;frame(t)})}
+function authUI(state,msg){$('auth').hidden=false;['authForm','authBusy','authLocked','authErr'].forEach(id=>{$(id).hidden=true});$({form:'authForm',busy:'authBusy',locked:'authLocked',error:'authErr'}[state]).hidden=false;if(msg!=null)$('authMsg').textContent=msg}
+function bootCloud(){
+  if(!(window.firebase&&window.FIREBASE_CONFIG)){authUI('error');return}
+  try{if(!firebase.apps.length)firebase.initializeApp(window.FIREBASE_CONFIG)}catch(e){authUI('error');return}
+  firebase.auth().onAuthStateChanged(async u=>{
+    if(!u){CLOUD.ok=false;CLOUD.uid=null;CLOUD.email='';if(started){location.reload();return}if(locked)return;authUI('form','');return}
+    authUI('busy');
+    CLOUD.uid=u.uid;CLOUD.email=u.email||'';
+    const db=firebase.database();
+    try{
+      const own=await db.ref('gorodok/owner').once('value');
+      if(!own.exists())await db.ref('gorodok/owner').set(u.uid);
+      else if(own.val()!==u.uid){CLOUD.uid=null;locked=true;authUI('locked');firebase.auth().signOut().catch(()=>{});return}
+      const snap=await db.ref('gorodok/players/'+u.uid).once('value');const r=snap.val();
+      if(r&&r.v===1&&(r.savedAt||0)>(S.savedAt||0)){S=decodeS(r);try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}placePlayer()}
+      CLOUD.ok=true;cloudPush();startGame();
+    }catch(err){
+      const c=String(err&&(err.code||err.message)||'');CLOUD.ok=false;startGame();
+      setTimeout(()=>toast(/permission/i.test(c)?'Облако ещё не настроено — прогресс пока хранится только на этом устройстве':'Нет связи с облаком — прогресс сохранится на этом устройстве'),1500);
+    }
+  });
+}
+$('authForm').addEventListener('submit',async ev=>{ev.preventDefault();const em=$('authEmail').value.trim(),pw=$('authPass').value,btn=$('authBtn');$('authMsg').textContent='';btn.disabled=true;
+  const slow=setTimeout(()=>{$('authMsg').textContent='Сервер долго не отвечает. Проверь интернет; если включён VPN — попробуй выключить его.'},12000);
+  try{await firebase.auth().signInWithEmailAndPassword(em,pw)}
+  catch(err){const c=err&&err.code||'';$('authMsg').textContent=c.includes('invalid-email')?'Проверь адрес почты':/password|credential|user-not-found/.test(c)?'Неверная почта или пароль. Это тот же аккаунт, что и в Money.':c.includes('too-many-requests')?'Слишком много попыток. Подожди пару минут.':'Не получилось ('+(c||'ошибка сети')+'). Проверь интернет.'}
+  clearTimeout(slow);btn.disabled=false});
+$('authReset').addEventListener('click',async()=>{const em=$('authEmail').value.trim();if(!em){$('authMsg').textContent='Сначала впиши почту — пришлю ссылку для нового пароля.';return}try{await firebase.auth().sendPasswordResetEmail(em);$('authMsg').textContent='Письмо со ссылкой отправлено на '+em+'.'}catch(err){$('authMsg').textContent='Не получилось отправить письмо ('+(err&&err.code||'ошибка')+').'}});
+$('authRetry').addEventListener('click',()=>location.reload());
+$('authOther').addEventListener('click',()=>{locked=false;$('authPass').value='';authUI('form','')});
+bootCloud();
+
+})();
+
+</script>
+</body>
+</html>
