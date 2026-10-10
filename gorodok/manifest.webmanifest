@@ -1,0 +1,24 @@
+{
+ "name": "Городок знаний",
+ "short_name": "Городок",
+ "start_url": "./",
+ "scope": "./",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#F6E9EF",
+ "theme_color": "#F6E9EF",
+ "lang": "ru",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}
