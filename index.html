@@ -506,7 +506,7 @@ function StoreProvider({ children }) {
                     let first = true;
                     const iref = rtdb.ref('invites/' + myKey);
                     const ih = iref.on('value', (snap) => {
-                        const list = Object.entries(snap.val() || {}).map(([sid, v]) => ({ sid, name: v.name || '', ownerEmail: v.ownerEmail || '' }));
+                        const list = Object.entries(snap.val() || {}).filter(([sid]) => sid !== myUid).map(([sid, v]) => ({ sid, name: v.name || '', ownerEmail: v.ownerEmail || '' }));
                         setInvites(list);
                         if (first) {
                             first = false;

@@ -1,0 +1,1530 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FEFCF7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Календарь">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Календарь</title>
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); }
+html, body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; } * { box-sizing: border-box; }
+button { background: none; border: 0; font: inherit; cursor: pointer; color: inherit; }
+/* Календарь Кати.
+   Тёплая «грушевая» палитра: сливочный фон, олива — действие, вино — сегодня и срочное.
+   Unbounded только для заголовков и цифр, Onest для всего остального. Без украшений. */
+:root {
+  --cream: #FEFCF7;      /* фон: тёплый молочный, не холодный белый */
+  --paper: #F4EEDF;      /* карточки чуть темнее фона */
+  --olive: #867B18;      /* действие */
+  --olive-ink: #4B4510;  /* текст на оливковом мягком */
+  --olive-soft: #DED6AE;
+  --wine: #8C2E3E;       /* сегодня, срочное, плюс */
+  --wine-soft: #EBD3CF;
+  --ink: #2E2A14;        /* основной текст — тёплый, не чёрный */
+  --muted: #7A7358;
+  --line: rgba(75, 69, 16, .14);
+  --late: #8C2E3E; --soon: #4F6470; --azure: #E1E3D8; --lav: #E7E0CC; --pink: #DED6AE; --pink-deep: #8C2E3E; --gray: #7A7358;
+  --display: 'Unbounded', 'Arial Black', sans-serif;
+  --sans: 'Onest', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+}
+html, body { background: var(--cream); color: var(--ink); }
+body { font-family: var(--sans); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3, .display { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; margin: 0; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 13px; color: var(--muted); font-weight: 500; }
+.title-mark { display: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.dot-lg { width: 14px; height: 14px; }
+
+/* заголовки вкладок */
+.ptitle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 0 18px; }
+.ptitle h1 { font-size: 30px; }
+.subtitle { color: var(--muted); margin: -12px 0 18px; }
+.dayhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px 10px; }
+.dayhead .eyebrow { font-family: var(--display); font-size: 15px; font-weight: 500; color: var(--ink); }
+.dayhead-sum { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* поверхности */
+.paper { background: var(--paper); border-radius: 20px; }
+.paper.divide-y > * + * { border-top: 1px solid var(--line); }
+.paper > :first-child { border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.empty { background: var(--paper); border-radius: 20px; padding: 28px 20px; text-align: center; color: var(--muted); margin-bottom: 24px; }
+.empty-title { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--ink); margin-bottom: 4px; }
+.note { font-size: 14px; color: var(--olive-ink); background: var(--olive-soft); padding: 10px 14px; border-radius: 14px; }
+.comment { background: var(--paper); border-radius: 14px; padding: 10px 14px; }
+
+/* кнопки и поля */
+.btn-primary { background: var(--olive); color: #FBF8EF; border-radius: 16px; font-weight: 600; font-size: 15px; }
+.btn-primary:active { background: #6F6612; }
+.btn-primary:disabled { opacity: .4; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 16px; font-weight: 500; font-size: 15px; }
+.mini-btn { font-size: 14px; font-weight: 600; padding: 7px 14px; border-radius: 12px; color: var(--olive); background: var(--olive-soft); white-space: nowrap; }
+.mini-btn:active { background: var(--olive); color: #FBF8EF; }
+.link-danger { color: var(--wine); font-size: 14px; font-weight: 500; }
+.input { width: 100%; background: var(--paper); border: 1px solid transparent; padding: 12px 14px; font-size: 16px; color: var(--ink); border-radius: 14px; outline: none; font-family: var(--sans); }
+.input:focus { border-color: var(--olive); }
+.input::placeholder { color: #A9A184; }
+.segmented { display: flex; background: var(--paper); border-radius: 14px; padding: 4px; gap: 2px; }
+.segmented button { flex: 1; padding: 8px 4px; font-size: 14px; font-weight: 500; color: var(--muted); border-radius: 10px; }
+.segmented .seg-on { background: var(--olive); color: #FBF8EF; }
+.chipbtn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 12px; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid transparent; }
+.chipbtn-on { border-color: var(--ink); }
+.chip { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 8px; line-height: 1.4; }
+.chip-late { color: var(--wine); background: var(--wine-soft); }
+.chip-soon { color: var(--olive-ink); background: var(--olive-soft); }
+.chip-calm { color: var(--muted); background: var(--cream); }
+.caltag { font-size: 12px; font-weight: 500; padding: 1px 7px; border-radius: 8px; }
+.caltag-shared { color: #F7F2E6; background: var(--soon); }
+.checkbox { width: 24px; height: 24px; border: 1.5px solid var(--olive); border-radius: 50%; flex: none; position: relative; background: transparent; }
+.checkbox-sm { width: 20px; height: 20px; }
+.checkbox-on { background: var(--olive); }
+.checkbox-on::after { content: ''; position: absolute; left: 36%; top: 20%; width: 28%; height: 45%; border: solid #FBF8EF; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--olive-soft); position: relative; flex: none; transition: background .2s; }
+.switch span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--paper); transition: transform .2s; }
+.switch-on { background: var(--olive); } .switch-on span { transform: translateX(18px); }
+.swatch { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--cream); }
+.swatch-on { box-shadow: 0 0 0 2px var(--ink); }
+.progress { height: 6px; background: var(--cream); border-radius: 3px; position: relative; overflow: hidden; }
+.progress span { position: absolute; inset: 0 auto 0 0; background: var(--olive); border-radius: 3px; }
+
+/* нижний лист */
+.sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(46, 42, 20, .35); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 30rem; max-height: 92vh; overflow-y: auto; background: var(--cream); border-radius: 28px 28px 0 0; padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px)); animation: sheetUp .26s ease-out; }
+.sheet h2 { font-size: 24px !important; color: var(--ink) !important; }
+.sheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--olive-soft); margin: 0 auto 16px; }
+.sheet .block > .eyebrow { margin-bottom: 6px; }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* плюс и навигация */
+.fab { position: fixed; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 35; width: 60px; height: 60px; border-radius: 20px; background: var(--wine); color: #FBF8EF; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px -8px rgba(140, 46, 62, .6); }
+.navbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--cream); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.navbar > div { max-width: 30rem; margin: 0 auto; display: flex; }
+.navbtn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; color: var(--muted); }
+.navbtn-active { color: var(--olive); }
+.navlabel { font-size: 11px; font-weight: 500; }
+
+/* год */
+.year-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--cream); margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); border-bottom: 1px solid var(--line); }
+.year-bar { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 10px; }
+.year-big { font-family: var(--display); font-weight: 600; font-size: 26px; letter-spacing: -0.02em; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
+.cal-wd { text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 0 8px; }
+.cal-we { color: var(--wine); opacity: .75; }
+.month-block { padding-top: 30px; scroll-margin-top: 118px; }
+.month-title { font-size: 38px; font-weight: 700; color: var(--olive); margin: 0 0 12px 2px; letter-spacing: -0.03em; }
+.month-year { font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
+.ycell { aspect-ratio: 1 / 1.08; display: flex; flex-direction: column; align-items: center; padding-top: 6px; color: var(--ink); min-width: 0; }
+.ycell-num { font-size: 17px; font-weight: 500; line-height: 1; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px; font-variant-numeric: tabular-nums; }
+.ycell-we .ycell-num { color: var(--wine); }
+.ycell-today .ycell-num { background: var(--wine); color: #FBF8EF; font-weight: 600; }
+.ycell:active .ycell-num { background: var(--olive-soft); }
+.cal-dots { display: flex; gap: 3px; height: 6px; margin-top: 4px; justify-content: center; }
+.cal-dots .dot { width: 6px; height: 6px; }
+
+/* день по часам */
+.dayview { position: fixed; top: 0; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; background: var(--cream); z-index: 30; padding-top: env(safe-area-inset-top, 0px); }
+.dayview-head { flex: none; border-bottom: 1px solid var(--line); }
+.backlink { display: flex; align-items: center; gap: 2px; font-weight: 600; color: var(--olive); font-size: 15px; }
+.dayview-title { font-size: 30px; padding: 12px 16px 14px; }
+.dayview-title span { display: block; font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-top: 6px; }
+.wstrip { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 0; border-radius: 14px; color: var(--ink); }
+.wstrip-wd { font-size: 11px; color: var(--muted); }
+.wstrip-num { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.wstrip-today .wstrip-num { color: var(--wine); }
+.wstrip-on { background: var(--olive); } .wstrip-on .wstrip-num, .wstrip-on .wstrip-wd { color: #FBF8EF; }
+.allday { color: #FBF8EF; font-size: 14px; font-weight: 500; padding: 5px 12px; border-radius: 10px; }
+.daytask { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; padding: 5px 12px; border-radius: 10px; background: var(--paper); color: var(--ink); }
+.daytask-done { text-decoration: line-through; color: var(--muted); }
+.timeline-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.timeline { position: relative; margin-bottom: 96px; }
+.hour { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); text-align: left; }
+.hour-label { position: absolute; left: 12px; top: -9px; font-size: 12px; color: var(--muted); background: var(--cream); padding-right: 6px; font-variant-numeric: tabular-nums; }
+.nowline { position: absolute; left: 50px; right: 0; height: 2px; background: var(--wine); z-index: 3; }
+.nowline::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--wine); }
+.evblock { position: absolute; z-index: 2; border-left: 4px solid; border-radius: 10px; padding: 5px 9px; text-align: left; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
+.evblock-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+.evblock-time { font-size: 12px; color: var(--muted); }
+
+/* задачи */
+.taskstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.taskstats > div { background: var(--paper); border-radius: 18px; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; }
+.taskstats b { font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1; }
+.taskstats span { font-size: 13px; color: var(--muted); }
+.taskstats .is-late b { color: var(--wine); }
+.taskcard { background: var(--paper); border-radius: 18px; padding: 14px 16px; }
+.taskcard.is-done { background: transparent; border: 1px solid var(--line); }
+
+/* неделя */
+.weeknav { display: flex; gap: 6px; }
+.weeknav button { width: 40px; height: 40px; border-radius: 12px; background: var(--paper); display: grid; place-items: center; color: var(--ink); }
+.weeknav button:disabled { opacity: .35; }
+.weekhero { background: var(--olive); color: #FBF8EF; border-radius: 28px; padding: 22px 22px 18px; margin-bottom: 28px; }
+.weekhero-main { display: flex; align-items: baseline; gap: 12px; }
+.weekhero-main b { font-family: var(--display); font-weight: 700; font-size: 76px; line-height: .9; letter-spacing: -0.04em; }
+.weekhero-main span { font-size: 17px; font-weight: 500; }
+.weekhero-diff { margin: 10px 0 18px; color: #E9E3C3; font-size: 15px; }
+.weekhero-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(251, 248, 239, .25); padding-top: 14px; }
+.weekhero-stats div { display: flex; flex-direction: column; gap: 2px; }
+.weekhero-stats b { font-family: var(--display); font-weight: 600; font-size: 20px; }
+.weekhero-stats span { font-size: 13px; color: #E9E3C3; }
+.catbar { height: 8px; background: var(--cream); border-radius: 4px; position: relative; overflow: hidden; }
+.catbar span { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.daybars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; }
+.daybar { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.daybar-col { height: 96px; width: 100%; max-width: 30px; display: flex; align-items: flex-end; background: var(--cream); border-radius: 9px; overflow: hidden; }
+.daybar-col span { width: 100%; min-height: 3px; border-radius: 9px; }
+.daybar-wd { font-size: 12px; color: var(--muted); }
+.daybar-wd.is-today { color: var(--ink); font-weight: 600; }
+
+/* заставка и вход */
+.splash { position: fixed; inset: 0; z-index: 50; background: var(--olive); color: #FBF8EF; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); overflow-y: auto; }
+.splash-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; animation: rise .9s ease-out both; }
+.splash-title { font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1.02; color: #FBF8EF; letter-spacing: -0.03em; }
+.splash-date { font-size: 17px; color: #E9E3C3; }
+.splash .logo-heart { color: #FBF8EF; }
+.splash .topstrip, .splash .splash-stripes, .splash-stamp { display: none; }
+.splash .eyebrow { color: #E9E3C3; }
+.splash .input { background: #FBF8EF; }
+.splash .note { background: #FBF8EF; }
+.splash .btn-primary { background: var(--wine); }
+.splash .segmented { background: rgba(251, 248, 239, .18); }
+.splash .segmented button { color: #FBF8EF; }
+.splash .segmented .seg-on { background: #FBF8EF; color: var(--olive-ink); }
+.splash p, .splash .text-gray-500, .splash .text-gray-600 { color: #EFEAD2 !important; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+#boot { min-height: 100vh; background: var(--olive); color: #FBF8EF; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* заставка-приветствие: текст слева внизу, «небо» меняется по времени суток */
+.hello { position: fixed; inset: 0; z-index: 50; background: var(--olive); color: #FBF8EF; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between; padding: calc(28px + env(safe-area-inset-top, 0px)) 26px calc(40px + env(safe-area-inset-bottom, 0px)); }
+.hello-date { position: relative; font-size: 17px; line-height: 1.35; color: #E9E3C3; margin: 0; }
+.hello-text { position: relative; display: flex; flex-direction: column; font-family: var(--display); font-weight: 700; font-size: clamp(34px, 9.5vw, 60px); line-height: 1; letter-spacing: -0.035em; color: #FBF8EF; text-align: left; }
+.hello-text span { display: block; animation: hello-in .7s cubic-bezier(.2, .7, .2, 1) both; }
+.hello-text span:nth-child(2) { animation-delay: .08s; }
+.hello-text span:nth-child(3) { animation-delay: .16s; color: #F2DCD6; }
+@keyframes hello-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.hello-sky { position: absolute; inset: 0; pointer-events: none; }
+.hello-sky span { position: absolute; border-radius: 50%; }
+/* утро — низкое солнце справа */
+.hello-morning .hello-sky span { width: 62vmax; height: 62vmax; right: -24vmax; top: 18%; background: #A1962E; }
+/* день — большое солнце высоко */
+.hello-day .hello-sky span { width: 78vmax; height: 78vmax; right: -30vmax; top: -34vmax; background: #9A8F27; }
+/* вечер — винное солнце садится за край */
+.hello-evening { background: #6F6612; }
+.hello-evening .hello-sky span { width: 70vmax; height: 70vmax; right: -28vmax; top: 30%; background: var(--wine); }
+/* ночь — тонкий месяц */
+.hello-night { background: #3F3A0D; }
+.hello-night .hello-sky span { width: 40vmax; height: 40vmax; right: -14vmax; top: 14%; background: transparent; box-shadow: -7vmax 4vmax 0 0 #E9E3C3; }
+
+.hello-evening .hello-text span:nth-child(3) { color: #FBF8EF; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
+<script>window.APP_STRIP = "Календарь"; window.APP_TAGLINE = "Ваш личный календарь";</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Onest:wght@400;500;600&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+<script>
+  tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
+    fontFamily: { sans: ['Onest', '-apple-system', 'sans-serif'], serif: ['Unbounded', 'sans-serif'] },
+    colors: { gray: { 50: '#F4EEDF', 100: '#FEFCF7', 200: '#DED6AE', 300: '#C9C1A0', 400: '#A9A184', 500: '#8C8466', 600: '#7A7358', 700: '#5A5338', 800: '#2E2A14', 900: '#1F1C0D' } }
+  } } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+<div id="root"><div id="boot"></div></div>
+<script>
+window.addEventListener("error", function (e) { var b = document.getElementById("boot"); if (b) b.textContent = "Не загрузилось: " + (e.message || "ошибка") + ". Обновите страницу."; });
+"use strict";
+const { useState, useEffect, useRef, createContext, useContext } = React;
+// Хранилище календаря: Firebase, личный календарь + общие (свой и те, куда пригласили)
+const StoreContext = createContext(null);
+const useStore = () => useContext(StoreContext);
+const clean = (o) => JSON.parse(JSON.stringify(o));
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const emailKey = (e) => (e || '').trim().toLowerCase().replace(/\./g, ',');
+function AuthShell({ title, children }) {
+    return (React.createElement("div", { className: "splash", style: { overflowY: 'auto' } },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "splash-body w-full max-w-sm mx-auto py-8" },
+            React.createElement(LoveLogo, null),
+            React.createElement("h1", { className: "display splash-title", style: { fontSize: 44 } }, title),
+            React.createElement("div", { className: "w-full space-y-4 text-left" }, children)),
+        React.createElement(Stripes, { className: "splash-stripes", style: { minHeight: 60 } })));
+}
+function Login() {
+    const [mode, setMode] = useState('in'); // in | up
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
+    const [name, setName] = useState('');
+    const [msg, setMsg] = useState('');
+    const [busy, setBusy] = useState(false);
+    const submit = async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setMsg('');
+        const slow = setTimeout(() => setMsg('Сервер долго не отвечает. Проверьте интернет; если включён VPN — попробуйте выключить его или сменить страну.'), 12000);
+        try {
+            if (mode === 'in')
+                await firebase.auth().signInWithEmailAndPassword(email.trim(), pass);
+            else {
+                if (!name.trim()) {
+                    setMsg('Напишите, как вас зовут — так приложение будет здороваться');
+                    setBusy(false);
+                    return;
+                }
+                if (pass.length < 6) {
+                    setMsg('Пароль — минимум 6 символов');
+                    setBusy(false);
+                    return;
+                }
+                const cred = await firebase.auth().createUserWithEmailAndPassword(email.trim(), pass);
+                await cred.user.updateProfile({ displayName: name.trim() });
+                await cred.user.sendEmailVerification();
+            }
+        }
+        catch (err) {
+            const c = err.code || '';
+            setMsg(c.includes('email-already-in-use') ? 'Аккаунт с этой почтой уже есть — нажмите «Войти»'
+                : c.includes('invalid-email') ? 'Проверьте адрес почты'
+                    : c.includes('weak-password') ? 'Пароль слишком простой, минимум 6 символов'
+                        : /password|credential|user-not-found/.test(c) ? (mode === 'in' ? 'Неверная почта или пароль. Если вы ещё не регистрировались — выберите «Создать аккаунт».' : 'Неверная почта или пароль')
+                            : 'Не получилось (' + (c || 'ошибка сети') + '). Проверьте интернет и попробуйте ещё раз.');
+        }
+        clearTimeout(slow);
+        setBusy(false);
+    };
+    const reset = async () => {
+        if (!email.trim()) {
+            setMsg('Введите почту, и мы пришлём ссылку для нового пароля');
+            return;
+        }
+        try {
+            await firebase.auth().sendPasswordResetEmail(email.trim());
+            setMsg('Письмо для смены пароля отправлено');
+        }
+        catch {
+            setMsg('Не удалось отправить письмо');
+        }
+    };
+    return (React.createElement(AuthShell, { title: mode === 'in' ? 'Вход' : 'Новый аккаунт' },
+        React.createElement("form", { onSubmit: submit, className: "space-y-4" },
+            React.createElement(Segmented, { value: mode, onChange: (v) => { setMode(v); setMsg(''); }, options: [['in', 'Войти'], ['up', 'Создать аккаунт']] }),
+            mode === 'up' && React.createElement(Field, { label: "\u0412\u0430\u0448\u0435 \u0438\u043C\u044F" },
+                React.createElement("input", { id: "login-name", className: "input", autoComplete: "given-name", placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F", value: name, onChange: (e) => setName(e.target.value) })),
+            React.createElement(Field, { label: "\u041F\u043E\u0447\u0442\u0430" },
+                React.createElement("input", { id: "login-email", className: "input", type: "email", autoComplete: "email", value: email, onChange: (e) => setEmail(e.target.value) })),
+            React.createElement(Field, { label: mode === 'in' ? 'Пароль' : 'Придумайте пароль' },
+                React.createElement("input", { id: "login-pass", className: "input", type: "password", autoComplete: mode === 'in' ? 'current-password' : 'new-password', value: pass, onChange: (e) => setPass(e.target.value) })),
+            msg && React.createElement("p", { className: "note" }, msg),
+            React.createElement("button", { type: "submit", disabled: busy, className: "btn-primary w-full py-3" }, busy ? 'Минутку…' : mode === 'in' ? 'Войти' : 'Создать аккаунт'),
+            mode === 'in'
+                ? React.createElement("button", { type: "button", onClick: reset, className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0417\u0430\u0431\u044B\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C?")
+                : React.createElement("p", { className: "text-xs text-gray-500 text-center" }, "\u041F\u043E\u0441\u043B\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043F\u0440\u0438\u0434\u0451\u0442 \u043F\u0438\u0441\u044C\u043C\u043E \u0434\u043B\u044F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u043F\u043E\u0447\u0442\u044B. \u0414\u043E\u0441\u0442\u0443\u043F \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u043E\u0442\u043A\u0440\u043E\u0435\u0442\u0441\u044F, \u043A\u043E\u0433\u0434\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446 \u0434\u043E\u0431\u0430\u0432\u0438\u0442 \u0432\u0430\u0448\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438."))));
+}
+function VerifyEmail({ user }) {
+    const [msg, setMsg] = useState('');
+    const check = async () => {
+        await user.reload();
+        if (firebase.auth().currentUser.emailVerified) {
+            await firebase.auth().currentUser.getIdToken(true);
+            location.reload();
+        }
+        else
+            setMsg('Почта ещё не подтверждена. Откройте письмо и нажмите ссылку.');
+    };
+    const resend = async () => {
+        try {
+            await user.sendEmailVerification();
+            setMsg('Письмо отправлено ещё раз. Проверьте папку «Спам».');
+        }
+        catch {
+            setMsg('Подождите минуту и попробуйте снова');
+        }
+    };
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u043F\u043E\u0447\u0442\u0443" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u041C\u044B \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0438 \u043F\u0438\u0441\u044C\u043C\u043E \u043D\u0430 ",
+            React.createElement("b", null, user.email),
+            ". \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u0432 \u043D\u0451\u043C \u0441\u0441\u044B\u043B\u043A\u0443, \u043F\u043E\u0442\u043E\u043C \u0432\u0435\u0440\u043D\u0438\u0442\u0435\u0441\u044C \u0441\u044E\u0434\u0430."),
+        msg && React.createElement("p", { className: "note" }, msg),
+        React.createElement("button", { type: "button", onClick: check, className: "btn-primary w-full py-3" }, "\u042F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043B\u0430 \u043F\u043E\u0447\u0442\u0443"),
+        React.createElement("button", { type: "button", onClick: resend, className: "btn-ghost w-full py-3" }, "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0438\u0441\u044C\u043C\u043E \u0435\u0449\u0451 \u0440\u0430\u0437"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+function AskName({ onSave }) {
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    return (React.createElement(AuthShell, { title: "\u041A\u0430\u043A \u0432\u0430\u0441 \u0437\u043E\u0432\u0443\u0442?" },
+        React.createElement("form", { className: "space-y-4", onSubmit: async (e) => { e.preventDefault(); if (!name.trim())
+                return; setBusy(true); try {
+                await onSave(name.trim());
+            }
+            finally {
+                setBusy(false);
+            } } },
+            React.createElement("p", { className: "text-center text-gray-600" }, "\u0422\u0430\u043A \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0441 \u0432\u0430\u043C\u0438 \u0437\u0434\u043E\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F."),
+            React.createElement(Field, { label: "\u0418\u043C\u044F" },
+                React.createElement("input", { id: "ask-name", className: "input", autoComplete: "given-name", value: name, onChange: (e) => setName(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F" })),
+            React.createElement("button", { type: "submit", disabled: busy || !name.trim(), className: "btn-primary w-full py-3" }, "\u0413\u043E\u0442\u043E\u0432\u043E"))));
+}
+function NoAccess({ user }) {
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0447\u0442\u0438 \u0433\u043E\u0442\u043E\u0432\u043E" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u0410\u043A\u043A\u0430\u0443\u043D\u0442 ",
+            React.createElement("b", null, user.email),
+            " \u0441\u043E\u0437\u0434\u0430\u043D. \u041F\u043E\u043F\u0440\u043E\u0441\u0438\u0442\u0435 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u0442\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u00AB\u0415\u0449\u0451 \u2192 \u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438\u00BB, \u0437\u0430\u0442\u0435\u043C \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C\u00BB."),
+        React.createElement("button", { type: "button", onClick: () => location.reload(), className: "btn-primary w-full py-3" }, "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+// Категории по умолчанию (можно менять в настройках)
+const DEFAULT_CATS = [
+    { id: 'work', name: 'Работа', color: '#4F6470' },
+    { id: 'study', name: 'Учёба', color: '#6B4C7A' },
+    { id: 'health', name: 'Здоровье', color: '#5F7A3E' },
+    { id: 'home', name: 'Дом', color: '#B88A22' },
+    { id: 'family', name: 'Семья', color: '#8C2E3E' },
+    { id: 'me', name: 'Для себя', color: '#C46F80' },
+];
+const toList = (v) => Object.entries(v || {}).map(([id, d]) => ({ ...d, id }));
+function StoreProvider({ children }) {
+    const [mode, setMode] = useState('loading');
+    const [user, setUser] = useState(null);
+    const [displayName, setDisplayName] = useState('');
+    const [uid, setUid] = useState(null);
+    const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+    const [personal, setPersonal] = useState({ events: [], tasks: [], categories: [] });
+    const [shared, setShared] = useState({}); // sid -> { events, tasks }
+    const [invites, setInvites] = useState([]); // [{ sid, name, ownerEmail }]
+    const [members, setMembers] = useState([]);
+    const [error, setError] = useState('');
+    // Демо-режим (предпросмотр без сервера): примеры событий, всё хранится только в этой вкладке
+    const demoRef = useRef(false);
+    const personalRef = useRef('');
+    const startDemo = () => {
+        demoRef.current = true;
+        const t = todayYmd();
+        const shiftD = (n) => { const d = ymdToDate(t); d.setDate(d.getDate() + n); return ymd(d); };
+        setUser({ email: 'katya@пример.рф' });
+        setDisplayName('Катя');
+        setUid('demo-shared');
+        const wk = (() => { const d = ymdToDate(t); return (d.getDay() + 6) % 7; })(); // 0 = понедельник
+        const mon = shiftD(-wk);
+        const wd = (n) => { const d = ymdToDate(mon); d.setDate(d.getDate() + n); return ymd(d); };
+        setPersonal({
+            categories: [],
+            events: [
+                { id: 'e1', title: 'Маникюр', category: 'me', date: t, start: '12:00', end: '13:30', place: 'Салон на Тверской', repeat: 'none', remind: '60', note: '' },
+                { id: 'e2', title: 'Созвон с кандидатом', category: 'work', date: t, start: '17:00', end: '17:30', repeat: 'none', remind: '15', note: 'Вакансия ассистента' },
+                { id: 'e5', title: 'Собеседование', category: 'work', date: t, start: '17:15', end: '18:00', repeat: 'none', remind: '15' },
+                { id: 'e3', title: 'Английский', category: 'study', date: wd(0), start: '19:00', end: '20:00', place: 'онлайн', repeat: 'weekly', remind: '15', note: '' },
+                { id: 'e6', title: 'Вождение', category: 'study', date: wd(1), start: '09:00', end: '10:30', repeat: 'weekly', remind: '60' },
+                { id: 'e7', title: 'Тренировка', category: 'health', date: wd(2), start: '08:00', end: '09:00', repeat: 'weekly', remind: '15' },
+                { id: 'e4', title: 'День рождения мамы', category: 'family', date: shiftD(9), allDay: true, repeat: 'yearly', remind: '1440', note: 'Купить цветы' },
+            ],
+            tasks: [
+                { id: 't1', title: 'Подготовить отчёт по вакансиям', category: 'work', date: t, done: false,
+                    subtasks: [{ id: 'a', t: 'Собрать отклики', done: true }, { id: 'b', t: 'Таблица по кандидатам', done: true }, { id: 'c', t: 'Отправить руководителю', done: false }],
+                    comments: [{ id: 'k1', text: 'Руководитель просил до среды', at: t + 'T10:20' }] },
+                { id: 't2', title: 'Записаться на вождение', category: 'study', date: shiftD(-1), done: false, subtasks: [], comments: [] },
+                { id: 't3', title: 'Купить подарок маме', category: 'family', date: shiftD(5), done: false,
+                    subtasks: [{ id: 'a', t: 'Выбрать', done: false }, { id: 'b', t: 'Заказать', done: false }], comments: [] },
+                { id: 't4', title: 'Глава 3 учебника по JS', category: 'study', date: '', done: false, subtasks: [{ id: 'a', t: 'Прочитать', done: true }, { id: 'b', t: 'Решить задачи', done: false }], comments: [] },
+                { id: 'd1', title: 'Оплатить интернет', category: 'home', date: wd(0), done: true, doneAt: wd(0) },
+                { id: 'd2', title: 'Разослать 10 вакансий', category: 'work', date: wd(0), done: true, doneAt: wd(0) },
+                { id: 'd3', title: 'Пробежка 3 км', category: 'health', date: wd(1), done: true, doneAt: wd(1) },
+                { id: 'd4', title: 'Урок английского', category: 'study', date: wd(1), done: true, doneAt: wd(1) },
+                { id: 'd5', title: 'Скрининг 5 кандидатов', category: 'work', date: wd(Math.min(wk, 2)), done: true, doneAt: wd(Math.min(wk, 2)) },
+                { id: 'd6', title: 'Уборка', category: 'home', date: wd(Math.min(wk, 3)), done: true, doneAt: wd(Math.min(wk, 3)) },
+            ],
+        });
+        setShared({ 'demo-shared': {
+                events: [{ id: 's1', title: 'Ужин у родителей', category: 'family', date: shiftD(2), start: '19:00', end: '22:00', repeat: 'none', remind: '60', note: '' }],
+                tasks: [{ id: 's2', title: 'Купить продукты на неделю', category: 'home', date: shiftD(1), done: false, subtasks: [], comments: [] }],
+            } });
+        setMembers([{ key: 'm1', email: 'muzh@пример.рф' }]);
+        setMode('ready');
+    };
+    useEffect(() => {
+        if (!window.firebase) {
+            startDemo();
+            return;
+        }
+        if (!firebase.apps.length)
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+        let unsubs = [];
+        const offAll = () => { unsubs.forEach(f => f()); unsubs = []; };
+        const listen = (ref, cb) => { const h = ref.on('value', s => cb(s.val()), () => { }); unsubs.push(() => ref.off('value', h)); };
+        const authOff = firebase.auth().onAuthStateChanged((u) => {
+            offAll();
+            setUser(u);
+            setDisplayName(u?.displayName || '');
+            setPersonal({ events: [], tasks: [], categories: [] });
+            setShared({});
+            setInvites([]);
+            setMembers([]);
+            if (!u) {
+                setMode('signedout');
+                return;
+            }
+            if (!u.emailVerified) {
+                setMode('verify');
+                return;
+            }
+            const db = firebase.database();
+            const me = u.uid, myKey = emailKey(u.email);
+            setUid(me);
+            // Хранение в той же базе, что и «Траты» (правила уже действуют):
+            //  личное — invites/{моя почта}/{мой uid}/cal  (читаю только я)
+            //  общее  — spaces/{sid}/data/cal  (видят участники общего пространства)
+            const personalBase = 'invites/' + myKey + '/' + me + '/cal';
+            personalRef.current = personalBase;
+            listen(db.ref(personalBase), v => setPersonal({ events: toList(v?.events), tasks: toList(v?.tasks), categories: toList(v?.categories) }));
+            const watchShared = (sid) => listen(db.ref('spaces/' + sid + '/data/cal'), v => setShared(prev => ({ ...prev, [sid]: { events: toList(v?.events), tasks: toList(v?.tasks) } })));
+            watchShared(me);
+            listen(db.ref('spaces/' + me + '/members'), v => setMembers(Object.entries(v || {}).map(([k, m]) => ({ key: k, email: m.email || k.replace(/,/g, '.') }))));
+            const seen = new Set([me]);
+            listen(db.ref('invites/' + myKey), v => {
+                const list = Object.entries(v || {}).filter(([sid]) => sid !== me).map(([sid, x]) => ({ sid, name: x.name || '', ownerEmail: x.ownerEmail || '' }));
+                setInvites(list);
+                list.forEach(i => { if (!seen.has(i.sid)) {
+                    seen.add(i.sid);
+                    watchShared(i.sid);
+                } });
+            });
+            setMode('ready');
+        });
+        return () => { offAll(); authOff(); };
+    }, []);
+    const wrap = async (fn) => {
+        try {
+            setError('');
+            await fn();
+        }
+        catch (e) {
+            setError(/permission/i.test(e?.code || e?.message || '') ? 'Нет доступа к этому календарю' : (e?.message || 'Не удалось сохранить'));
+        }
+    };
+    // calKey: 'personal' или sid общего календаря
+    const pathFor = (calKey, kind) => calKey === 'personal' ? `${personalRef.current}/${kind}` : `spaces/${calKey}/data/cal/${kind}`;
+    // Список календарей для выбора и подписей
+    const calendars = [
+        { key: 'personal', label: 'Личное', tone: 'personal' },
+        { key: uid, label: 'Общее', tone: 'shared', own: true },
+        ...invites.map(i => ({ key: i.sid, label: i.name ? `Общее · ${i.name}` : 'Общее · ' + i.ownerEmail, tone: 'shared' })),
+    ].filter(c => c.key);
+    const all = (kind) => [
+        ...personal[kind].map(x => ({ ...x, cal: 'personal' })),
+        ...Object.entries(shared).flatMap(([sid, d]) => d[kind].map(x => ({ ...x, cal: sid }))),
+    ];
+    const api = {
+        mode, user, uid, displayName, month, setMonth, error, invites, members, calendars,
+        events: all('events'), tasks: all('tasks'),
+        categories: (personal.categories || []).length ? personal.categories : DEFAULT_CATS,
+        categoriesStored: (personal.categories || []).length > 0,
+        sharedTarget: invites[0] ? invites[0].sid : uid,
+        save: (kind, calKey, item, prevCal) => wrap(async () => {
+            if (demoRef.current) {
+                const id = item.id || newId();
+                const { cal: _c, ...body } = item;
+                const rec = { ...body, id };
+                const upd = (bucket) => ({ ...bucket, [kind]: [...(bucket[kind] || []).filter(x => x.id !== id), rec] });
+                const del = (bucket) => ({ ...bucket, [kind]: (bucket[kind] || []).filter(x => x.id !== id) });
+                if (prevCal && prevCal !== calKey) {
+                    if (prevCal === 'personal')
+                        setPersonal(p => del(p));
+                    else
+                        setShared(p => ({ ...p, [prevCal]: del(p[prevCal]) }));
+                }
+                if (calKey === 'personal')
+                    setPersonal(p => upd(p));
+                else
+                    setShared(p => ({ ...p, [calKey]: upd(p[calKey] || { events: [], tasks: [] }) }));
+                return;
+            }
+            const db = firebase.database();
+            const id = item.id || newId();
+            const { id: _, cal: __, ...body } = item;
+            if (prevCal && prevCal !== calKey)
+                await db.ref(pathFor(prevCal, kind) + '/' + id).remove();
+            await db.ref(pathFor(calKey, kind) + '/' + id).set(clean(body));
+        }),
+        remove: (kind, calKey, id) => wrap(async () => {
+            if (demoRef.current) {
+                const del = (b) => ({ ...b, [kind]: b[kind].filter(x => x.id !== id) });
+                if (calKey === 'personal')
+                    setPersonal(p => del(p));
+                else
+                    setShared(p => ({ ...p, [calKey]: del(p[calKey]) }));
+                return;
+            }
+            await firebase.database().ref(pathFor(calKey, kind) + '/' + id).remove();
+        }),
+        setName: (n) => wrap(async () => {
+            const v = n.trim();
+            if (!v)
+                return;
+            if (demoRef.current) {
+                setDisplayName(v);
+                return;
+            }
+            await firebase.auth().currentUser.updateProfile({ displayName: v });
+            setDisplayName(v);
+            await firebase.database().ref('spaces/' + uid + '/meta').update({ name: v });
+        }),
+        addMember: (email) => wrap(async () => {
+            const e = email.trim().toLowerCase();
+            if (demoRef.current) {
+                setMembers(m => [...m, { key: e, email: e }]);
+                return;
+            }
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+                throw { message: 'Проверьте адрес почты' };
+            if (e === (user?.email || '').toLowerCase())
+                throw { message: 'Это ваша почта' };
+            const db = firebase.database();
+            await db.ref('spaces/' + uid + '/members/' + emailKey(e)).set({ email: e, addedAt: todayYmd() });
+            await db.ref('invites/' + emailKey(e) + '/' + uid).set({ name: displayName || '', ownerEmail: (user?.email || '').toLowerCase() });
+        }),
+        removeMember: (key) => wrap(async () => {
+            if (demoRef.current) {
+                setMembers(m => m.filter(x => x.key !== key));
+                return;
+            }
+            const db = firebase.database();
+            await db.ref('spaces/' + uid + '/members/' + key).remove();
+            await db.ref('invites/' + key + '/' + uid).remove();
+        }),
+        signOut: () => { if (!demoRef.current)
+            firebase.auth().signOut(); },
+    };
+    if (mode === 'nofirebase')
+        return React.createElement("div", { id: "boot" }, "\u041D\u0435\u0442 \u0441\u0432\u044F\u0437\u0438 \u0441 \u0441\u0435\u0440\u0432\u0435\u0440\u043E\u043C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C\u0442\u0435 \u0438\u043D\u0442\u0435\u0440\u043D\u0435\u0442.");
+    if (mode === 'signedout')
+        return React.createElement(Login, null);
+    if (mode === 'verify' && user)
+        return React.createElement(VerifyEmail, { user: user });
+    if (user && !displayName)
+        return React.createElement(AskName, { onSave: async (n) => { await user.updateProfile({ displayName: n }); setDisplayName(n); try {
+                await firebase.database().ref('spaces/' + user.uid + '/meta').update({ name: n });
+            }
+            catch (e) { } } });
+    if (mode !== 'ready')
+        return React.createElement("div", { id: "boot" });
+    return React.createElement(StoreContext.Provider, { value: api }, children);
+}
+// ---- components/Icon.jsx
+// Контурные иконки (Lucide). Ключ хранится в категории; старые эмодзи показываются как есть.
+const ICON_SET = [
+    ['ShoppingCart', 'Продукты'], ['ShoppingBag', 'Покупки'], ['Utensils', 'Еда'], ['Coffee', 'Кофе'],
+    ['Pizza', 'Фастфуд'], ['Apple', 'Фрукты'], ['Wine', 'Вино'], ['Beer', 'Бар'],
+    ['Car', 'Авто'], ['Fuel', 'Бензин'], ['Bus', 'Автобус'], ['TrainFront', 'Метро'],
+    ['Bike', 'Велосипед'], ['Plane', 'Перелёт'], ['Hotel', 'Отель'], ['Umbrella', 'Отпуск'],
+    ['House', 'Дом'], ['Sofa', 'Интерьер'], ['Zap', 'Свет'], ['Droplet', 'Вода'],
+    ['Wifi', 'Интернет'], ['Smartphone', 'Связь'], ['Wrench', 'Ремонт'], ['Bath', 'Быт'],
+    ['Shirt', 'Одежда'], ['Footprints', 'Обувь'], ['Gem', 'Украшения'], ['Scissors', 'Стрижка'],
+    ['Sparkles', 'Красота'], ['Flower2', 'Цветы'], ['Heart', 'Любовь'], ['HeartPulse', 'Здоровье'],
+    ['Pill', 'Аптека'], ['Stethoscope', 'Врач'], ['Dumbbell', 'Спорт'], ['Baby', 'Дети'],
+    ['PawPrint', 'Питомцы'], ['Gift', 'Подарки'], ['PartyPopper', 'Праздники'], ['Ticket', 'Билеты'],
+    ['Film', 'Кино'], ['Popcorn', 'Досуг'], ['Music', 'Музыка'], ['Gamepad2', 'Игры'],
+    ['Tv', 'Подписки'], ['Book', 'Книги'], ['GraduationCap', 'Учёба'], ['Palette', 'Хобби'],
+    ['Camera', 'Фото'], ['Laptop', 'Техника'], ['Briefcase', 'Работа'], ['CreditCard', 'Карта'],
+    ['Receipt', 'Счета'], ['Landmark', 'Налоги'], ['Wallet', 'Наличные'], ['Leaf', 'Разное'],
+    // ещё еда
+    ['Goose', 'Гусь'], ['Croissant', 'Выпечка'], ['Pasta', 'Паста'], ['Cake', 'Торт'],
+    ['CakeSlice', 'Десерт'], ['Donut', 'Пончик'], ['Cookie', 'Печенье'], ['IceCreamCone', 'Мороженое'],
+    ['Candy', 'Сладкое'], ['Lollipop', 'Конфеты'], ['Sandwich', 'Сэндвич'], ['Soup', 'Суп'],
+    ['Salad', 'Салат'], ['Fish', 'Рыба'], ['Beef', 'Мясо'], ['Drumstick', 'Курица'],
+    ['Egg', 'Яйца'], ['Milk', 'Молочка'], ['Wheat', 'Хлеб'], ['Carrot', 'Овощи'],
+    ['Cherry', 'Ягоды'], ['Grape', 'Виноград'], ['Citrus', 'Цитрусы'], ['CupSoda', 'Напитки'],
+    ['Martini', 'Коктейли'], ['CookingPot', 'Готовка'], ['ShoppingBasket', 'Рынок'], ['Store', 'Магазин'],
+    // жизнь и дом
+    ['CarTaxiFront', 'Такси'], ['Ship', 'Круиз'], ['Tent', 'Поход'], ['Mountain', 'Горы'],
+    ['TreePine', 'Природа'], ['Sun', 'Лето'], ['Snowflake', 'Зима'], ['Bed', 'Спальня'],
+    ['Lamp', 'Свет в доме'], ['WashingMachine', 'Стирка'], ['Key', 'Аренда'], ['Sprout', 'Растения'],
+    ['Dog', 'Собака'], ['Cat', 'Кошка'], ['Bird', 'Птица'], ['Rabbit', 'Кролик'],
+    ['Glasses', 'Очки'], ['Watch', 'Часы'], ['Brush', 'Уход'], ['Backpack', 'Сумки'],
+    ['Headphones', 'Аудио'], ['ToyBrick', 'Игрушки'], ['Puzzle', 'Развлечения'], ['Drama', 'Театр'],
+    ['Syringe', 'Анализы'], ['HandHeart', 'Благотворит.'], ['PiggyBank', 'Копилка'], ['Coins', 'Мелочь'],
+    ['Banknote', 'Зарплата'], ['Flame', 'Отопление'], ['Ribbon', 'Важное'], ['Moon', 'Ночь'],
+];
+// Свои контурные рисунки в стиле Lucide (их нет в библиотеке)
+const CUSTOM_ICONS = {
+    Goose: [
+        ['path', { d: 'M7 12.5V5a2 2 0 0 1 4 0v8.2c3 0 5.6.8 7.4 2.6L21 14.5c-.2 3.7-2.6 6-6.5 6h-4c-3.2 0-5.4-1.4-5.9-3.6-.3-1.6.6-3.3 2.4-4.4' }],
+        ['path', { d: 'M7 4.6 3.6 5.6 7 6.6' }],
+        ['path', { d: 'M11.5 16.2c1.9 0 3.6.6 4.9 1.8' }],
+        ['circle', { cx: '9.1', cy: '4.8', r: '.3', fill: 'currentColor' }],
+    ],
+    Pasta: [
+        ['path', { d: 'M2 15h20' }],
+        ['path', { d: 'M3.5 15c1.2 3 4.4 5 8.5 5s7.3-2 8.5-5' }],
+        ['path', { d: 'M5 15c.5-3.5 3.2-6 7-6s6.5 2.5 7 6' }],
+        ['path', { d: 'M7.5 15c.3-2 2-3.5 4.5-3.5s4.2 1.5 4.5 3.5' }],
+        ['path', { d: 'M10 15c.2-.8.9-1.3 2-1.3s1.8.5 2 1.3' }],
+        ['path', { d: 'M12 9V2.5' }],
+        ['path', { d: 'M10.5 2.5v2a1.5 1.5 0 0 0 3 0v-2' }],
+    ],
+};
+function iconNode(name) {
+    if (CUSTOM_ICONS[name])
+        return CUSTOM_ICONS[name];
+    const icons = (window.lucide && window.lucide.icons) || {};
+    const ALIASES = { CircleCheck: 'CheckCircle', CalendarDays: 'Calendar', ListChecks: 'CheckSquare', CalendarPlus: 'Calendar', House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
+    const node = icons[name] || icons[ALIASES[name]];
+    if (!node)
+        return null;
+    // Разные версии Lucide: [tag, attrs][] либо ['svg', attrs, children]
+    return node[0] === 'svg' ? node[2] : node;
+}
+function Icon({ name, size = 22, strokeWidth = 1.6, className = '', style }) {
+    const children = name ? iconNode(name) : null;
+    if (!children) {
+        // эмодзи из старых категорий или если иконки не загрузились
+        return React.createElement("span", { className: className, style: { fontSize: size * 0.9, lineHeight: 1, ...style } }, name && !/^[A-Z]/.test(name) ? name : '•');
+    }
+    return (React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: strokeWidth, strokeLinecap: "round", strokeLinejoin: "round", className: className, style: style, "aria-hidden": "true" }, children.map(([tag, attrs], i) => React.createElement(tag, { ...attrs, key: i }))));
+}
+function CategoryBadge({ category, size = 22, box = 44 }) {
+    const color = category?.color || '#ec4899';
+    return (React.createElement("div", { className: "flex items-center justify-center rounded-full shrink-0", style: { width: box, height: box, color, backgroundColor: color + '14', border: `1px solid ${color}40` } },
+        React.createElement(Icon, { name: category?.icon, size: size })));
+}
+// ---- components/Decor.jsx
+// Декоративные элементы в духе референса: полоса-анонс, логотип, печать, маркиза, сердечки.
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+function Heart({ size = 9, className = '' }) {
+    return (React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", className: className, "aria-hidden": "true" },
+        React.createElement("path", { fill: "currentColor", d: "M12 21s-7.5-4.6-10-9.3C.3 8.3 2.2 4 6.2 4c2.4 0 3.9 1.4 5.8 3.6C13.9 5.4 15.4 4 17.8 4c4 0 5.9 4.3 4.2 7.7C19.5 16.4 12 21 12 21z" })));
+}
+function Stamp({ text = 'MONEY · EST. 2026 · MONEY · EST. 2026 · ', size = 84, className = '', heart = false }) {
+    const id = React.useId ? React.useId().replace(/:/g, '') : 'st';
+    return (React.createElement("div", { className: `stamp ${className}`, style: { width: size, height: size }, "aria-hidden": "true" },
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-ring" },
+            React.createElement("path", { id: 'c' + id, d: "M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0", fill: "none" }),
+            React.createElement("text", null,
+                React.createElement("textPath", { href: '#c' + id, startOffset: "0" }, text))),
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-edge" },
+            React.createElement("circle", { cx: "50", cy: "50", r: "47" })),
+        heart
+            ? React.createElement(Heart, { size: size * 0.14, className: "stamp-heart" })
+            : React.createElement("span", { className: "stamp-mark", style: { fontSize: size * 0.3 } }, "\u20BD")));
+}
+// Вместо надписи — тонкое контурное сердечко
+function LoveLogo() {
+    return (React.createElement("svg", { className: "logo-heart", width: "28", height: "26", viewBox: "0 0 24 22", "aria-hidden": "true" },
+        React.createElement("path", { d: "M12 20.2s-7.6-4.7-9.9-9.2C.4 7.6 2.4 3 6.4 3c2.4 0 3.9 1.4 5.6 3.5C13.7 4.4 15.2 3 17.6 3c4 0 6 4.6 4.3 8-2.3 4.5-9.9 9.2-9.9 9.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinejoin: "round", strokeLinecap: "round" })));
+}
+function Logo({ small = false }) {
+    return (React.createElement("div", { className: `wordmark ${small ? 'wordmark-sm' : ''}` },
+        React.createElement("span", { className: "wordmark-rule" }),
+        React.createElement("span", { className: "wordmark-text" }, "MONEY"),
+        React.createElement("span", { className: "wordmark-rule" })));
+}
+// Полоса сверху показывает выбранный месяц (на экранах входа — текущий)
+function TopStrip() {
+    const store = useContext(StoreContext);
+    const d = new Date();
+    const y = store && store.month ? store.month.y : d.getFullYear();
+    const m = store && store.month ? store.month.m : d.getMonth();
+    return React.createElement("div", { className: "topstrip" },
+        window.APP_STRIP || 'Учёт трат',
+        " \u00B7 ",
+        MONTHS_NOM[m],
+        " ",
+        y);
+}
+function PageHeader({ title, subtitle }) {
+    return (React.createElement("header", { className: "pagehead" },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "pagehead-title" },
+            React.createElement("span", { className: "title-mark" }, "\u2726"),
+            React.createElement("h1", { className: "display" }, title),
+            subtitle && React.createElement("p", { className: "eyebrow mt-2" }, subtitle))));
+}
+function Stripes({ children, className = '' }) {
+    return React.createElement("div", { className: `stripes ${className}` }, children);
+}
+// ---- components/Ui.jsx
+// Общие элементы: нижний лист, поля, даты и деньги.
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const ymdToDate = (ymd) => new Date(ymd + 'T12:00');
+const daysUntil = (ymd) => Math.round((ymdToDate(ymd) - ymdToDate(todayYmd())) / 86400000);
+const fmtDay = (ymd) => ymdToDate(ymd).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+const money = (n) => (Number(n) || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ₽';
+const addPeriod = (ymd, repeat) => {
+    const d = ymdToDate(ymd);
+    const day = d.getDate();
+    if (repeat === 'weekly')
+        d.setDate(d.getDate() + 7);
+    if (repeat === 'monthly') {
+        d.setDate(1);
+        d.setMonth(d.getMonth() + 1);
+        d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    }
+    if (repeat === 'yearly')
+        d.setFullYear(d.getFullYear() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const whenLabel = (ymd) => {
+    const n = daysUntil(ymd);
+    if (n < 0)
+        return { text: `просрочено на ${-n} дн.`, tone: 'late' };
+    if (n === 0)
+        return { text: 'сегодня', tone: 'soon' };
+    if (n === 1)
+        return { text: 'завтра', tone: 'soon' };
+    if (n <= 7)
+        return { text: `через ${n} дн.`, tone: 'soon' };
+    return { text: fmtDay(ymd), tone: 'calm' };
+};
+function Sheet({ title, onClose, children }) {
+    return (React.createElement("div", { className: "sheet-backdrop", onClick: onClose },
+        React.createElement("div", { className: "sheet", onClick: (e) => e.stopPropagation() },
+            React.createElement("div", { className: "sheet-grip" }),
+            React.createElement("h2", { className: "display text-3xl text-gray-800 mb-5" }, title),
+            children)));
+}
+function Field({ label, children }) {
+    return (React.createElement("label", { className: "block" },
+        React.createElement("span", { className: "eyebrow block mb-2" }, label),
+        children));
+}
+function Segmented({ value, onChange, options }) {
+    return (React.createElement("div", { className: "segmented", role: "tablist" }, options.map(([v, l]) => (React.createElement("button", { key: v, type: "button", role: "tab", "aria-selected": value === v, className: value === v ? 'seg-on' : '', onClick: () => onChange(v) }, l)))));
+}
+function Chip({ tone = 'calm', children }) {
+    return React.createElement("span", { className: `chip chip-${tone}` }, children);
+}
+function SectionLabel({ children, right }) {
+    return (React.createElement("div", { className: "dayhead" },
+        React.createElement("span", { className: "eyebrow" }, children),
+        right && React.createElement("span", { className: "dayhead-sum" }, right)));
+}
+// Повторы, сортировка и экспорт в календарь телефона (.ics)
+const REPEAT_OPTS = [['none', 'Нет'], ['daily', 'День'], ['weekly', 'Неделя'], ['monthly', 'Месяц'], ['yearly', 'Год']];
+const REPEAT_LABEL = { daily: 'каждый день', weekly: 'каждую неделю', monthly: 'каждый месяц', yearly: 'каждый год' };
+const REMIND_OPTS = [['none', 'Без напоминания'], ['0', 'В момент начала'], ['15', 'За 15 минут'], ['60', 'За 1 час'], ['1440', 'За 1 день']];
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+// Происходит ли событие в этот день (с учётом повтора)
+function occursOn(ev, day) {
+    if (!ev.date || day < ev.date)
+        return false;
+    if (ev.until && day > ev.until)
+        return false;
+    const a = ymdToDate(ev.date), b = ymdToDate(day);
+    switch (ev.repeat) {
+        case 'daily': return true;
+        case 'weekly': return a.getDay() === b.getDay();
+        case 'monthly': return a.getDate() === b.getDate();
+        case 'yearly': return a.getDate() === b.getDate() && a.getMonth() === b.getMonth();
+        default: return ev.date === day;
+    }
+}
+const byTime = (a, b) => (a.allDay ? '' : (a.start || '')).localeCompare(b.allDay ? '' : (b.start || '')) || (a.title || '').localeCompare(b.title || '');
+const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+const icsDate = (d) => d.replace(/-/g, '');
+const icsDT = (d, t) => icsDate(d) + 'T' + (t || '09:00').replace(':', '') + '00';
+const plusDay = (d) => { const x = ymdToDate(d); x.setDate(x.getDate() + 1); return ymd(x); };
+function buildIcs(ev) {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kalendar//RU', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+        'UID:' + (ev.id || newId()) + '@kalendar', 'DTSTAMP:' + stamp, 'SUMMARY:' + icsEsc(ev.title)];
+    if (ev.allDay) {
+        lines.push('DTSTART;VALUE=DATE:' + icsDate(ev.date), 'DTEND;VALUE=DATE:' + icsDate(plusDay(ev.date)));
+    }
+    else {
+        lines.push('DTSTART:' + icsDT(ev.date, ev.start), 'DTEND:' + icsDT(ev.date, ev.end || ev.start));
+    }
+    const freq = { daily: 'DAILY', weekly: 'WEEKLY', monthly: 'MONTHLY', yearly: 'YEARLY' }[ev.repeat];
+    if (freq)
+        lines.push('RRULE:FREQ=' + freq);
+    if (ev.place)
+        lines.push('LOCATION:' + icsEsc(ev.place));
+    if (ev.note)
+        lines.push('DESCRIPTION:' + icsEsc(ev.note));
+    if (ev.remind && ev.remind !== 'none') {
+        const min = Number(ev.remind) + (ev.allDay ? -540 : 0); // для события на весь день — в 9:00 нужного дня
+        lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(ev.title), 'TRIGGER:' + (min > 0 ? '-PT' + min + 'M' : min < 0 ? 'PT' + (-min) + 'M' : 'PT0M'), 'END:VALARM');
+    }
+    lines.push('END:VEVENT', 'END:VCALENDAR');
+    return lines.join('\r\n');
+}
+function exportIcs(ev) {
+    const ics = buildIcs(ev);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // На iPhone/iPad открытие .ics сразу предлагает «Добавить в Календарь»
+    if (isIOS) {
+        location.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+        return;
+    }
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (ev.title || 'event').replace(/[^\wа-яё -]/gi, '').slice(0, 40) + '.ics';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+const ymdOf = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+const NavContext = createContext({ path: '/', go: () => { } });
+const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const DAY_NAMES = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота'];
+const HOUR_H = 56; // высота часа в дневном виде
+function PageTitle({ title, children }) {
+    return (React.createElement("header", { className: "ptitle" },
+        React.createElement("h1", null, title),
+        children));
+}
+// Приветствие по времени суток
+function greeting(h) {
+    if (h >= 5 && h < 12)
+        return { text: ['Доброе', 'утро'], sky: 'morning' };
+    if (h >= 12 && h < 17)
+        return { text: ['Добрый', 'день'], sky: 'day' };
+    if (h >= 17 && h < 23)
+        return { text: ['Добрый', 'вечер'], sky: 'evening' };
+    return { text: ['Доброй', 'ночи'], sky: 'night' };
+}
+function Splash() {
+    const store = useStore();
+    const d = new Date();
+    const g = greeting(d.getHours());
+    const name = store && store.displayName;
+    return (React.createElement("div", { className: `hello hello-${g.sky}` },
+        React.createElement("div", { className: "hello-sky", "aria-hidden": "true" },
+            React.createElement("span", null)),
+        React.createElement("p", { className: "hello-date" },
+            DAY_NAMES[d.getDay()],
+            React.createElement("br", null),
+            d.getDate(),
+            " ",
+            MONTHS_GEN[d.getMonth()]),
+        React.createElement("h1", { className: "hello-text" },
+            React.createElement("span", null, g.text[0]),
+            React.createElement("span", null,
+                g.text[1],
+                name ? ',' : ''),
+            name && React.createElement("span", { style: name.length > 9 ? { fontSize: Math.max(0.6, 9 / name.length) + 'em' } : undefined }, name))));
+}
+// ---------- категории ----------
+const GUESS = {
+    work: ['созвон', 'кандидат', 'собесед', 'ваканс', 'отчёт', 'отчет', 'встреча', 'работ', 'резюме', 'hr', 'рекрут', 'скрининг'],
+    study: ['урок', 'учеб', 'учёб', 'курс', 'англ', 'вожден', 'экзамен', 'лекци', 'js', 'код', 'глава'],
+    health: ['трениров', 'спорт', 'бег', 'пробежк', 'врач', 'зал', 'йог', 'анализ', 'стоматолог'],
+    home: ['уборк', 'оплат', 'интернет', 'квартир', 'продукт', 'стирк', 'ремонт', 'счёт', 'счет'],
+    family: ['мам', 'пап', 'родител', 'муж', 'семь', 'день рождения', 'бабуш', 'сестр', 'брат'],
+    me: ['маникюр', 'салон', 'кино', 'отдых', 'книг', 'массаж', 'бров', 'ресниц'],
+};
+const guessCategory = (title, cats) => {
+    const t = (title || '').toLowerCase();
+    for (const [id, words] of Object.entries(GUESS))
+        if (cats.some(c => c.id === id) && words.some(w => t.includes(w)))
+            return id;
+    return null;
+};
+const useCat = () => { const { categories } = useStore(); return (id) => categories.find(c => c.id === id) || { id: '', name: 'Без категории', color: '#A8A8A4' }; };
+function CatPicker({ value, onChange }) {
+    const { categories } = useStore();
+    return (React.createElement("div", { className: "flex flex-wrap gap-2" }, categories.map(c => (React.createElement("button", { key: c.id, type: "button", onClick: () => onChange(c.id), className: `chipbtn ${value === c.id ? 'chipbtn-on' : ''}` },
+        React.createElement("span", { className: "dot", style: { background: c.color } }),
+        c.name)))));
+}
+function SharedToggle({ value, onChange }) {
+    const { members, invites } = useStore();
+    if (!members.length && !invites.length)
+        return null;
+    return (React.createElement("label", { className: "flex items-center justify-between gap-3 text-sm text-gray-700" },
+        React.createElement("span", null, "\u041E\u0431\u0449\u0435\u0435 \u2014 \u0432\u0438\u0434\u044F\u0442 \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438"),
+        React.createElement("button", { type: "button", role: "switch", "aria-checked": value, onClick: () => onChange(!value), className: `switch ${value ? 'switch-on' : ''}` },
+            React.createElement("span", null))));
+}
+function ConfirmDelete({ label, onDelete }) {
+    const [ask, setAsk] = useState(false);
+    return ask ? (React.createElement("div", { className: "flex gap-3 items-center justify-center text-sm" },
+        React.createElement("span", { className: "text-gray-600" }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C?"),
+        React.createElement("button", { type: "button", className: "link-danger", onClick: onDelete }, "\u0414\u0430, \u0443\u0434\u0430\u043B\u0438\u0442\u044C"),
+        React.createElement("button", { type: "button", className: "text-gray-500 underline", onClick: () => setAsk(false) }, "\u041D\u0435\u0442"))) : React.createElement("button", { type: "button", className: "link-danger w-full text-center", onClick: () => setAsk(true) }, label);
+}
+// ---------- событие ----------
+function EventSheet({ ev, date, start, onClose }) {
+    const { save, remove, categories, sharedTarget } = useStore();
+    const endOf = (s) => { const [h, m] = (s || '10:00').split(':').map(Number); return String(Math.min(23, h + 1)).padStart(2, '0') + ':' + String(m).padStart(2, '0'); };
+    const [f, setF] = useState(() => ({
+        title: '', date: date || todayYmd(), allDay: false, start: start || '10:00', end: endOf(start), category: '',
+        repeat: 'none', remind: '15', place: '', note: '', cal: 'personal', ...(ev || {}),
+    }));
+    const [catTouched, setCatTouched] = useState(!!(ev && ev.category));
+    const set = (k) => (e) => setF(p => ({ ...p, [k]: e && e.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e }));
+    const onTitle = (e) => { const v = e.target.value; setF(p => ({ ...p, title: v, category: catTouched ? p.category : (guessCategory(v, categories) || p.category) })); };
+    const submit = async (e) => {
+        e.preventDefault();
+        if (!f.title.trim())
+            return;
+        await save('events', f.cal, { ...f, title: f.title.trim(), id: f.id || newId() }, ev && ev.cal);
+        onClose();
+    };
+    return (React.createElement(Sheet, { title: ev ? 'Событие' : 'Новое событие', onClose: onClose },
+        React.createElement("form", { onSubmit: submit, className: "space-y-5" },
+            React.createElement(Field, { label: "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435" },
+                React.createElement("input", { id: "ev-title", className: "input", value: f.title, onChange: onTitle, placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0441\u043E\u0437\u0432\u043E\u043D \u0441 \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u043C" })),
+            React.createElement(Field, { label: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F" },
+                React.createElement(CatPicker, { value: f.category, onChange: (v) => { setCatTouched(true); set('category')(v); } })),
+            React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                React.createElement(Field, { label: "\u0414\u0430\u0442\u0430" },
+                    React.createElement("input", { id: "ev-date", className: "input", type: "date", value: f.date, onChange: set('date') })),
+                React.createElement("label", { className: "flex items-end gap-2 pb-3 text-sm text-gray-700" },
+                    React.createElement("input", { id: "ev-allday", type: "checkbox", checked: f.allDay, onChange: set('allDay'), className: "w-4 h-4 accent-[#2F2F2E]" }),
+                    " \u0412\u0435\u0441\u044C \u0434\u0435\u043D\u044C")),
+            !f.allDay && (React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                React.createElement(Field, { label: "\u041D\u0430\u0447\u0430\u043B\u043E" },
+                    React.createElement("input", { id: "ev-start", className: "input", type: "time", value: f.start, onChange: set('start') })),
+                React.createElement(Field, { label: "\u041A\u043E\u043D\u0435\u0446" },
+                    React.createElement("input", { id: "ev-end", className: "input", type: "time", value: f.end, onChange: set('end') })))),
+            React.createElement(Field, { label: "\u041F\u043E\u0432\u0442\u043E\u0440" },
+                React.createElement(Segmented, { value: f.repeat, onChange: set('repeat'), options: REPEAT_OPTS })),
+            React.createElement(Field, { label: "\u041D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435" },
+                React.createElement("select", { id: "ev-remind", className: "input", value: f.remind, onChange: set('remind') }, REMIND_OPTS.map(([v, l]) => React.createElement("option", { key: v, value: v }, l)))),
+            React.createElement(Field, { label: "\u041C\u0435\u0441\u0442\u043E" },
+                React.createElement("input", { id: "ev-place", className: "input", value: f.place, onChange: set('place'), placeholder: "\u041D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E" })),
+            React.createElement(Field, { label: "\u0417\u0430\u043C\u0435\u0442\u043A\u0430" },
+                React.createElement("textarea", { id: "ev-note", rows: 2, className: "input resize-none", value: f.note, onChange: set('note'), placeholder: "\u041D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E" })),
+            React.createElement(SharedToggle, { value: f.cal !== 'personal', onChange: (on) => set('cal')(on ? sharedTarget : 'personal') }),
+            React.createElement("div", { className: "flex gap-3 pt-1" },
+                React.createElement("button", { type: "button", onClick: onClose, className: "btn-ghost flex-1 py-3" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { type: "submit", className: "btn-primary flex-1 py-3" }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")),
+            ev && React.createElement("button", { type: "button", onClick: () => exportIcs(f), className: "btn-ghost w-full py-3 flex items-center justify-center gap-2" },
+                React.createElement(Icon, { name: "CalendarPlus", size: 16 }),
+                " \u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0432 \u041A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u044C iPhone"),
+            ev && React.createElement(ConfirmDelete, { label: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u043E\u0431\u044B\u0442\u0438\u0435", onDelete: async () => { await remove('events', ev.cal, ev.id); onClose(); } }))));
+}
+// ---------- задача ----------
+const taskProgress = (t) => {
+    if (t.done)
+        return 100;
+    const st = t.subtasks || [];
+    if (!st.length)
+        return 0;
+    return Math.round(st.filter(x => x.done).length / st.length * 100);
+};
+function TaskSheet({ task, date, onClose }) {
+    const { save, remove, categories, sharedTarget, displayName } = useStore();
+    const [f, setF] = useState(() => ({ title: '', date: date === undefined ? todayYmd() : date, category: '', note: '', done: false, subtasks: [], comments: [], cal: 'personal', ...(task || {}) }));
+    const [catTouched, setCatTouched] = useState(!!(task && task.category));
+    const [newSub, setNewSub] = useState('');
+    const [newComment, setNewComment] = useState('');
+    const set = (k) => (v) => setF(p => ({ ...p, [k]: v && v.target ? v.target.value : v }));
+    const onTitle = (e) => { const v = e.target.value; setF(p => ({ ...p, title: v, category: catTouched ? p.category : (guessCategory(v, categories) || p.category) })); };
+    const persist = async (next) => { if (task)
+        await save('tasks', next.cal, next, task.cal); };
+    const update = (patch) => { const next = { ...f, ...patch }; setF(next); persist(next); };
+    const addSub = () => { if (!newSub.trim())
+        return; update({ subtasks: [...(f.subtasks || []), { id: newId(), t: newSub.trim(), done: false }] }); setNewSub(''); };
+    const addComment = () => {
+        if (!newComment.trim())
+            return;
+        const now = new Date();
+        update({ comments: [...(f.comments || []), { id: newId(), text: newComment.trim(), at: ymd(now) + 'T' + now.toTimeString().slice(0, 5), by: displayName || '' }] });
+        setNewComment('');
+    };
+    const submit = async (e) => {
+        e.preventDefault();
+        if (!f.title.trim())
+            return;
+        await save('tasks', f.cal, { ...f, title: f.title.trim(), id: f.id || newId() }, task && task.cal);
+        onClose();
+    };
+    const pct = taskProgress(f);
+    return (React.createElement(Sheet, { title: task ? 'Задача' : 'Новая задача', onClose: onClose },
+        React.createElement("form", { onSubmit: submit, className: "space-y-5" },
+            React.createElement(Field, { label: "\u0427\u0442\u043E \u0441\u0434\u0435\u043B\u0430\u0442\u044C" },
+                React.createElement("input", { id: "task-title", className: "input", value: f.title, onChange: onTitle, placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u043F\u043E\u0434\u0433\u043E\u0442\u043E\u0432\u0438\u0442\u044C \u043E\u0442\u0447\u0451\u0442" })),
+            React.createElement(Field, { label: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F" },
+                React.createElement(CatPicker, { value: f.category, onChange: (v) => { setCatTouched(true); set('category')(v); } })),
+            React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                f.date !== '' ? React.createElement(Field, { label: "\u0421\u0440\u043E\u043A" },
+                    React.createElement("input", { id: "task-date", className: "input", type: "date", value: f.date, onChange: set('date') })) : React.createElement("div", null),
+                React.createElement("label", { className: "flex items-end gap-2 pb-3 text-sm text-gray-700" },
+                    React.createElement("input", { id: "task-nodate", type: "checkbox", checked: f.date === '', onChange: (e) => set('date')(e.target.checked ? '' : todayYmd()), className: "w-4 h-4 accent-[#2F2F2E]" }),
+                    " \u0411\u0435\u0437 \u0441\u0440\u043E\u043A\u0430")),
+            React.createElement("div", null,
+                React.createElement(SectionLabel, { right: (f.subtasks || []).length ? pct + '%' : null }, "\u0428\u0430\u0433\u0438"),
+                (f.subtasks || []).length > 0 && React.createElement("div", { className: "progress mb-3" },
+                    React.createElement("span", { style: { width: pct + '%' } })),
+                React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" },
+                    (f.subtasks || []).map(st => (React.createElement("div", { key: st.id, className: "px-3 py-2 flex items-center gap-3" },
+                        React.createElement("button", { type: "button", "aria-label": "\u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0448\u0430\u0433", className: `checkbox checkbox-sm ${st.done ? 'checkbox-on' : ''}`, onClick: () => update({ subtasks: f.subtasks.map(x => x.id === st.id ? { ...x, done: !x.done } : x) }) }),
+                        React.createElement("span", { className: `flex-1 text-sm ${st.done ? 'line-through text-gray-400' : 'text-gray-800'}` }, st.t),
+                        React.createElement("button", { type: "button", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0448\u0430\u0433", className: "text-gray-300 px-1", onClick: () => update({ subtasks: f.subtasks.filter(x => x.id !== st.id) }) }, "\u2715")))),
+                    React.createElement("div", { className: "px-3 py-2 flex gap-2" },
+                        React.createElement("input", { id: "task-newsub", className: "flex-1 min-w-0 bg-transparent outline-none text-sm py-1", value: newSub, onChange: (e) => setNewSub(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addSub();
+                            } }, placeholder: "+ \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0448\u0430\u0433" }),
+                        newSub && React.createElement("button", { type: "button", className: "mini-btn", onClick: addSub }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")))),
+            React.createElement("div", null,
+                React.createElement(SectionLabel, { right: (f.comments || []).length ? String(f.comments.length) : null }, "\u041A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0438"),
+                React.createElement("div", { className: "space-y-2" },
+                    (f.comments || []).map(c => (React.createElement("div", { key: c.id, className: "comment" },
+                        React.createElement("p", { className: "text-sm text-gray-800 whitespace-pre-wrap" }, c.text),
+                        React.createElement("p", { className: "text-[11px] text-gray-400 mt-1" },
+                            c.by ? c.by + ' · ' : '',
+                            fmtDay(c.at.slice(0, 10)),
+                            ", ",
+                            c.at.slice(11, 16))))),
+                    React.createElement("div", { className: "flex gap-2" },
+                        React.createElement("input", { id: "task-newcomment", className: "input flex-1 min-w-0", value: newComment, onChange: (e) => setNewComment(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addComment();
+                            } }, placeholder: "\u041D\u0430\u043F\u0438\u0441\u0430\u0442\u044C \u043A\u043E\u043C\u043C\u0435\u043D\u0442\u0430\u0440\u0438\u0439" }),
+                        React.createElement("button", { type: "button", className: "btn-primary px-4", onClick: addComment, disabled: !newComment.trim() }, "\u2191")))),
+            React.createElement(SharedToggle, { value: f.cal !== 'personal', onChange: (on) => set('cal')(on ? sharedTarget : 'personal') }),
+            React.createElement("div", { className: "flex gap-3 pt-1" },
+                React.createElement("button", { type: "button", onClick: onClose, className: "btn-ghost flex-1 py-3" }, task ? 'Закрыть' : 'Отмена'),
+                React.createElement("button", { type: "submit", className: "btn-primary flex-1 py-3" }, task ? 'Сохранить' : 'Создать')),
+            task && !f.done && React.createElement("button", { type: "button", className: "btn-ghost w-full py-3", onClick: async () => { await save('tasks', f.cal, { ...f, done: true, doneAt: todayYmd() }, task.cal); onClose(); } }, "\u041E\u0442\u043C\u0435\u0442\u0438\u0442\u044C \u0432\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043D\u043E\u0439"),
+            task && React.createElement(ConfirmDelete, { label: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443", onDelete: async () => { await remove('tasks', task.cal, task.id); onClose(); } }))));
+}
+function TaskCard({ t, onOpen }) {
+    const { save } = useStore();
+    const cat = useCat()(t.category);
+    const pct = taskProgress(t);
+    const st = t.subtasks || [];
+    const w = t.date ? whenLabel(t.date) : null;
+    return (React.createElement("div", { className: `taskcard ${t.done ? 'is-done' : ''}` },
+        React.createElement("div", { className: "flex items-start gap-3" },
+            React.createElement("button", { type: "button", "aria-label": t.done ? 'Вернуть в работу' : 'Отметить выполненной', className: `checkbox mt-0.5 ${t.done ? 'checkbox-on' : ''}`, onClick: () => save('tasks', t.cal, { ...t, done: !t.done, doneAt: !t.done ? todayYmd() : '' }) }),
+            React.createElement("button", { type: "button", onClick: onOpen, className: "flex-1 min-w-0 text-left" },
+                React.createElement("p", { className: `font-medium ${t.done ? 'line-through text-gray-400' : 'text-gray-800'}` }, t.title),
+                React.createElement("p", { className: "flex items-center gap-2 mt-1 flex-wrap text-xs text-gray-500" },
+                    React.createElement("span", { className: "flex items-center gap-1" },
+                        React.createElement("span", { className: "dot", style: { background: cat.color } }),
+                        cat.name),
+                    w && !t.done && React.createElement(Chip, { tone: w.tone }, w.text),
+                    (t.comments || []).length > 0 && React.createElement("span", { className: "flex items-center gap-1" },
+                        React.createElement(Icon, { name: "MessageCircle", size: 12 }),
+                        t.comments.length),
+                    t.cal !== 'personal' && React.createElement("span", { className: "caltag caltag-shared" }, "\u043E\u0431\u0449\u0435\u0435")))),
+        st.length > 0 && !t.done && (React.createElement("div", { className: "flex items-center gap-3 mt-3 pl-9" },
+            React.createElement("div", { className: "progress flex-1" },
+                React.createElement("span", { style: { width: pct + '%' } })),
+            React.createElement("span", { className: "text-[11px] text-gray-500 tabular-nums" },
+                st.filter(x => x.done).length,
+                "/",
+                st.length)))));
+}
+// ---------- вкладка 1: год + день по часам ----------
+function MonthBlock({ y, m, onPick, refCb }) {
+    const { events, tasks } = useStore();
+    const catOf = useCat();
+    const days = new Date(y, m + 1, 0).getDate();
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    const today = todayYmd();
+    const cells = [...Array(lead).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)];
+    return (React.createElement("section", { ref: refCb, className: "month-block" },
+        React.createElement("h2", { className: "month-title" },
+            MONTHS_NOM[m],
+            m === 0 || y !== new Date().getFullYear() ? React.createElement("span", { className: "month-year" }, y) : null),
+        React.createElement("div", { className: "cal-grid" }, cells.map((d, i) => {
+            if (!d)
+                return React.createElement("span", { key: 'e' + i });
+            const k = ymdOf(y, m, d);
+            const evs = events.filter(e => occursOn(e, k));
+            const tk = tasks.filter(t => t.date === k && !t.done);
+            const colors = [...new Set([...evs, ...tk].map(x => catOf(x.category).color))].slice(0, 3);
+            const we = ((lead + d - 1) % 7) > 4;
+            return (React.createElement("button", { key: k, type: "button", onClick: () => onPick(k), className: `ycell ${k === today ? 'ycell-today' : ''} ${we ? 'ycell-we' : ''}`, "aria-label": `${d} ${MONTHS_GEN[m]}${evs.length ? ', событий: ' + evs.length : ''}${tk.length ? ', задач: ' + tk.length : ''}` },
+                React.createElement("span", { className: "ycell-num" }, d),
+                React.createElement("span", { className: "cal-dots" }, colors.map(c => React.createElement("span", { key: c, className: "dot", style: { background: c } })))));
+        }))));
+}
+function YearPage() {
+    const [day, setDay] = useState(null);
+    const now = new Date();
+    const months = [];
+    for (let k = -6; k <= 12; k++) {
+        const d = new Date(now.getFullYear(), now.getMonth() + k, 1);
+        months.push({ y: d.getFullYear(), m: d.getMonth(), k });
+    }
+    const curRef = useRef(null);
+    const scrollToNow = (smooth) => { if (curRef.current)
+        curRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' }); };
+    useEffect(() => { scrollToNow(false); }, []);
+    if (day)
+        return React.createElement(DayView, { day: day, setDay: setDay, onBack: () => setDay(null) });
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement("div", { className: "year-head" },
+            React.createElement("div", { className: "max-w-md mx-auto px-4" },
+                React.createElement("div", { className: "year-bar" },
+                    React.createElement("span", { className: "year-big" }, "\u041A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u044C"),
+                    React.createElement("button", { type: "button", className: "mini-btn", onClick: () => scrollToNow(true) }, "\u0421\u0435\u0433\u043E\u0434\u043D\u044F")),
+                React.createElement("div", { className: "cal-grid year-wd" }, WEEKDAYS.map((w, i) => React.createElement("span", { key: w, className: `cal-wd ${i > 4 ? 'cal-we' : ''}` }, w))))),
+        months.map(({ y, m, k }) => React.createElement(MonthBlock, { key: y + '-' + m, y: y, m: m, onPick: setDay, refCb: k === 0 ? curRef : undefined }))));
+}
+// раскладка пересекающихся событий по колонкам
+function layoutDay(evs) {
+    const toMin = (s) => { const [h, m] = (s || '0:0').split(':').map(Number); return h * 60 + m; };
+    const items = evs.map(e => ({ e, s: toMin(e.start), en: Math.max(toMin(e.end || e.start), toMin(e.start) + 30) })).sort((a, b) => a.s - b.s);
+    let group = [], groups = [], end = -1;
+    items.forEach(it => { if (it.s >= end && group.length) {
+        groups.push(group);
+        group = [];
+    } group.push(it); end = Math.max(end, it.en); });
+    if (group.length)
+        groups.push(group);
+    groups.forEach(g => { const cols = []; g.forEach(it => { let c = cols.findIndex(last => last <= it.s); if (c < 0) {
+        c = cols.length;
+        cols.push(0);
+    } cols[c] = it.en; it.col = c; }); g.forEach(it => { it.cols = cols.length; }); });
+    return items;
+}
+function DayView({ day, setDay, onBack }) {
+    const { events, tasks } = useStore();
+    const catOf = useCat();
+    const [sheet, setSheet] = useState(null);
+    const d = ymdToDate(day);
+    const mon = new Date(d);
+    mon.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    const week = Array.from({ length: 7 }, (_, i) => { const x = new Date(mon); x.setDate(mon.getDate() + i); return ymd(x); });
+    const shiftWeek = (n) => { const x = ymdToDate(day); x.setDate(x.getDate() + 7 * n); setDay(ymd(x)); };
+    const dayEv = events.filter(e => occursOn(e, day));
+    const allDay = dayEv.filter(e => e.allDay);
+    const timed = layoutDay(dayEv.filter(e => !e.allDay));
+    const dayTasks = tasks.filter(t => t.date === day);
+    const today = todayYmd();
+    const scrollRef = useRef(null);
+    useEffect(() => { if (scrollRef.current)
+        scrollRef.current.scrollTop = 7.5 * HOUR_H; }, [day]);
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    return (React.createElement("div", { className: "dayview" },
+        React.createElement("div", { className: "dayview-head" },
+            React.createElement("div", { className: "max-w-md mx-auto" },
+                React.createElement("div", { className: "flex items-center justify-between px-4 pt-3" },
+                    React.createElement("button", { type: "button", onClick: onBack, className: "backlink" },
+                        React.createElement(Icon, { name: "ChevronLeft", size: 18 }),
+                        " ",
+                        MONTHS_NOM[d.getMonth()]),
+                    React.createElement("button", { type: "button", className: "mini-btn", onClick: () => setDay(today) }, "\u0421\u0435\u0433\u043E\u0434\u043D\u044F")),
+                React.createElement("h1", { className: "dayview-title" },
+                    d.getDate(),
+                    " ",
+                    MONTHS_GEN[d.getMonth()],
+                    React.createElement("span", null, DAY_NAMES[d.getDay()])),
+                React.createElement("div", { className: "flex items-center gap-1 px-2 pb-3" },
+                    React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0430\u044F \u043D\u0435\u0434\u0435\u043B\u044F", className: "p-2", onClick: () => shiftWeek(-1) },
+                        React.createElement(Icon, { name: "ChevronLeft", size: 18 })),
+                    React.createElement("div", { className: "grid grid-cols-7 gap-1 flex-1" }, week.map((w, i) => {
+                        const wd = ymdToDate(w);
+                        return (React.createElement("button", { key: w, type: "button", onClick: () => setDay(w), className: `wstrip ${w === day ? 'wstrip-on' : ''} ${w === today ? 'wstrip-today' : ''}` },
+                            React.createElement("span", { className: "wstrip-wd" }, WEEKDAYS[i]),
+                            React.createElement("span", { className: "wstrip-num" }, wd.getDate())));
+                    })),
+                    React.createElement("button", { type: "button", "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u043D\u0435\u0434\u0435\u043B\u044F", className: "p-2", onClick: () => shiftWeek(1) },
+                        React.createElement(Icon, { name: "ChevronRight", size: 18 }))),
+                (allDay.length > 0 || dayTasks.length > 0) && (React.createElement("div", { className: "px-4 pb-3 flex flex-wrap gap-2" },
+                    allDay.map(e => React.createElement("button", { key: e.cal + e.id, type: "button", onClick: () => setSheet({ kind: 'event', item: e }), className: "allday", style: { background: catOf(e.category).color } }, e.title)),
+                    dayTasks.map(t => React.createElement("button", { key: t.cal + t.id, type: "button", onClick: () => setSheet({ kind: 'task', item: t }), className: `daytask ${t.done ? 'daytask-done' : ''}` },
+                        React.createElement("span", { className: "dot", style: { background: catOf(t.category).color } }),
+                        t.title)))))),
+        React.createElement("div", { className: "timeline-wrap", ref: scrollRef },
+            React.createElement("div", { className: "timeline max-w-md mx-auto", style: { height: 24 * HOUR_H } },
+                Array.from({ length: 24 }, (_, h) => (React.createElement("button", { key: h, type: "button", className: "hour", style: { top: h * HOUR_H, height: HOUR_H }, onClick: () => setSheet({ kind: 'new', start: String(h).padStart(2, '0') + ':00' }), "aria-label": `Добавить событие на ${h}:00` },
+                    React.createElement("span", { className: "hour-label" },
+                        String(h).padStart(2, '0'),
+                        ":00")))),
+                day === today && React.createElement("div", { className: "nowline", style: { top: nowMin / 60 * HOUR_H } }),
+                timed.map(({ e, s, en, col, cols }) => {
+                    const c = catOf(e.category).color;
+                    return (React.createElement("button", { key: e.cal + e.id, type: "button", className: "evblock", onClick: () => setSheet({ kind: 'event', item: e }), style: { top: s / 60 * HOUR_H + 1, height: Math.max(26, (en - s) / 60 * HOUR_H - 2), left: `calc(52px + (100% - 56px) * ${col / cols})`, width: `calc((100% - 56px) / ${cols} - 3px)`, background: c + '22', borderLeftColor: c } },
+                        React.createElement("span", { className: "evblock-title" }, e.title),
+                        React.createElement("span", { className: "evblock-time" },
+                            e.start,
+                            "\u2013",
+                            e.end,
+                            e.place ? ' · ' + e.place : '')));
+                }))),
+        React.createElement("button", { onClick: () => setSheet({ kind: 'choose' }), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C", className: "fab" },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        sheet && sheet.kind === 'choose' && React.createElement(AddChooser, { date: day, onClose: () => setSheet(null) }),
+        sheet && sheet.kind === 'new' && React.createElement(EventSheet, { date: day, start: sheet.start, onClose: () => setSheet(null) }),
+        sheet && sheet.kind === 'event' && React.createElement(EventSheet, { ev: sheet.item, onClose: () => setSheet(null) }),
+        sheet && sheet.kind === 'task' && React.createElement(TaskSheet, { task: sheet.item, onClose: () => setSheet(null) })));
+}
+function AddChooser({ date, onClose }) {
+    const [kind, setKind] = useState(null);
+    if (kind === 'event')
+        return React.createElement(EventSheet, { date: date, onClose: onClose });
+    if (kind === 'task')
+        return React.createElement(TaskSheet, { date: date, onClose: onClose });
+    return (React.createElement(Sheet, { title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C", onClose: onClose },
+        React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+            React.createElement("button", { type: "button", className: "paper p-5 flex flex-col items-center gap-2", onClick: () => setKind('event') },
+                React.createElement(Icon, { name: "CalendarClock", size: 26 }),
+                React.createElement("span", { className: "display text-2xl" }, "\u0421\u043E\u0431\u044B\u0442\u0438\u0435"),
+                React.createElement("span", { className: "text-xs text-gray-500" }, "\u0432\u0441\u0442\u0440\u0435\u0447\u0430, \u0437\u0430\u043F\u0438\u0441\u044C, \u043F\u0440\u0430\u0437\u0434\u043D\u0438\u043A")),
+            React.createElement("button", { type: "button", className: "paper p-5 flex flex-col items-center gap-2", onClick: () => setKind('task') },
+                React.createElement(Icon, { name: "CircleCheck", size: 26 }),
+                React.createElement("span", { className: "display text-2xl" }, "\u0417\u0430\u0434\u0430\u0447\u0430"),
+                React.createElement("span", { className: "text-xs text-gray-500" }, "\u0434\u0435\u043B\u043E \u0441 \u0448\u0430\u0433\u0430\u043C\u0438")))));
+}
+// ---------- вкладка 2: задачи ----------
+function TasksPage() {
+    const { tasks } = useStore();
+    const [filter, setFilter] = useState('all');
+    const [sheet, setSheet] = useState(null);
+    const today = todayYmd();
+    const open = tasks.filter(t => !t.done);
+    const match = (t) => filter === 'all' ? true : filter === 'today' ? t.date && t.date <= today : filter === 'week' ? t.date && daysUntil(t.date) <= 7 : !t.date;
+    const list = open.filter(match).sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
+    const inWork = list.filter(t => taskProgress(t) > 0);
+    const notStarted = list.filter(t => taskProgress(t) === 0);
+    const done = tasks.filter(t => t.done).sort((a, b) => (b.doneAt || '').localeCompare(a.doneAt || '')).slice(0, 10);
+    const late = open.filter(t => t.date && t.date < today).length;
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: "\u0417\u0430\u0434\u0430\u0447\u0438" }),
+        React.createElement("div", { className: "taskstats mb-5" },
+            React.createElement("div", null,
+                React.createElement("b", null, open.length),
+                React.createElement("span", null, "\u0432 \u0440\u0430\u0431\u043E\u0442\u0435")),
+            React.createElement("div", null,
+                React.createElement("b", null, tasks.filter(t => t.done && t.doneAt === today).length),
+                React.createElement("span", null, "\u0441\u0434\u0435\u043B\u0430\u043D\u043E \u0441\u0435\u0433\u043E\u0434\u043D\u044F")),
+            React.createElement("div", { className: late ? 'is-late' : '' },
+                React.createElement("b", null, late),
+                React.createElement("span", null, "\u043F\u0440\u043E\u0441\u0440\u043E\u0447\u0435\u043D\u043E"))),
+        React.createElement("div", { className: "mb-5" },
+            React.createElement(Segmented, { value: filter, onChange: setFilter, options: [['all', 'Все'], ['today', 'Сегодня'], ['week', 'Неделя'], ['nodate', 'Без срока']] })),
+        list.length === 0 && (React.createElement("div", { className: "empty" },
+            React.createElement("p", { className: "empty-title" }, "\u0417\u0434\u0435\u0441\u044C \u043F\u0443\u0441\u0442\u043E"),
+            React.createElement("p", null, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 +, \u0447\u0442\u043E\u0431\u044B \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443."))),
+        inWork.length > 0 && React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, { right: String(inWork.length) }, "\u0412 \u043F\u0440\u043E\u0446\u0435\u0441\u0441\u0435"),
+            React.createElement("div", { className: "space-y-2" }, inWork.map(t => React.createElement(TaskCard, { key: t.cal + t.id, t: t, onOpen: () => setSheet(t) })))),
+        notStarted.length > 0 && React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, { right: String(notStarted.length) }, "\u041D\u0435 \u043D\u0430\u0447\u0430\u0442\u043E"),
+            React.createElement("div", { className: "space-y-2" }, notStarted.map(t => React.createElement(TaskCard, { key: t.cal + t.id, t: t, onOpen: () => setSheet(t) })))),
+        done.length > 0 && filter === 'all' && React.createElement("section", { className: "mb-6 opacity-70" },
+            React.createElement(SectionLabel, null, "\u0412\u044B\u043F\u043E\u043B\u043D\u0435\u043D\u043E"),
+            React.createElement("div", { className: "space-y-2" }, done.map(t => React.createElement(TaskCard, { key: t.cal + t.id, t: t, onOpen: () => setSheet(t) })))),
+        React.createElement("button", { onClick: () => setSheet('new'), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u0434\u0430\u0447\u0443", className: "fab" },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        sheet && React.createElement(TaskSheet, { task: sheet === 'new' ? null : sheet, date: sheet === 'new' && filter === 'nodate' ? '' : undefined, onClose: () => setSheet(null) })));
+}
+// ---------- вкладка 3: прогресс недели ----------
+function weekDays(offset) {
+    const d = ymdToDate(todayYmd());
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + offset * 7);
+    return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(d.getDate() + i); return ymd(x); });
+}
+const evMinutes = (e) => { if (e.allDay)
+    return 0; const t = (s) => { const [h, m] = (s || '0:0').split(':').map(Number); return h * 60 + m; }; return Math.max(0, t(e.end) - t(e.start)); };
+const hrs = (min) => { const h = min / 60; return (Math.round(h * 10) / 10).toString().replace('.', ',') + ' ч'; };
+function ProgressPage() {
+    const { tasks, events, categories } = useStore();
+    const catOf = useCat();
+    const [off, setOff] = useState(0);
+    const days = weekDays(off), prev = weekDays(off - 1);
+    const inWeek = (d, w) => d && d >= w[0] && d <= w[6];
+    const doneTasks = tasks.filter(t => t.done && inWeek(t.doneAt, days));
+    const prevDone = tasks.filter(t => t.done && inWeek(t.doneAt, prev)).length;
+    const occ = days.flatMap(d => events.filter(e => occursOn(e, d)).map(e => ({ e, d })));
+    const minutes = occ.reduce((s, o) => s + evMinutes(o.e), 0);
+    const leftInWeek = tasks.filter(t => !t.done && inWeek(t.date, days)).length;
+    const rows = [...categories, { id: '', name: 'Без категории', color: '#A8A8A4' }].map(c => {
+        const tk = doneTasks.filter(t => (t.category || '') === c.id).length;
+        const min = occ.filter(o => (o.e.category || '') === c.id).reduce((s, o) => s + evMinutes(o.e), 0);
+        return { c, tk, min, score: tk + min / 60 };
+    }).filter(r => r.score > 0).sort((a, b) => b.score - a.score);
+    const total = rows.reduce((s, r) => s + r.score, 0) || 1;
+    const perDay = days.map(d => doneTasks.filter(t => t.doneAt === d).length);
+    const maxDay = Math.max(1, ...perDay);
+    const best = perDay.indexOf(Math.max(...perDay));
+    const diff = doneTasks.length - prevDone;
+    const d0 = ymdToDate(days[0]), d6 = ymdToDate(days[6]);
+    const range = `${d0.getDate()} ${d0.getMonth() !== d6.getMonth() ? MONTHS_GEN[d0.getMonth()] : ''} — ${d6.getDate()} ${MONTHS_GEN[d6.getMonth()]}`;
+    // кольцо по категориям
+    let acc = 0;
+    const R = 54, C = 2 * Math.PI * R;
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: off === 0 ? 'Эта неделя' : off === -1 ? 'Прошлая неделя' : 'Неделя' },
+            React.createElement("div", { className: "weeknav" },
+                React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u043E\u0448\u043B\u0430\u044F \u043D\u0435\u0434\u0435\u043B\u044F", onClick: () => setOff(off - 1) },
+                    React.createElement(Icon, { name: "ChevronLeft", size: 20 })),
+                React.createElement("button", { type: "button", "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0430\u044F \u043D\u0435\u0434\u0435\u043B\u044F", onClick: () => setOff(Math.min(0, off + 1)), disabled: off === 0 },
+                    React.createElement(Icon, { name: "ChevronRight", size: 20 })))),
+        React.createElement("p", { className: "subtitle" }, range),
+        React.createElement("div", { className: "weekhero" },
+            React.createElement("div", { className: "weekhero-main" },
+                React.createElement("b", null, doneTasks.length),
+                React.createElement("span", null, doneTasks.length % 10 === 1 && doneTasks.length % 100 !== 11 ? 'дело сделано' : (doneTasks.length % 10 >= 2 && doneTasks.length % 10 <= 4 && (doneTasks.length % 100 < 10 || doneTasks.length % 100 >= 20)) ? 'дела сделано' : 'дел сделано')),
+            React.createElement("p", { className: "weekhero-diff" }, diff === 0 ? 'Столько же, сколько на прошлой неделе' : diff > 0 ? `На ${diff} больше, чем на прошлой неделе` : `На ${-diff} меньше, чем на прошлой неделе`),
+            React.createElement("div", { className: "weekhero-stats" },
+                React.createElement("div", null,
+                    React.createElement("b", null, occ.length),
+                    React.createElement("span", null, "\u0441\u043E\u0431\u044B\u0442\u0438\u0439")),
+                React.createElement("div", null,
+                    React.createElement("b", null, hrs(minutes)),
+                    React.createElement("span", null, "\u0432 \u043F\u043B\u0430\u043D\u0430\u0445")),
+                React.createElement("div", null,
+                    React.createElement("b", null, leftInWeek),
+                    React.createElement("span", null, "\u043E\u0441\u0442\u0430\u043B\u043E\u0441\u044C")))),
+        React.createElement(SectionLabel, null, "\u041F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C"),
+        rows.length === 0 ? (React.createElement("div", { className: "empty" },
+            React.createElement("p", null, "\u041D\u0430 \u044D\u0442\u043E\u0439 \u043D\u0435\u0434\u0435\u043B\u0435 \u043F\u043E\u043A\u0430 \u043D\u0438\u0447\u0435\u0433\u043E \u043D\u0435 \u0441\u0434\u0435\u043B\u0430\u043D\u043E."))) : (React.createElement("div", { className: "paper p-4 mb-6" },
+            React.createElement("div", { className: "flex items-center gap-5" },
+                React.createElement("svg", { width: "132", height: "132", viewBox: "0 0 132 132", className: "shrink-0", role: "img", "aria-label": "\u0414\u043E\u043B\u044F \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0439" },
+                    React.createElement("circle", { cx: "66", cy: "66", r: R, fill: "none", stroke: "var(--line)", strokeWidth: "14" }),
+                    rows.map(r => { const len = r.score / total * C; const el = React.createElement("circle", { key: r.c.id, cx: "66", cy: "66", r: R, fill: "none", stroke: r.c.color, strokeWidth: "14", strokeDasharray: `${len} ${C - len}`, strokeDashoffset: -acc, transform: "rotate(-90 66 66)" }); acc += len; return el; }),
+                    React.createElement("text", { x: "66", y: "66", textAnchor: "middle", fontFamily: "Unbounded, sans-serif", fontWeight: "600", fontSize: "26", fill: "var(--ink)" }, rows.length),
+                    React.createElement("text", { x: "66", y: "84", textAnchor: "middle", fontSize: "11", fill: "var(--muted)" }, rows.length === 1 ? 'категория' : rows.length < 5 ? 'категории' : 'категорий')),
+                React.createElement("div", { className: "flex-1 min-w-0 space-y-2" }, rows.slice(0, 4).map(r => (React.createElement("div", { key: r.c.id, className: "flex items-center gap-2 text-sm" },
+                    React.createElement("span", { className: "dot", style: { background: r.c.color } }),
+                    React.createElement("span", { className: "truncate flex-1" }, r.c.name),
+                    React.createElement("span", { className: "text-gray-500 tabular-nums" },
+                        Math.round(r.score / total * 100),
+                        "%")))))),
+            React.createElement("div", { className: "mt-4 divide-y divide-[color:var(--line)] border-t border-[color:var(--line)]" }, rows.map(r => (React.createElement("div", { key: r.c.id, className: "py-3" },
+                React.createElement("div", { className: "flex items-baseline justify-between gap-3" },
+                    React.createElement("span", { className: "text-gray-800" }, r.c.name),
+                    React.createElement("span", { className: "text-sm text-gray-500" },
+                        r.tk ? `${r.tk} ${r.tk === 1 ? 'дело' : r.tk < 5 ? 'дела' : 'дел'}` : '',
+                        r.tk && r.min ? ' · ' : '',
+                        r.min ? hrs(r.min) : '')),
+                React.createElement("div", { className: "catbar mt-2" },
+                    React.createElement("span", { style: { width: (r.score / rows[0].score * 100) + '%', background: r.c.color } })))))))),
+        React.createElement(SectionLabel, null, "\u0414\u0435\u043B\u0430 \u043F\u043E \u0434\u043D\u044F\u043C"),
+        React.createElement("div", { className: "paper p-4 mb-6" },
+            React.createElement("div", { className: "daybars" }, perDay.map((n, i) => (React.createElement("div", { key: i, className: "daybar" },
+                React.createElement("span", { className: "text-[11px] text-gray-500 tabular-nums" }, n || ''),
+                React.createElement("div", { className: "daybar-col" },
+                    React.createElement("span", { style: { height: (n / maxDay * 100) + '%', background: i === best && n ? 'var(--wine)' : 'var(--olive)' } })),
+                React.createElement("span", { className: `daybar-wd ${days[i] === todayYmd() ? 'is-today' : ''}` }, WEEKDAYS[i]))))),
+            perDay[best] > 0 && React.createElement("p", { className: "text-sm text-gray-600 mt-3 text-center" },
+                "\u0421\u0430\u043C\u044B\u0439 \u043F\u0440\u043E\u0434\u0443\u043A\u0442\u0438\u0432\u043D\u044B\u0439 \u0434\u0435\u043D\u044C \u2014 ",
+                React.createElement("b", null, DAY_NAMES[(best + 1) % 7])))));
+}
+// ---------- вкладка 4: настройки ----------
+const PALETTE = ['#4F6470', '#6B4C7A', '#5F7A3E', '#B88A22', '#8C2E3E', '#C46F80', '#867B18', '#7E6A58', '#3E6E6A'];
+function SettingsPage() {
+    const { user, displayName, setName, members, addMember, removeMember, invites, signOut, error, categories, categoriesStored, save, remove } = useStore();
+    const [editName, setEditName] = useState(null);
+    const [email, setEmail] = useState('');
+    const [confirmKey, setConfirmKey] = useState(null);
+    const [catEdit, setCatEdit] = useState(null); // {id?, name, color}
+    const seedDefaults = async () => { if (!categoriesStored)
+        for (const c of categories)
+            await save('categories', 'personal', c); };
+    const saveCat = async () => {
+        if (!catEdit.name.trim())
+            return;
+        await seedDefaults();
+        await save('categories', 'personal', { ...catEdit, name: catEdit.name.trim(), id: catEdit.id || newId() });
+        setCatEdit(null);
+    };
+    const delCat = async (id) => { await seedDefaults(); await remove('categories', 'personal', id); setCatEdit(null); };
+    return (React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: "\u041D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438" }),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C"),
+            React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" },
+                React.createElement("div", { className: "px-4 py-3 flex items-center justify-between gap-3" },
+                    React.createElement("span", { className: "text-gray-600" }, "\u0418\u043C\u044F"),
+                    editName !== null ? (React.createElement("form", { className: "flex gap-2", onSubmit: async (e) => { e.preventDefault(); await setName(editName); setEditName(null); } },
+                        React.createElement("input", { id: "profile-name", className: "input py-1 w-36", value: editName, onChange: (e) => setEditName(e.target.value), autoFocus: true }),
+                        React.createElement("button", { type: "submit", className: "mini-btn" }, "\u041E\u041A"))) : React.createElement("button", { type: "button", className: "font-medium underline underline-offset-4 decoration-[color:var(--line)]", onClick: () => setEditName(displayName) }, displayName)),
+                React.createElement("div", { className: "px-4 py-3 flex items-center justify-between gap-3" },
+                    React.createElement("span", { className: "min-w-0 truncate text-gray-800" }, user.email),
+                    React.createElement("button", { type: "button", className: "mini-btn", onClick: signOut }, "\u0412\u044B\u0439\u0442\u0438")))),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, { right: String(categories.length) }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438"),
+            React.createElement("div", { className: "paper divide-y divide-[color:var(--line)]" },
+                categories.map(c => (React.createElement("button", { key: c.id, type: "button", className: "w-full px-4 py-3 flex items-center gap-3 text-left", onClick: () => setCatEdit({ ...c }) },
+                    React.createElement("span", { className: "dot dot-lg", style: { background: c.color } }),
+                    React.createElement("span", { className: "flex-1 text-gray-800" }, c.name),
+                    React.createElement(Icon, { name: "ChevronRight", size: 16, className: "text-gray-400" })))),
+                React.createElement("button", { type: "button", className: "w-full px-4 py-3 text-left text-gray-600", onClick: () => setCatEdit({ name: '', color: PALETTE[categories.length % PALETTE.length] }) }, "+ \u041D\u043E\u0432\u0430\u044F \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F")),
+            React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F \u043F\u043E\u0434\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442\u0441\u044F \u0441\u0430\u043C\u0430 \u043F\u043E \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044E \u2014 \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \u00AB\u0441\u043E\u0437\u0432\u043E\u043D \u0441 \u043A\u0430\u043D\u0434\u0438\u0434\u0430\u0442\u043E\u043C\u00BB \u2192 \u0420\u0430\u0431\u043E\u0442\u0430. \u0415\u0451 \u0432\u0441\u0435\u0433\u0434\u0430 \u043C\u043E\u0436\u043D\u043E \u043F\u043E\u043C\u0435\u043D\u044F\u0442\u044C.")),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, { right: members.length ? String(members.length) : null }, "\u041E\u0431\u0449\u0438\u0439 \u0434\u043E\u0441\u0442\u0443\u043F"),
+            React.createElement("div", { className: "paper" },
+                React.createElement("div", { className: "divide-y divide-[color:var(--line)]" },
+                    members.length === 0 && React.createElement("p", { className: "px-4 py-3 text-sm text-gray-500" }, "\u041F\u043E\u043A\u0430 \u043E\u0431\u0449\u0438\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u044F \u0432\u0438\u0434\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B."),
+                    members.map(m => (React.createElement("div", { key: m.key, className: "px-4 py-3 flex items-center justify-between gap-3" },
+                        React.createElement("span", { className: "min-w-0 truncate text-gray-800" }, m.email),
+                        confirmKey === m.key ? (React.createElement("span", { className: "flex gap-3 shrink-0 text-sm" },
+                            React.createElement("button", { type: "button", className: "link-danger", onClick: () => { removeMember(m.key); setConfirmKey(null); } }, "\u0423\u0431\u0440\u0430\u0442\u044C"),
+                            React.createElement("button", { type: "button", className: "text-gray-500 underline", onClick: () => setConfirmKey(null) }, "\u041D\u0435\u0442"))) : React.createElement("button", { type: "button", "aria-label": 'Убрать ' + m.email, className: "text-gray-300 px-1", onClick: () => setConfirmKey(m.key) }, "\u2715"))))),
+                React.createElement("form", { className: "px-4 py-4 border-t border-[color:var(--line)] flex gap-2", onSubmit: async (e) => { e.preventDefault(); if (!email.trim())
+                        return; await addMember(email); setEmail(''); } },
+                    React.createElement("input", { id: "member-email", type: "email", className: "input flex-1 min-w-0", placeholder: "\u043F\u043E\u0447\u0442\u0430 \u043C\u0443\u0436\u0430 \u0438\u043B\u0438 \u0434\u0440\u0443\u0433\u0430", value: email, onChange: (e) => setEmail(e.target.value) }),
+                    React.createElement("button", { type: "submit", className: "btn-primary px-4" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+                error && React.createElement("p", { className: "note mx-4 mb-4" }, error),
+                React.createElement("p", { className: "px-4 pb-4 text-xs text-gray-500" }, "\u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438 \u0432\u0438\u0434\u044F\u0442 \u0441\u043E\u0431\u044B\u0442\u0438\u044F \u0438 \u0437\u0430\u0434\u0430\u0447\u0438 \u0441 \u043E\u0442\u043C\u0435\u0442\u043A\u043E\u0439 \u00AB\u041E\u0431\u0449\u0435\u0435\u00BB \u0438 \u043C\u043E\u0433\u0443\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0442\u044C \u0441\u0432\u043E\u0438. \u042D\u0442\u043E \u0442\u0435 \u0436\u0435 \u043B\u044E\u0434\u0438, \u0447\u0442\u043E \u0438 \u0432 \u043E\u0431\u0449\u0438\u0445 \u0442\u0440\u0430\u0442\u0430\u0445 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F Money: \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043D\u044B\u0439 \u0437\u0434\u0435\u0441\u044C \u043F\u043E\u043B\u0443\u0447\u0438\u0442 \u0434\u043E\u0441\u0442\u0443\u043F \u0438 \u043A \u043D\u0438\u043C. \u041B\u0438\u0447\u043D\u043E\u0435 \u0432\u0438\u0434\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B.")),
+            invites.length > 0 && React.createElement("p", { className: "text-xs text-gray-500 mt-2" },
+                "\u0412\u0430\u0441 \u043F\u0440\u0438\u0433\u043B\u0430\u0441\u0438\u043B\u0438: ",
+                invites.map(i => i.name || i.ownerEmail).join(', '))),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "\u041D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u044F"),
+            React.createElement("div", { className: "paper px-4 py-4 text-sm text-gray-600 space-y-2" },
+                React.createElement("p", null, "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u0441\u043E\u0431\u044B\u0442\u0438\u0435 \u0438 \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0432 \u041A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u044C iPhone\u00BB \u2014 \u0442\u0435\u043B\u0435\u0444\u043E\u043D \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442 \u0435\u0433\u043E \u0441 \u043D\u0430\u043F\u043E\u043C\u0438\u043D\u0430\u043D\u0438\u0435\u043C \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u043E\u043C \u0438 \u0441\u0430\u043C \u043D\u0430\u043F\u043E\u043C\u043D\u0438\u0442 \u0432 \u043D\u0443\u0436\u043D\u043E\u0435 \u0432\u0440\u0435\u043C\u044F."))),
+        catEdit && (React.createElement(Sheet, { title: catEdit.id ? 'Категория' : 'Новая категория', onClose: () => setCatEdit(null) },
+            React.createElement("div", { className: "space-y-5" },
+                React.createElement(Field, { label: "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435" },
+                    React.createElement("input", { id: "cat-name", className: "input", value: catEdit.name, onChange: (e) => setCatEdit({ ...catEdit, name: e.target.value }), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0412\u043E\u0436\u0434\u0435\u043D\u0438\u0435" })),
+                React.createElement(Field, { label: "\u0426\u0432\u0435\u0442" },
+                    React.createElement("div", { className: "flex flex-wrap gap-3" }, PALETTE.map(col => React.createElement("button", { key: col, type: "button", "aria-label": 'Цвет ' + col, onClick: () => setCatEdit({ ...catEdit, color: col }), className: `swatch ${catEdit.color === col ? 'swatch-on' : ''}`, style: { background: col } })))),
+                React.createElement("div", { className: "flex gap-3" },
+                    React.createElement("button", { type: "button", className: "btn-ghost flex-1 py-3", onClick: () => setCatEdit(null) }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "button", className: "btn-primary flex-1 py-3", onClick: saveCat }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")),
+                catEdit.id && React.createElement(ConfirmDelete, { label: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044E", onDelete: () => delCat(catEdit.id) }))))));
+}
+// ---------- навигация ----------
+function BottomNav() {
+    const { path, go } = useContext(NavContext);
+    const tabs = [['/', 'Календарь', 'CalendarDays'], ['/tasks', 'Задачи', 'ListChecks'], ['/progress', 'Прогресс', 'ChartColumn'], ['/settings', 'Настройки', 'Settings']];
+    return (React.createElement("nav", { className: "navbar" },
+        React.createElement("div", null, tabs.map(([p, l, ic]) => (React.createElement("button", { key: p, type: "button", onClick: () => go(p), className: `navbtn ${path === p ? 'navbtn-active' : ''}` },
+            React.createElement(Icon, { name: ic, size: 22 }),
+            React.createElement("span", { className: "navlabel" }, l)))))));
+}
+const useNavigate = () => useContext(NavContext).go;
+function Main() {
+    const [showSplash, setShowSplash] = useState(true);
+    const [path, setPath] = useState('/');
+    const [k, setK] = useState(0);
+    useEffect(() => { const t = setTimeout(() => setShowSplash(false), 2200); return () => clearTimeout(t); }, []);
+    if (showSplash)
+        return React.createElement(Splash, null);
+    const Page = { '/': YearPage, '/tasks': TasksPage, '/progress': ProgressPage, '/settings': SettingsPage }[path] || YearPage;
+    // повторное нажатие на «Календарь» возвращает из дня к году
+    const go = (p) => { if (p === path)
+        setK(k + 1); setPath(p); window.scrollTo(0, 0); };
+    return (React.createElement(NavContext.Provider, { value: { path, go } },
+        React.createElement("div", { className: "min-h-screen" },
+            React.createElement(Page, { key: path + k }),
+            React.createElement(BottomNav, null))));
+}
+function App() { return React.createElement(StoreProvider, null,
+    React.createElement(Main, null)); }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+
+</script>
+</body>
+</html>
