@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F8F7F4">
+<meta name="theme-color" content="#F6F1E7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -230,16 +230,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 
 /* Бизнес-учёт: поверх общей темы. Палитра — в переменных ниже (меняется в одном месте). */
 :root {
-  --cream: #F8F7F4; --paper: #EEECE6; --ink: #1F2421; --muted: #6B706A; --line: rgba(31, 36, 33, .12);
-  --olive: #26332D; --olive-ink: #26332D; --olive-soft: #DDE3DD;   /* основное действие */
-  --wine: #26332D; --wine-soft: #E4E1D8;                           /* плюс и акценты */
-  --in: #2F7A55; --in-soft: #DCEBE2;     /* поступления */
-  --out: #B5452F; --out-soft: #F2DED7;   /* расходы */
-  --warn: #B07A12; --warn-soft: #F3E7C9;
-  --display: 'Manrope', -apple-system, sans-serif;
+  /* кофе + сливки + небо (по референсам dorada / MURU) */
+  --cream: #F6F1E7; --paper: #EDE3D1; --ink: #3A2116; --muted: #8A7364; --line: rgba(58, 33, 22, .12);
+  --coffee: #4A2A1C; --butter: #F1DFAF; --sky: #BFD0E4;
+  --olive: #4A2A1C; --olive-ink: #4A2A1C; --olive-soft: #F1DFAF;   /* основное действие — кофе */
+  --wine: #4A2A1C; --wine-soft: #F1DFAF;
+  --in: #3A659A; --in-soft: #CFDCEC;     /* поступления — небо */
+  --out: #8B4A26; --out-soft: #F1DFAF;   /* расходы — кофе со сливками */
+  --warn: #9A6A12; --warn-soft: #F5E8C6;
+  --display: 'Dela Gothic One', 'Arial Black', sans-serif;
   --sans: 'Manrope', -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
-h1, h2, h3, .display { font-weight: 700; letter-spacing: -0.025em; }
+h1, h2, h3, .display { font-weight: 400; letter-spacing: -0.01em; }
+.ptitle h1 { font-size: 30px; color: var(--coffee); }
 .page { max-width: 30rem; margin: 0 auto; padding: 0 16px 120px; }
 .ptitle { padding: 20px 0 16px; }
 .ptitle h1 { font-size: 28px; }
@@ -307,18 +310,42 @@ h1, h2, h3, .display { font-weight: 700; letter-spacing: -0.025em; }
 .fab { box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .45); }
 .btn-primary:active { filter: brightness(.9); }
 .navbtn > span:first-child { position: relative; display: inline-flex; }
+
+/* главный блок: остаток на картах — как стаканчик кофе */
+.hero { background: var(--coffee); color: var(--butter); border-radius: 26px; padding: 18px 16px 16px; margin-top: 18px; position: relative; overflow: hidden; }
+.hero::after { content: ''; position: absolute; right: -40px; top: -40px; width: 150px; height: 150px; border-radius: 50%; background: var(--sky); opacity: .16; }
+.hero-label { font-size: 13px; opacity: .8; }
+.hero-total { font-family: var(--display); font-size: 36px; line-height: 1.1; margin: 4px 0 14px; font-variant-numeric: tabular-nums; }
+.hero .cardtile { background: rgba(241, 223, 175, .1); color: var(--butter); }
+.hero .cardtile-sum { color: #FFF8E6; }
+.hero .status-ok { background: var(--sky); color: var(--coffee); }
+.hero .status-bad { background: #F3C9B4; color: #6B2A12; }
+.hero .status-stale, .hero .status-none { background: var(--butter); color: var(--coffee); }
+.ledger-head b, .cardtile-sum, .calcline b, .profit b { font-weight: 800; }
+.col-out { background: var(--butter); }
+.oprow-in { background: #E3EBF4; } .oprow-out { background: #F5EBD3; }
+.segmented .seg-on { background: var(--coffee); color: var(--butter); }
+.fab { background: var(--coffee); color: var(--butter); }
+.navbtn-active { color: var(--coffee); }
+.splash { background: var(--coffee); }
+/* ошибки — отдельный кирпичный оттенок, чтобы не путать с расходами */
+:root { --err: #9C3B1E; --err-soft: #F4D3C5; }
+.status-bad, .alertbar-bad, .problem-bad { background: var(--err-soft); color: var(--err); }
+.problem-bad b { color: var(--err); }
+.navbadge { background: var(--err); }
+.status-ok, .alertbar-ok, .okbox { background: var(--in-soft); color: var(--in); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
 <script>window.APP_STRIP = "Бизнес-учёт"; window.APP_TAGLINE = "Поступления и расходы";</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@400;500;600;700;800&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.1"></script>
 <script>
   tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
     fontFamily: { sans: ['Manrope', '-apple-system', 'sans-serif'] },
-    colors: { gray: { 50: '#EEECE6', 100: '#F8F7F4', 200: '#DAD8D1', 300: '#BFC2BC', 400: '#9A9E98', 500: '#6B706A', 600: '#585D57', 700: '#3D423E', 800: '#1F2421', 900: '#141816' } }
+    colors: { gray: { 50: '#EDE3D1', 100: '#F6F1E7', 200: '#E0D3BD', 300: '#C7B5A2', 400: '#A8927F', 500: '#8A7364', 600: '#6E5848', 700: '#523A2C', 800: '#3A2116', 900: '#26150D' } }
   } } };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
@@ -1124,7 +1151,11 @@ function HomePage() {
     const days = [...new Set(mops.map(o => o.date))].sort().reverse();
     return (React.createElement("div", { className: "page" },
         React.createElement(PageTitle, { title: "\u0411\u0438\u0437\u043D\u0435\u0441", right: React.createElement(MonthNav, null) }),
-        React.createElement("section", { className: "ledger-head" },
+        React.createElement("section", { className: "hero" },
+            React.createElement("div", { className: "hero-label" }, "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u0430\u0440\u0442\u0430\u0445"),
+            React.createElement("div", { className: "hero-total" }, money(total)),
+            React.createElement("div", { className: "cardtiles" }, cards.map(c => React.createElement(CardTile, { key: c.id, card: c, onClick: () => go('/check') })))),
+        React.createElement("section", { className: "ledger-head mt-5" },
             React.createElement("div", { className: "col-in" },
                 React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F"),
                 React.createElement("b", { className: "tabular-nums" }, money(sumIn))),
@@ -1134,11 +1165,6 @@ function HomePage() {
         React.createElement("div", { className: "profit" },
             React.createElement("span", null, "\u0418\u0442\u043E\u0433 \u043C\u0435\u0441\u044F\u0446\u0430"),
             React.createElement("b", { className: `tabular-nums ${sumIn - sumOut < 0 ? 'neg' : ''}` }, signed(r2(sumIn - sumOut)))),
-        React.createElement("section", { className: "mt-6" },
-            React.createElement("div", { className: "dayhead" },
-                React.createElement("span", { className: "eyebrow" }, "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u0430\u0440\u0442\u0430\u0445"),
-                React.createElement("span", { className: "dayhead-sum tabular-nums" }, money(total))),
-            React.createElement("div", { className: "cardtiles" }, cards.map(c => React.createElement(CardTile, { key: c.id, card: c, onClick: () => go('/check') })))),
         React.createElement("button", { type: "button", className: `alertbar ${problems.length ? 'alertbar-bad' : 'alertbar-ok'}`, onClick: () => go('/check') },
             React.createElement(Icon, { name: problems.length ? 'TriangleAlert' : 'CircleCheck', size: 18 }),
             React.createElement("span", null, problems.length ? `Найдено ошибок: ${problems.length} — посмотреть` : 'Ошибок не найдено'),
