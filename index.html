@@ -1041,41 +1041,61 @@ function ExpenseList({ expenses, categories, onEdit, onDelete }) {
         })))))));
 }
 // ---- components/AddExpenseModal.jsx
-function AddExpenseModal({ categories, onAdd, onClose, defaultDate }) {
+// Последняя выбранная дата запоминается на 30 минут — удобно вносить прошлые траты подряд
+const STICKY_KEY = 'money-last-date';
+const stickyDate = () => {
+    try {
+        const v = JSON.parse(localStorage.getItem(STICKY_KEY) || 'null');
+        if (v && Date.now() - v.at < 30 * 60 * 1000)
+            return v.date;
+    }
+    catch (e) { }
+    return null;
+};
+const rememberDate = (d) => { try {
+    localStorage.setItem(STICKY_KEY, JSON.stringify({ date: d, at: Date.now() }));
+}
+catch (e) { } };
+const shiftYmd = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return ymdOf(d.getFullYear(), d.getMonth(), d.getDate()); };
+function AddExpenseModal({ categories, onAdd, onAddMore, onClose, defaultDate }) {
     var _a;
     const [amount, setAmount] = useState('');
     const [categoryId, setCategoryId] = useState(((_a = categories[0]) === null || _a === void 0 ? void 0 : _a.id) || '');
-    const [date, setDate] = useState(defaultDate || todayYmd());
+    const [date, setDateRaw] = useState(defaultDate || stickyDate() || todayYmd());
+    const setDate = (d) => { setDateRaw(d); rememberDate(d); };
+    const [added, setAdded] = useState([]);
+    const quick = [[shiftYmd(0), 'Сегодня'], [shiftYmd(1), 'Вчера'], [shiftYmd(2), 'Позавчера']];
     const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
     const [note, setNote] = useState('');
     // если категории ещё загружаются (открыли с виджета) — выбрать первую, когда придут
     useEffect(() => { if (!categoryId && categories[0])
         setCategoryId(categories[0].id); }, [categories, categoryId]);
-    const handleSubmit = (e) => {
-        var _a;
-        e.preventDefault();
+    const submit = (more) => {
         if (!amount || !categoryId)
             return;
         const dateTime = new Date(`${date}T${time}`).toISOString();
-        onAdd({
-            amount: parseFloat(amount),
-            categoryId,
-            date: dateTime,
-            description: note.trim()
-        });
-        setAmount('');
-        setNote('');
-        setCategoryId(((_a = categories[0]) === null || _a === void 0 ? void 0 : _a.id) || '');
-        setDate(new Date().toISOString().split('T')[0]);
-        setTime(new Date().toTimeString().slice(0, 5));
+        const item = { amount: parseFloat(amount), categoryId, date: dateTime, description: note.trim() };
+        rememberDate(date);
+        if (more && onAddMore) {
+            onAddMore(item);
+            const cat = categories.find(c => c.id === categoryId);
+            setAdded(a => [...a, money(item.amount) + (cat ? ' · ' + cat.name : '')]);
+            setAmount('');
+            setNote('');
+            setTimeout(() => { const el = document.getElementById('add-amount'); if (el)
+                el.focus(); }, 0);
+            return;
+        }
+        onAdd(item);
     };
+    const handleSubmit = (e) => { e.preventDefault(); submit(false); };
     return (React.createElement("div", { className: "fixed inset-0 bg-black/50 flex items-end z-50" },
         React.createElement("div", { className: "w-full bg-white rounded-t-2xl p-6 animate-slideUp" },
             React.createElement("h2", { className: "text-2xl font-serif text-gray-800 mb-6" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0440\u0430\u0442\u0443"),
             React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0421\u0443\u043C\u043C\u0430 (\u20BD)"),
-                    React.createElement("input", { type: "number", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0.00", className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
+                    React.createElement("input", { id: "add-amount", type: "number", inputMode: "decimal", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0.00", className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
                     React.createElement("div", { className: "flex flex-wrap gap-2 max-h-40 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm transition-colors ${categoryId === cat.id ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` },
@@ -1086,6 +1106,9 @@ function AddExpenseModal({ categories, onAdd, onClose, defaultDate }) {
                         "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435 ",
                         React.createElement("span", { className: "text-gray-400" }, "\u2014 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E")),
                     React.createElement("textarea", { id: "add-note", rows: 2, maxLength: 300, value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u043F\u043E\u0434\u0430\u0440\u043E\u043A \u043C\u0430\u043C\u0435, \u0443\u0436\u0438\u043D \u0441 \u0434\u0440\u0443\u0437\u044C\u044F\u043C\u0438", className: "input resize-none text-base" })),
+                React.createElement("div", { className: "flex gap-2 flex-wrap" },
+                    quick.map(([d, label]) => (React.createElement("button", { key: d, type: "button", onClick: () => setDate(d), className: `px-3 py-1.5 rounded-full border text-sm ${date === d ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` }, label))),
+                    date !== quick[0][0] && React.createElement("span", { className: "self-center text-sm", style: { color: 'var(--pink-deep)' } }, fmtDay(date))),
                 React.createElement("div", { className: "grid grid-cols-2 gap-4" },
                     React.createElement("div", null,
                         React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0414\u0430\u0442\u0430"),
@@ -1093,8 +1116,14 @@ function AddExpenseModal({ categories, onAdd, onClose, defaultDate }) {
                     React.createElement("div", null,
                         React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0412\u0440\u0435\u043C\u044F"),
                         React.createElement("input", { type: "time", value: time, onChange: (e) => setTime(e.target.value), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none" }))),
-                React.createElement("div", { className: "flex gap-3 pt-4" },
-                    React.createElement("button", { type: "button", onClick: onClose, className: "flex-1 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200" }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                added.length > 0 && (React.createElement("p", { className: "text-sm text-gray-500" },
+                    "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043E \u043D\u0430 ",
+                    fmtDay(date),
+                    ": ",
+                    added.join(', '))),
+                onAddMore && (React.createElement("button", { type: "button", onClick: () => submit(true), className: "w-full px-4 py-3 rounded-lg border-2 border-pink-200 text-gray-800 font-medium" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438 \u0432\u043D\u0435\u0441\u0442\u0438 \u0435\u0449\u0451 \u043D\u0430 \u044D\u0442\u0443 \u0434\u0430\u0442\u0443")),
+                React.createElement("div", { className: "flex gap-3 pt-1" },
+                    React.createElement("button", { type: "button", onClick: onClose, className: "flex-1 px-4 py-3 bg-gray-100 text-gray-800 rounded-lg font-medium hover:bg-gray-200" }, added.length ? 'Готово' : 'Отмена'),
                     React.createElement("button", { type: "submit", className: "flex-1 px-4 py-3 btn-primary" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")))),
         React.createElement("style", null, `
         @keyframes slideUp {
@@ -1248,7 +1277,7 @@ function Dashboard() {
             React.createElement("p", { className: "text-sm" }, categories.length === 0 ? 'Сначала создайте категорию во вкладке «Категории»' : 'Нажмите + чтобы добавить первую трату'))) : (React.createElement(ExpenseList, { expenses: shown, categories: categories, onEdit: handleEditExpense, onDelete: handleDeleteExpense })),
         React.createElement("button", { onClick: () => setShowAddModal(true), "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0442\u0440\u0430\u0442\u0443", className: "fab" },
             React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
-        showAddModal && (React.createElement(AddExpenseModal, { categories: categories, defaultDate: selDay, onAdd: handleAddExpense, onClose: () => setShowAddModal(false) })),
+        showAddModal && (React.createElement(AddExpenseModal, { categories: categories, defaultDate: selDay, onAdd: handleAddExpense, onAddMore: (item) => addExpense(item), onClose: () => setShowAddModal(false) })),
         showEditModal && editingExpense && (React.createElement(EditExpenseModal, { expense: editingExpense, categories: categories, onSave: handleSaveEditExpense, onClose: () => {
                 setShowEditModal(false);
                 setEditingExpense(null);
