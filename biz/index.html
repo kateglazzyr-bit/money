@@ -1,0 +1,1553 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F8F7F4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Бизнес">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Бизнес-учёт</title>
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); }
+html, body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; } * { box-sizing: border-box; }
+button { background: none; border: 0; font: inherit; cursor: pointer; color: inherit; }
+/* Календарь Кати.
+   Тёплая «грушевая» палитра: сливочный фон, олива — действие, вино — сегодня и срочное.
+   Unbounded только для заголовков и цифр, Onest для всего остального. Без украшений. */
+:root {
+  --cream: #FEFCF7;      /* фон: тёплый молочный, не холодный белый */
+  --paper: #F4EEDF;      /* карточки чуть темнее фона */
+  --olive: #867B18;      /* действие */
+  --olive-ink: #4B4510;  /* текст на оливковом мягком */
+  --olive-soft: #DED6AE;
+  --wine: #8C2E3E;       /* сегодня, срочное, плюс */
+  --wine-soft: #EBD3CF;
+  --ink: #2E2A14;        /* основной текст — тёплый, не чёрный */
+  --muted: #7A7358;
+  --line: rgba(75, 69, 16, .14);
+  --late: #8C2E3E; --soon: #4F6470; --azure: #E1E3D8; --lav: #E7E0CC; --pink: #DED6AE; --pink-deep: #8C2E3E; --gray: #7A7358;
+  --display: 'Unbounded', 'Arial Black', sans-serif;
+  --sans: 'Onest', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color-scheme: light;
+}
+html, body { background: var(--cream); color: var(--ink); }
+body { font-family: var(--sans); font-size: 16px; line-height: 1.45; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+h1, h2, h3, .display { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; margin: 0; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--olive); outline-offset: 2px; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 13px; color: var(--muted); font-weight: 500; }
+.title-mark { display: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+.dot-lg { width: 14px; height: 14px; }
+
+/* заголовки вкладок */
+.ptitle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 0 18px; }
+.ptitle h1 { font-size: 30px; }
+.subtitle { color: var(--muted); margin: -12px 0 18px; }
+.dayhead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 2px 10px; }
+.dayhead .eyebrow { font-family: var(--display); font-size: 15px; font-weight: 500; color: var(--ink); }
+.dayhead-sum { font-size: 14px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* поверхности */
+.paper { background: var(--paper); border-radius: 20px; }
+.paper.divide-y > * + * { border-top: 1px solid var(--line); }
+.paper > :first-child { border-top-left-radius: 20px; border-top-right-radius: 20px; }
+.empty { background: var(--paper); border-radius: 20px; padding: 28px 20px; text-align: center; color: var(--muted); margin-bottom: 24px; }
+.empty-title { font-family: var(--display); font-weight: 600; font-size: 20px; color: var(--ink); margin-bottom: 4px; }
+.note { font-size: 14px; color: var(--olive-ink); background: var(--olive-soft); padding: 10px 14px; border-radius: 14px; }
+.comment { background: var(--paper); border-radius: 14px; padding: 10px 14px; }
+
+/* кнопки и поля */
+.btn-primary { background: var(--olive); color: #FBF8EF; border-radius: 16px; font-weight: 600; font-size: 15px; }
+.btn-primary:active { background: #6F6612; }
+.btn-primary:disabled { opacity: .4; }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 16px; font-weight: 500; font-size: 15px; }
+.mini-btn { font-size: 14px; font-weight: 600; padding: 7px 14px; border-radius: 12px; color: var(--olive); background: var(--olive-soft); white-space: nowrap; }
+.mini-btn:active { background: var(--olive); color: #FBF8EF; }
+.link-danger { color: var(--wine); font-size: 14px; font-weight: 500; }
+.input { width: 100%; background: var(--paper); border: 1px solid transparent; padding: 12px 14px; font-size: 16px; color: var(--ink); border-radius: 14px; outline: none; font-family: var(--sans); }
+.input:focus { border-color: var(--olive); }
+.input::placeholder { color: #A9A184; }
+.segmented { display: flex; background: var(--paper); border-radius: 14px; padding: 4px; gap: 2px; }
+.segmented button { flex: 1; padding: 8px 4px; font-size: 14px; font-weight: 500; color: var(--muted); border-radius: 10px; }
+.segmented .seg-on { background: var(--olive); color: #FBF8EF; }
+.chipbtn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 12px; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid transparent; }
+.chipbtn-on { border-color: var(--ink); }
+.chip { display: inline-block; font-size: 12px; font-weight: 500; padding: 2px 8px; border-radius: 8px; line-height: 1.4; }
+.chip-late { color: var(--wine); background: var(--wine-soft); }
+.chip-soon { color: var(--olive-ink); background: var(--olive-soft); }
+.chip-calm { color: var(--muted); background: var(--cream); }
+.caltag { font-size: 12px; font-weight: 500; padding: 1px 7px; border-radius: 8px; }
+.caltag-shared { color: #F7F2E6; background: var(--soon); }
+.checkbox { width: 24px; height: 24px; border: 1.5px solid var(--olive); border-radius: 50%; flex: none; position: relative; background: transparent; }
+.checkbox-sm { width: 20px; height: 20px; }
+.checkbox-on { background: var(--olive); }
+.checkbox-on::after { content: ''; position: absolute; left: 36%; top: 20%; width: 28%; height: 45%; border: solid #FBF8EF; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.switch { width: 46px; height: 28px; border-radius: 14px; background: var(--olive-soft); position: relative; flex: none; transition: background .2s; }
+.switch span { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--paper); transition: transform .2s; }
+.switch-on { background: var(--olive); } .switch-on span { transform: translateX(18px); }
+.swatch { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--cream); }
+.swatch-on { box-shadow: 0 0 0 2px var(--ink); }
+.progress { height: 6px; background: var(--cream); border-radius: 3px; position: relative; overflow: hidden; }
+.progress span { position: absolute; inset: 0 auto 0 0; background: var(--olive); border-radius: 3px; }
+
+/* нижний лист */
+.sheet-backdrop { position: fixed; inset: 0; z-index: 60; background: rgba(46, 42, 20, .35); display: flex; align-items: flex-end; justify-content: center; }
+.sheet { width: 100%; max-width: 30rem; max-height: 92vh; overflow-y: auto; background: var(--cream); border-radius: 28px 28px 0 0; padding: 10px 20px calc(24px + env(safe-area-inset-bottom, 0px)); animation: sheetUp .26s ease-out; }
+.sheet h2 { font-size: 24px !important; color: var(--ink) !important; }
+.sheet-grip { width: 40px; height: 5px; border-radius: 3px; background: var(--olive-soft); margin: 0 auto 16px; }
+.sheet .block > .eyebrow { margin-bottom: 6px; }
+@keyframes sheetUp { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* плюс и навигация */
+.fab { position: fixed; right: 18px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 35; width: 60px; height: 60px; border-radius: 20px; background: var(--wine); color: #FBF8EF; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px -8px rgba(140, 46, 62, .6); }
+.navbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--cream); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.navbar > div { max-width: 30rem; margin: 0 auto; display: flex; }
+.navbtn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 0 8px; color: var(--muted); }
+.navbtn-active { color: var(--olive); }
+.navlabel { font-size: 11px; font-weight: 500; }
+
+/* год */
+.year-head { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--cream); margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); border-bottom: 1px solid var(--line); }
+.year-bar { display: flex; align-items: center; justify-content: space-between; padding: 18px 0 10px; }
+.year-big { font-family: var(--display); font-weight: 600; font-size: 26px; letter-spacing: -0.02em; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; }
+.cal-wd { text-align: center; font-size: 12px; font-weight: 500; color: var(--muted); padding: 2px 0 8px; }
+.cal-we { color: var(--wine); opacity: .75; }
+.month-block { padding-top: 30px; scroll-margin-top: 118px; }
+.month-title { font-size: 38px; font-weight: 700; color: var(--olive); margin: 0 0 12px 2px; letter-spacing: -0.03em; }
+.month-year { font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--muted); margin-left: 10px; letter-spacing: 0; }
+.ycell { aspect-ratio: 1 / 1.08; display: flex; flex-direction: column; align-items: center; padding-top: 6px; color: var(--ink); min-width: 0; }
+.ycell-num { font-size: 17px; font-weight: 500; line-height: 1; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 12px; font-variant-numeric: tabular-nums; }
+.ycell-we .ycell-num { color: var(--wine); }
+.ycell-today .ycell-num { background: var(--wine); color: #FBF8EF; font-weight: 600; }
+.ycell:active .ycell-num { background: var(--olive-soft); }
+.cal-dots { display: flex; gap: 3px; height: 6px; margin-top: 4px; justify-content: center; }
+.cal-dots .dot { width: 6px; height: 6px; }
+
+/* день по часам */
+.dayview { position: fixed; top: 0; left: 0; right: 0; bottom: calc(62px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; background: var(--cream); z-index: 30; padding-top: env(safe-area-inset-top, 0px); }
+.dayview-head { flex: none; border-bottom: 1px solid var(--line); }
+.backlink { display: flex; align-items: center; gap: 2px; font-weight: 600; color: var(--olive); font-size: 15px; }
+.dayview-title { font-size: 30px; padding: 12px 16px 14px; }
+.dayview-title span { display: block; font-family: var(--sans); font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0; margin-top: 6px; }
+.wstrip { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 7px 0; border-radius: 14px; color: var(--ink); }
+.wstrip-wd { font-size: 11px; color: var(--muted); }
+.wstrip-num { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.wstrip-today .wstrip-num { color: var(--wine); }
+.wstrip-on { background: var(--olive); } .wstrip-on .wstrip-num, .wstrip-on .wstrip-wd { color: #FBF8EF; }
+.allday { color: #FBF8EF; font-size: 14px; font-weight: 500; padding: 5px 12px; border-radius: 10px; }
+.daytask { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; padding: 5px 12px; border-radius: 10px; background: var(--paper); color: var(--ink); }
+.daytask-done { text-decoration: line-through; color: var(--muted); }
+.timeline-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.timeline { position: relative; margin-bottom: 96px; }
+.hour { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); text-align: left; }
+.hour-label { position: absolute; left: 12px; top: -9px; font-size: 12px; color: var(--muted); background: var(--cream); padding-right: 6px; font-variant-numeric: tabular-nums; }
+.nowline { position: absolute; left: 50px; right: 0; height: 2px; background: var(--wine); z-index: 3; }
+.nowline::before { content: ''; position: absolute; left: -5px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--wine); }
+.evblock { position: absolute; z-index: 2; border-left: 4px solid; border-radius: 10px; padding: 5px 9px; text-align: left; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
+.evblock-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+.evblock-time { font-size: 12px; color: var(--muted); }
+
+/* задачи */
+.taskstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.taskstats > div { background: var(--paper); border-radius: 18px; padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; }
+.taskstats b { font-family: var(--display); font-weight: 600; font-size: 28px; line-height: 1; }
+.taskstats span { font-size: 13px; color: var(--muted); }
+.taskstats .is-late b { color: var(--wine); }
+.taskcard { background: var(--paper); border-radius: 18px; padding: 14px 16px; }
+.taskcard.is-done { background: transparent; border: 1px solid var(--line); }
+
+/* неделя */
+.weeknav { display: flex; gap: 6px; }
+.weeknav button { width: 40px; height: 40px; border-radius: 12px; background: var(--paper); display: grid; place-items: center; color: var(--ink); }
+.weeknav button:disabled { opacity: .35; }
+.weekhero { background: var(--olive); color: #FBF8EF; border-radius: 28px; padding: 22px 22px 18px; margin-bottom: 28px; }
+.weekhero-main { display: flex; align-items: baseline; gap: 12px; }
+.weekhero-main b { font-family: var(--display); font-weight: 700; font-size: 76px; line-height: .9; letter-spacing: -0.04em; }
+.weekhero-main span { font-size: 17px; font-weight: 500; }
+.weekhero-diff { margin: 10px 0 18px; color: #E9E3C3; font-size: 15px; }
+.weekhero-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid rgba(251, 248, 239, .25); padding-top: 14px; }
+.weekhero-stats div { display: flex; flex-direction: column; gap: 2px; }
+.weekhero-stats b { font-family: var(--display); font-weight: 600; font-size: 20px; }
+.weekhero-stats span { font-size: 13px; color: #E9E3C3; }
+.catbar { height: 8px; background: var(--cream); border-radius: 4px; position: relative; overflow: hidden; }
+.catbar span { position: absolute; inset: 0 auto 0 0; border-radius: 4px; }
+.daybars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; }
+.daybar { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.daybar-col { height: 96px; width: 100%; max-width: 30px; display: flex; align-items: flex-end; background: var(--cream); border-radius: 9px; overflow: hidden; }
+.daybar-col span { width: 100%; min-height: 3px; border-radius: 9px; }
+.daybar-wd { font-size: 12px; color: var(--muted); }
+.daybar-wd.is-today { color: var(--ink); font-weight: 600; }
+
+/* заставка и вход */
+.splash { position: fixed; inset: 0; z-index: 50; background: var(--olive); color: #FBF8EF; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); overflow-y: auto; }
+.splash-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px; text-align: center; animation: rise .9s ease-out both; }
+.splash-title { font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1.02; color: #FBF8EF; letter-spacing: -0.03em; }
+.splash-date { font-size: 17px; color: #E9E3C3; }
+.splash .logo-heart { color: #FBF8EF; }
+.splash .topstrip, .splash .splash-stripes, .splash-stamp { display: none; }
+.splash .eyebrow { color: #E9E3C3; }
+.splash .input { background: #FBF8EF; }
+.splash .note { background: #FBF8EF; }
+.splash .btn-primary { background: var(--wine); }
+.splash .segmented { background: rgba(251, 248, 239, .18); }
+.splash .segmented button { color: #FBF8EF; }
+.splash .segmented .seg-on { background: #FBF8EF; color: var(--olive-ink); }
+.splash p, .splash .text-gray-500, .splash .text-gray-600 { color: #EFEAD2 !important; }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+#boot { min-height: 100vh; background: var(--olive); color: #FBF8EF; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* заставка-приветствие: текст слева внизу, «небо» меняется по времени суток */
+.hello { position: fixed; inset: 0; z-index: 50; background: var(--olive); color: #FBF8EF; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: space-between; padding: calc(28px + env(safe-area-inset-top, 0px)) 26px calc(40px + env(safe-area-inset-bottom, 0px)); }
+.hello-date { position: relative; font-size: 17px; line-height: 1.35; color: #E9E3C3; margin: 0; }
+.hello-text { position: relative; display: flex; flex-direction: column; font-family: var(--display); font-weight: 700; font-size: clamp(34px, 9.5vw, 60px); line-height: 1; letter-spacing: -0.035em; color: #FBF8EF; text-align: left; }
+.hello-text span { display: block; animation: hello-in .7s cubic-bezier(.2, .7, .2, 1) both; }
+.hello-text span:nth-child(2) { animation-delay: .08s; }
+.hello-text span:nth-child(3) { animation-delay: .16s; color: #F2DCD6; }
+@keyframes hello-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.hello-sky { position: absolute; inset: 0; pointer-events: none; }
+.hello-sky span { position: absolute; border-radius: 50%; }
+/* утро — низкое солнце справа */
+.hello-morning .hello-sky span { width: 62vmax; height: 62vmax; right: -24vmax; top: 18%; background: #A1962E; }
+/* день — большое солнце высоко */
+.hello-day .hello-sky span { width: 78vmax; height: 78vmax; right: -30vmax; top: -34vmax; background: #9A8F27; }
+/* вечер — винное солнце садится за край */
+.hello-evening { background: #6F6612; }
+.hello-evening .hello-sky span { width: 70vmax; height: 70vmax; right: -28vmax; top: 30%; background: var(--wine); }
+/* ночь — тонкий месяц */
+.hello-night { background: #3F3A0D; }
+.hello-night .hello-sky span { width: 40vmax; height: 40vmax; right: -14vmax; top: 14%; background: transparent; box-shadow: -7vmax 4vmax 0 0 #E9E3C3; }
+
+.hello-evening .hello-text span:nth-child(3) { color: #FBF8EF; }
+
+/* Бизнес-учёт: поверх общей темы. Палитра — в переменных ниже (меняется в одном месте). */
+:root {
+  --cream: #F8F7F4; --paper: #EEECE6; --ink: #1F2421; --muted: #6B706A; --line: rgba(31, 36, 33, .12);
+  --olive: #26332D; --olive-ink: #26332D; --olive-soft: #DDE3DD;   /* основное действие */
+  --wine: #26332D; --wine-soft: #E4E1D8;                           /* плюс и акценты */
+  --in: #2F7A55; --in-soft: #DCEBE2;     /* поступления */
+  --out: #B5452F; --out-soft: #F2DED7;   /* расходы */
+  --warn: #B07A12; --warn-soft: #F3E7C9;
+  --display: 'Manrope', -apple-system, sans-serif;
+  --sans: 'Manrope', -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+h1, h2, h3, .display { font-weight: 700; letter-spacing: -0.025em; }
+.page { max-width: 30rem; margin: 0 auto; padding: 0 16px 120px; }
+.ptitle { padding: 20px 0 16px; }
+.ptitle h1 { font-size: 28px; }
+.subtitle { margin: -6px 0 18px; font-size: 14px; }
+.txt-in { color: var(--in); } .txt-out { color: var(--out); }
+.neg { color: var(--out); }
+.input-big { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.input-sm { width: auto; padding: 8px 10px; font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chipbtn-on { border-color: var(--ink); background: var(--cream); }
+
+.monthnav { display: flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.monthnav button { padding: 6px; color: var(--muted); }
+
+.ledger-head { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ledger-head > div { border-radius: 18px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 4px; }
+.ledger-head b { font-size: 21px; font-weight: 700; letter-spacing: -0.02em; }
+.col-in { background: var(--in-soft); } .col-in b { color: var(--in); }
+.col-out { background: var(--out-soft); } .col-out b { color: var(--out); }
+.profit { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 4px 0; font-size: 15px; color: var(--muted); }
+.profit b { font-size: 18px; color: var(--ink); }
+
+.cardtiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cardtile { background: var(--paper); border-radius: 18px; padding: 12px 14px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+.cardtile-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+.cardtile-sum { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; }
+.status { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 2px 7px; }
+.status-ok { color: var(--in); background: var(--in-soft); }
+.status-bad { color: var(--out); background: var(--out-soft); }
+.status-stale, .status-none { color: var(--warn); background: var(--warn-soft); }
+
+.alertbar { width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 16px; font-size: 14px; font-weight: 600; text-align: left; }
+.alertbar span { flex: 1; }
+.alertbar-bad { background: var(--out-soft); color: var(--out); }
+.alertbar-ok { background: var(--in-soft); color: var(--in); }
+
+.ledger { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ledger-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.oprow { background: var(--paper); border-radius: 14px; padding: 9px 11px; display: flex; flex-direction: column; gap: 1px; text-align: left; min-width: 0; border-left: 3px solid transparent; }
+.oprow-in { border-left-color: var(--in); } .oprow-out { border-left-color: var(--out); }
+.oprow-sum { font-weight: 700; font-size: 15px; }
+.oprow-in .oprow-sum { color: var(--in); } .oprow-out .oprow-sum { color: var(--out); }
+.oprow-cat { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oprow-meta { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.oprow-meta .dot { width: 6px; height: 6px; }
+.transfer { width: 100%; margin-top: 6px; display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 14px; border: 1px dashed var(--line); font-size: 13px; color: var(--muted); text-align: left; }
+.transfer span { flex: 1; }
+.transfer b { color: var(--ink); }
+
+.calcline { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; color: var(--muted); }
+.calcline b { font-size: 20px; color: var(--ink); }
+.okbox { display: flex; gap: 10px; align-items: center; background: var(--in-soft); color: var(--in); border-radius: 16px; padding: 14px; font-weight: 600; font-size: 14px; }
+.problem { border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+.problem-bad { background: var(--out-soft); } .problem-bad b { color: var(--out); }
+.problem-warn { background: var(--warn-soft); } .problem-warn b { color: var(--warn); }
+.problem-info { background: var(--paper); }
+.hints { margin: 10px 0 0; padding-left: 18px; list-style: disc; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+
+.bar { height: 5px; background: var(--cream); border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.bar span { display: block; height: 100%; border-radius: 3px; }
+.bar-in { background: var(--in); } .bar-out { background: var(--out); }
+.paper.divide-y > * + * { border-top: 1px solid var(--line); }
+
+.navbadge { position: absolute; top: -5px; right: -9px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--out); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.fab { box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .45); }
+.btn-primary:active { filter: brightness(.9); }
+.navbtn > span:first-child { position: relative; display: inline-flex; }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
+<script>window.APP_STRIP = "Бизнес-учёт"; window.APP_TAGLINE = "Поступления и расходы";</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.1"></script>
+<script>
+  tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
+    fontFamily: { sans: ['Manrope', '-apple-system', 'sans-serif'] },
+    colors: { gray: { 50: '#EEECE6', 100: '#F8F7F4', 200: '#DAD8D1', 300: '#BFC2BC', 400: '#9A9E98', 500: '#6B706A', 600: '#585D57', 700: '#3D423E', 800: '#1F2421', 900: '#141816' } }
+  } } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div id="root"><div id="boot"></div></div>
+<script>
+window.addEventListener("error", function (e) { var b = document.getElementById("boot"); if (b) b.textContent = "Не загрузилось: " + (e.message || "ошибка") + ". Обновите страницу."; });
+"use strict";
+const { useState, useEffect, useRef, createContext, useContext } = React;
+// Хранилище «Бизнес-учёта»: Firebase, одно общее пространство на бизнес + приглашённые участники
+const StoreContext = createContext(null);
+const useStore = () => useContext(StoreContext);
+const clean = (o) => JSON.parse(JSON.stringify(o));
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const emailKey = (e) => (e || '').trim().toLowerCase().replace(/\./g, ',');
+function AuthShell({ title, children }) {
+    return (React.createElement("div", { className: "splash", style: { overflowY: 'auto' } },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "splash-body w-full max-w-sm mx-auto py-8" },
+            React.createElement(LoveLogo, null),
+            React.createElement("h1", { className: "display splash-title", style: { fontSize: 44 } }, title),
+            React.createElement("div", { className: "w-full space-y-4 text-left" }, children)),
+        React.createElement(Stripes, { className: "splash-stripes", style: { minHeight: 60 } })));
+}
+function Login() {
+    const [mode, setMode] = useState('in'); // in | up
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
+    const [name, setName] = useState('');
+    const [msg, setMsg] = useState('');
+    const [busy, setBusy] = useState(false);
+    const submit = async (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setMsg('');
+        const slow = setTimeout(() => setMsg('Сервер долго не отвечает. Проверьте интернет; если включён VPN — попробуйте выключить его или сменить страну.'), 12000);
+        try {
+            if (mode === 'in')
+                await firebase.auth().signInWithEmailAndPassword(email.trim(), pass);
+            else {
+                if (!name.trim()) {
+                    setMsg('Напишите, как вас зовут — так приложение будет здороваться');
+                    setBusy(false);
+                    return;
+                }
+                if (pass.length < 6) {
+                    setMsg('Пароль — минимум 6 символов');
+                    setBusy(false);
+                    return;
+                }
+                const cred = await firebase.auth().createUserWithEmailAndPassword(email.trim(), pass);
+                await cred.user.updateProfile({ displayName: name.trim() });
+                await cred.user.sendEmailVerification();
+            }
+        }
+        catch (err) {
+            const c = err.code || '';
+            setMsg(c.includes('email-already-in-use') ? 'Аккаунт с этой почтой уже есть — нажмите «Войти»'
+                : c.includes('invalid-email') ? 'Проверьте адрес почты'
+                    : c.includes('weak-password') ? 'Пароль слишком простой, минимум 6 символов'
+                        : /password|credential|user-not-found/.test(c) ? (mode === 'in' ? 'Неверная почта или пароль. Если вы ещё не регистрировались — выберите «Создать аккаунт».' : 'Неверная почта или пароль')
+                            : 'Не получилось (' + (c || 'ошибка сети') + '). Проверьте интернет и попробуйте ещё раз.');
+        }
+        clearTimeout(slow);
+        setBusy(false);
+    };
+    const reset = async () => {
+        if (!email.trim()) {
+            setMsg('Введите почту, и мы пришлём ссылку для нового пароля');
+            return;
+        }
+        try {
+            await firebase.auth().sendPasswordResetEmail(email.trim());
+            setMsg('Письмо для смены пароля отправлено');
+        }
+        catch {
+            setMsg('Не удалось отправить письмо');
+        }
+    };
+    return (React.createElement(AuthShell, { title: mode === 'in' ? 'Вход' : 'Новый аккаунт' },
+        React.createElement("form", { onSubmit: submit, className: "space-y-4" },
+            React.createElement(Segmented, { value: mode, onChange: (v) => { setMode(v); setMsg(''); }, options: [['in', 'Войти'], ['up', 'Создать аккаунт']] }),
+            mode === 'up' && React.createElement(Field, { label: "\u0412\u0430\u0448\u0435 \u0438\u043C\u044F" },
+                React.createElement("input", { id: "login-name", className: "input", autoComplete: "given-name", placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F", value: name, onChange: (e) => setName(e.target.value) })),
+            React.createElement(Field, { label: "\u041F\u043E\u0447\u0442\u0430" },
+                React.createElement("input", { id: "login-email", className: "input", type: "email", autoComplete: "email", value: email, onChange: (e) => setEmail(e.target.value) })),
+            React.createElement(Field, { label: mode === 'in' ? 'Пароль' : 'Придумайте пароль' },
+                React.createElement("input", { id: "login-pass", className: "input", type: "password", autoComplete: mode === 'in' ? 'current-password' : 'new-password', value: pass, onChange: (e) => setPass(e.target.value) })),
+            msg && React.createElement("p", { className: "note" }, msg),
+            React.createElement("button", { type: "submit", disabled: busy, className: "btn-primary w-full py-3" }, busy ? 'Минутку…' : mode === 'in' ? 'Войти' : 'Создать аккаунт'),
+            mode === 'in'
+                ? React.createElement("button", { type: "button", onClick: reset, className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0417\u0430\u0431\u044B\u043B\u0438 \u043F\u0430\u0440\u043E\u043B\u044C?")
+                : React.createElement("p", { className: "text-xs text-gray-500 text-center" }, "\u041F\u043E\u0441\u043B\u0435 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438 \u043F\u0440\u0438\u0434\u0451\u0442 \u043F\u0438\u0441\u044C\u043C\u043E \u0434\u043B\u044F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F \u043F\u043E\u0447\u0442\u044B. \u0414\u043E\u0441\u0442\u0443\u043F \u043A \u0434\u0430\u043D\u043D\u044B\u043C \u043E\u0442\u043A\u0440\u043E\u0435\u0442\u0441\u044F, \u043A\u043E\u0433\u0434\u0430 \u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446 \u0434\u043E\u0431\u0430\u0432\u0438\u0442 \u0432\u0430\u0448\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u0443\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438."))));
+}
+function VerifyEmail({ user }) {
+    const [msg, setMsg] = useState('');
+    const check = async () => {
+        await user.reload();
+        if (firebase.auth().currentUser.emailVerified) {
+            await firebase.auth().currentUser.getIdToken(true);
+            location.reload();
+        }
+        else
+            setMsg('Почта ещё не подтверждена. Откройте письмо и нажмите ссылку.');
+    };
+    const resend = async () => {
+        try {
+            await user.sendEmailVerification();
+            setMsg('Письмо отправлено ещё раз. Проверьте папку «Спам».');
+        }
+        catch {
+            setMsg('Подождите минуту и попробуйте снова');
+        }
+    };
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u0442\u0435 \u043F\u043E\u0447\u0442\u0443" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u041C\u044B \u043E\u0442\u043F\u0440\u0430\u0432\u0438\u043B\u0438 \u043F\u0438\u0441\u044C\u043C\u043E \u043D\u0430 ",
+            React.createElement("b", null, user.email),
+            ". \u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u0432 \u043D\u0451\u043C \u0441\u0441\u044B\u043B\u043A\u0443, \u043F\u043E\u0442\u043E\u043C \u0432\u0435\u0440\u043D\u0438\u0442\u0435\u0441\u044C \u0441\u044E\u0434\u0430."),
+        msg && React.createElement("p", { className: "note" }, msg),
+        React.createElement("button", { type: "button", onClick: check, className: "btn-primary w-full py-3" }, "\u042F \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0434\u0438\u043B\u0430 \u043F\u043E\u0447\u0442\u0443"),
+        React.createElement("button", { type: "button", onClick: resend, className: "btn-ghost w-full py-3" }, "\u041E\u0442\u043F\u0440\u0430\u0432\u0438\u0442\u044C \u043F\u0438\u0441\u044C\u043C\u043E \u0435\u0449\u0451 \u0440\u0430\u0437"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+function AskName({ onSave }) {
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    return (React.createElement(AuthShell, { title: "\u041A\u0430\u043A \u0432\u0430\u0441 \u0437\u043E\u0432\u0443\u0442?" },
+        React.createElement("form", { className: "space-y-4", onSubmit: async (e) => { e.preventDefault(); if (!name.trim())
+                return; setBusy(true); try {
+                await onSave(name.trim());
+            }
+            finally {
+                setBusy(false);
+            } } },
+            React.createElement("p", { className: "text-center text-gray-600" }, "\u0422\u0430\u043A \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u0431\u0443\u0434\u0435\u0442 \u0441 \u0432\u0430\u043C\u0438 \u0437\u0434\u043E\u0440\u043E\u0432\u0430\u0442\u044C\u0441\u044F."),
+            React.createElement(Field, { label: "\u0418\u043C\u044F" },
+                React.createElement("input", { id: "ask-name", className: "input", autoComplete: "given-name", value: name, onChange: (e) => setName(e.target.value), placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u041A\u0430\u0442\u044F" })),
+            React.createElement("button", { type: "submit", disabled: busy || !name.trim(), className: "btn-primary w-full py-3" }, "\u0413\u043E\u0442\u043E\u0432\u043E"))));
+}
+function NoAccess({ user }) {
+    return (React.createElement(AuthShell, { title: "\u041F\u043E\u0447\u0442\u0438 \u0433\u043E\u0442\u043E\u0432\u043E" },
+        React.createElement("p", { className: "text-center text-gray-600" },
+            "\u0410\u043A\u043A\u0430\u0443\u043D\u0442 ",
+            React.createElement("b", null, user.email),
+            " \u0441\u043E\u0437\u0434\u0430\u043D. \u041F\u043E\u043F\u0440\u043E\u0441\u0438\u0442\u0435 \u0432\u043B\u0430\u0434\u0435\u043B\u044C\u0446\u0430 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u044D\u0442\u0443 \u043F\u043E\u0447\u0442\u0443 \u0432 \u00AB\u0415\u0449\u0451 \u2192 \u0423\u0447\u0430\u0441\u0442\u043D\u0438\u043A\u0438\u00BB, \u0437\u0430\u0442\u0435\u043C \u043D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C\u00BB."),
+        React.createElement("button", { type: "button", onClick: () => location.reload(), className: "btn-primary w-full py-3" }, "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C \u0434\u043E\u0441\u0442\u0443\u043F"),
+        React.createElement("button", { type: "button", onClick: () => firebase.auth().signOut(), className: "eyebrow block mx-auto underline underline-offset-4" }, "\u0412\u044B\u0439\u0442\u0438")));
+}
+const toList = (v) => Object.entries(v || {}).map(([id, d]) => ({ ...d, id }));
+const DEFAULT_CARDS = [
+    { id: 'tbank', name: 'Т-Банк', color: '#E8B923', order: 1 },
+    { id: 'ozon', name: 'Озон Банк', color: '#3D63DD', order: 2 },
+];
+const DEFAULT_CATS = [
+    ['in-client', 'in', 'Оплата от клиента'], ['in-prepay', 'in', 'Предоплата'], ['in-refund', 'in', 'Возврат от поставщика'],
+    ['in-topup', 'in', 'Пополнение'], ['in-other', 'in', 'Прочее'],
+    ['out-goods', 'out', 'Закупка товара'], ['out-pack', 'out', 'Упаковка'], ['out-delivery', 'out', 'Доставка'],
+    ['out-ads', 'out', 'Реклама'], ['out-fees', 'out', 'Комиссии'], ['out-salary', 'out', 'Зарплата'],
+    ['out-services', 'out', 'Сервисы и связь'], ['out-tax', 'out', 'Налоги'], ['out-cash', 'out', 'Снятие наличных'], ['out-other', 'out', 'Прочее'],
+].map(([id, type, name], i) => ({ id, type, name, order: i }));
+function StoreProvider({ children }) {
+    const [mode, setMode] = useState('loading');
+    const [user, setUser] = useState(null);
+    const [displayName, setDisplayName] = useState('');
+    const [uid, setUid] = useState(null);
+    const [bid, setBid] = useState(null); // чей бизнес открыт (uid владельца)
+    const [invites, setInvites] = useState([]); // [{ bid, name, ownerEmail }]
+    const [members, setMembers] = useState([]);
+    const [data, setData] = useState({ cards: [], ops: [], checks: [], cats: [] });
+    const [loaded, setLoaded] = useState(false);
+    const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+    const [error, setError] = useState('');
+    const demoRef = useRef(false);
+    const dataOff = useRef(null);
+    const switchRef = useRef(null);
+    const startDemo = () => {
+        demoRef.current = true;
+        const d = (k) => { const x = new Date(); x.setDate(x.getDate() - k); return ymd(x); };
+        setUser({ email: 'demo@example.ru' });
+        setDisplayName('Катя');
+        setUid('demo');
+        setBid('demo');
+        setData({
+            cards: [{ ...DEFAULT_CARDS[0], start: 25000, startDate: d(12) }, { ...DEFAULT_CARDS[1], start: 8000, startDate: d(12) }],
+            ops: [
+                { id: 'o1', type: 'in', amount: 15000, card: 'tbank', cat: 'in-client', date: d(10), note: 'Заказ №12', by: 'Катя' },
+                { id: 'o2', type: 'out', amount: 4200, card: 'tbank', cat: 'out-goods', date: d(9), note: 'Семена и грунт', by: 'Катя' },
+                { id: 'o3', type: 'out', amount: 1300, card: 'ozon', cat: 'out-pack', date: d(8), note: 'Коробки', by: 'Эрик' },
+                { id: 'o4', type: 'transfer', amount: 5000, card: 'tbank', toCard: 'ozon', date: d(7), note: '', by: 'Катя' },
+                { id: 'o5', type: 'out', amount: 2500, card: 'ozon', cat: 'out-ads', date: d(5), note: 'Реклама ВК', by: 'Эрик' },
+                { id: 'o6', type: 'in', amount: 7400, card: 'ozon', cat: 'in-client', date: d(3), note: '', by: 'Эрик' },
+                { id: 'o7', type: 'out', amount: 890, card: 'tbank', cat: 'out-delivery', date: d(2), note: 'СДЭК', by: 'Катя' },
+                { id: 'o8', type: 'out', amount: 890, card: 'tbank', cat: 'out-delivery', date: d(2), note: 'СДЭК', by: 'Катя' },
+                { id: 'o9', type: 'out', amount: 1500, card: 'tbank', date: d(1), note: '', by: 'Катя' },
+            ],
+            checks: [
+                { id: 'c1', card: 'tbank', date: d(6), actual: 30800, at: Date.now() - 6 * 864e5, by: 'Катя' },
+                { id: 'c2', card: 'ozon', date: d(4), actual: 9200, at: Date.now() - 4 * 864e5, by: 'Эрик' },
+            ],
+            cats: [],
+        });
+        setMembers([{ key: 'm1', email: 'partner@example.ru' }]);
+        setLoaded(true);
+        setMode('ready');
+    };
+    useEffect(() => {
+        if (!window.firebase || !window.FIREBASE_CONFIG) {
+            startDemo();
+            return;
+        }
+        if (!firebase.apps.length)
+            firebase.initializeApp(window.FIREBASE_CONFIG);
+        let unsubs = [];
+        const offAll = () => { unsubs.forEach(f => f()); unsubs = []; if (dataOff.current) {
+            dataOff.current();
+            dataOff.current = null;
+        } };
+        const listen = (ref, cb, onErr) => { const h = ref.on('value', s => cb(s.val()), (e) => { if (onErr)
+            onErr(e); }); return () => ref.off('value', h); };
+        const authOff = firebase.auth().onAuthStateChanged((u) => {
+            offAll();
+            setUser(u);
+            setDisplayName(u?.displayName || '');
+            setData({ cards: [], ops: [], checks: [], cats: [] });
+            setLoaded(false);
+            setInvites([]);
+            setMembers([]);
+            if (!u) {
+                setMode('signedout');
+                return;
+            }
+            if (!u.emailVerified) {
+                setMode('verify');
+                return;
+            }
+            const db = firebase.database();
+            const me = u.uid, myKey = emailKey(u.email);
+            setUid(me);
+            const saveKey = 'biz-open-' + me;
+            const metaRef = db.ref('biz/' + me + '/meta');
+            metaRef.once('value').then(s => { if (!s.exists())
+                metaRef.set({ ownerEmail: u.email.toLowerCase(), name: u.displayName || '', createdAt: todayYmd() }); })
+                .catch((e) => { if (/permission/i.test(e?.code || e?.message || ''))
+                setMode('norules'); });
+            const switchTo = (b) => {
+                if (dataOff.current)
+                    dataOff.current();
+                setBid(b);
+                setLoaded(false);
+                try {
+                    localStorage.setItem(saveKey, b);
+                }
+                catch (e) { }
+                dataOff.current = listen(db.ref('biz/' + b + '/data'), v => {
+                    setData({ cards: toList(v?.cards), ops: toList(v?.ops), checks: toList(v?.checks), cats: toList(v?.cats) });
+                    setLoaded(true);
+                }, (e) => { if (b !== me)
+                    switchTo(me);
+                else
+                    setMode('norules'); });
+            };
+            switchRef.current = switchTo;
+            unsubs.push(listen(db.ref('biz/' + me + '/members'), v => setMembers(Object.entries(v || {}).map(([k, m]) => ({ key: k, email: m.email || k.replace(/,/g, '.') })))));
+            let first = true;
+            unsubs.push(listen(db.ref('bizInvites/' + myKey), v => {
+                const list = Object.entries(v || {}).filter(([b]) => b !== me).map(([b, x]) => ({ bid: b, name: x.name || '', ownerEmail: x.ownerEmail || '' }));
+                setInvites(list);
+                if (first) {
+                    first = false;
+                    let saved = null;
+                    try {
+                        saved = localStorage.getItem(saveKey);
+                    }
+                    catch (e) { }
+                    const valid = [me, ...list.map(x => x.bid)];
+                    // приглашённый сразу попадает в общий бизнес
+                    switchTo(saved && valid.includes(saved) ? saved : (list[0] ? list[0].bid : me));
+                }
+            }, () => { if (first) {
+                first = false;
+                switchTo(me);
+            } }));
+            setMode('ready');
+        });
+        return () => { offAll(); authOff(); };
+    }, []);
+    const wrap = async (fn) => {
+        try {
+            setError('');
+            await fn();
+            return true;
+        }
+        catch (e) {
+            setError(/permission/i.test(e?.code || e?.message || '') ? 'Нет доступа. Попросите владельца добавить вашу почту.' : (e?.message || 'Не удалось сохранить'));
+            return false;
+        }
+    };
+    // запись/удаление в коллекцию: cards | ops | checks | cats
+    const put = (col, item) => wrap(async () => {
+        const id = item.id || newId();
+        const { id: _, ...body } = item;
+        const rec = { ...body, updatedAt: Date.now() };
+        if (demoRef.current) {
+            setData(d => ({ ...d, [col]: [...d[col].filter(x => x.id !== id), { ...rec, id }] }));
+            return;
+        }
+        await firebase.database().ref(`biz/${bid}/data/${col}/${id}`).set(clean(rec));
+    });
+    const del = (col, id) => wrap(async () => {
+        if (demoRef.current) {
+            setData(d => ({ ...d, [col]: d[col].filter(x => x.id !== id) }));
+            return;
+        }
+        await firebase.database().ref(`biz/${bid}/data/${col}/${id}`).remove();
+    });
+    const cards = (data.cards.length ? data.cards : DEFAULT_CARDS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    const cats = (data.cats.length ? data.cats : DEFAULT_CATS).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
+    const api = {
+        mode, user, uid, bid, displayName, month, setMonth, error, setError, invites, members, loaded,
+        isOwner: bid === uid,
+        cardsReady: data.cards.length > 0 && data.cards.every(c => c.startDate),
+        cards, cats, ops: data.ops, checks: data.checks,
+        saveOp: (op) => put('ops', { ...op, by: op.by || displayName || (user?.email || '') }),
+        removeOp: (id) => del('ops', id),
+        saveCard: (c) => put('cards', c),
+        saveCheck: (c) => put('checks', { ...c, at: Date.now(), by: displayName || '' }),
+        removeCheck: (id) => del('checks', id),
+        saveCats: (list) => wrap(async () => {
+            if (demoRef.current) {
+                setData(d => ({ ...d, cats: list }));
+                return;
+            }
+            const obj = {};
+            list.forEach(c => { const { id, ...b } = c; obj[id] = b; });
+            await firebase.database().ref(`biz/${bid}/data/cats`).set(clean(obj));
+        }),
+        switchBiz: (b) => { if (switchRef.current)
+            switchRef.current(b); },
+        setName: (n) => wrap(async () => {
+            const v = n.trim();
+            if (!v)
+                return;
+            if (demoRef.current) {
+                setDisplayName(v);
+                return;
+            }
+            await firebase.auth().currentUser.updateProfile({ displayName: v });
+            setDisplayName(v);
+            await firebase.database().ref('biz/' + uid + '/meta').update({ name: v });
+        }),
+        addMember: (email) => wrap(async () => {
+            const e = email.trim().toLowerCase();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e))
+                throw { message: 'Проверьте адрес почты' };
+            if (demoRef.current) {
+                setMembers(m => [...m, { key: e, email: e }]);
+                return;
+            }
+            if (e === (user?.email || '').toLowerCase())
+                throw { message: 'Это ваша почта' };
+            const db = firebase.database();
+            await db.ref('biz/' + uid + '/members/' + emailKey(e)).set({ email: e, addedAt: todayYmd() });
+            await db.ref('bizInvites/' + emailKey(e) + '/' + uid).set({ name: displayName || '', ownerEmail: (user?.email || '').toLowerCase() });
+        }),
+        removeMember: (key) => wrap(async () => {
+            if (demoRef.current) {
+                setMembers(m => m.filter(x => x.key !== key));
+                return;
+            }
+            const db = firebase.database();
+            await db.ref('biz/' + uid + '/members/' + key).remove();
+            await db.ref('bizInvites/' + key + '/' + uid).remove();
+        }),
+        signOut: () => { if (!demoRef.current)
+            firebase.auth().signOut(); },
+    };
+    if (mode === 'signedout')
+        return React.createElement(Login, null);
+    if (mode === 'verify' && user)
+        return React.createElement(VerifyEmail, { user: user });
+    if (user && !displayName && !demoRef.current)
+        return React.createElement(AskName, { onSave: async (n) => { await user.updateProfile({ displayName: n }); setDisplayName(n); } });
+    if (mode === 'norules')
+        return React.createElement("div", { id: "boot", style: { padding: 24, textAlign: 'center', fontSize: 16, letterSpacing: 0 } }, "\u0411\u0430\u0437\u0430 \u0435\u0449\u0451 \u043D\u0435 \u043D\u0430\u0441\u0442\u0440\u043E\u0435\u043D\u0430 \u0434\u043B\u044F \u0431\u0438\u0437\u043D\u0435\u0441-\u0443\u0447\u0451\u0442\u0430. \u041D\u0443\u0436\u043D\u043E \u043E\u0434\u0438\u043D \u0440\u0430\u0437 \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u043F\u0440\u0430\u0432\u0438\u043B\u0430 Firebase \u2014 \u0438\u043D\u0441\u0442\u0440\u0443\u043A\u0446\u0438\u044F \u0443 Claude.");
+    if (mode !== 'ready')
+        return React.createElement("div", { id: "boot" });
+    return React.createElement(StoreContext.Provider, { value: api }, children);
+}
+// ---- components/Icon.jsx
+// Контурные иконки (Lucide). Ключ хранится в категории; старые эмодзи показываются как есть.
+const ICON_SET = [
+    ['ShoppingCart', 'Продукты'], ['ShoppingBag', 'Покупки'], ['Utensils', 'Еда'], ['Coffee', 'Кофе'],
+    ['Pizza', 'Фастфуд'], ['Apple', 'Фрукты'], ['Wine', 'Вино'], ['Beer', 'Бар'],
+    ['Car', 'Авто'], ['Fuel', 'Бензин'], ['Bus', 'Автобус'], ['TrainFront', 'Метро'],
+    ['Bike', 'Велосипед'], ['Plane', 'Перелёт'], ['Hotel', 'Отель'], ['Umbrella', 'Отпуск'],
+    ['House', 'Дом'], ['Sofa', 'Интерьер'], ['Zap', 'Свет'], ['Droplet', 'Вода'],
+    ['Wifi', 'Интернет'], ['Smartphone', 'Связь'], ['Wrench', 'Ремонт'], ['Bath', 'Быт'],
+    ['Shirt', 'Одежда'], ['Footprints', 'Обувь'], ['Gem', 'Украшения'], ['Scissors', 'Стрижка'],
+    ['Sparkles', 'Красота'], ['Flower2', 'Цветы'], ['Heart', 'Любовь'], ['HeartPulse', 'Здоровье'],
+    ['Pill', 'Аптека'], ['Stethoscope', 'Врач'], ['Dumbbell', 'Спорт'], ['Baby', 'Дети'],
+    ['PawPrint', 'Питомцы'], ['Gift', 'Подарки'], ['PartyPopper', 'Праздники'], ['Ticket', 'Билеты'],
+    ['Film', 'Кино'], ['Popcorn', 'Досуг'], ['Music', 'Музыка'], ['Gamepad2', 'Игры'],
+    ['Tv', 'Подписки'], ['Book', 'Книги'], ['GraduationCap', 'Учёба'], ['Palette', 'Хобби'],
+    ['Camera', 'Фото'], ['Laptop', 'Техника'], ['Briefcase', 'Работа'], ['CreditCard', 'Карта'],
+    ['Receipt', 'Счета'], ['Landmark', 'Налоги'], ['Wallet', 'Наличные'], ['Leaf', 'Разное'],
+    // ещё еда
+    ['Goose', 'Гусь'], ['Croissant', 'Выпечка'], ['Pasta', 'Паста'], ['Cake', 'Торт'],
+    ['CakeSlice', 'Десерт'], ['Donut', 'Пончик'], ['Cookie', 'Печенье'], ['IceCreamCone', 'Мороженое'],
+    ['Candy', 'Сладкое'], ['Lollipop', 'Конфеты'], ['Sandwich', 'Сэндвич'], ['Soup', 'Суп'],
+    ['Salad', 'Салат'], ['Fish', 'Рыба'], ['Beef', 'Мясо'], ['Drumstick', 'Курица'],
+    ['Egg', 'Яйца'], ['Milk', 'Молочка'], ['Wheat', 'Хлеб'], ['Carrot', 'Овощи'],
+    ['Cherry', 'Ягоды'], ['Grape', 'Виноград'], ['Citrus', 'Цитрусы'], ['CupSoda', 'Напитки'],
+    ['Martini', 'Коктейли'], ['CookingPot', 'Готовка'], ['ShoppingBasket', 'Рынок'], ['Store', 'Магазин'],
+    // жизнь и дом
+    ['CarTaxiFront', 'Такси'], ['Ship', 'Круиз'], ['Tent', 'Поход'], ['Mountain', 'Горы'],
+    ['TreePine', 'Природа'], ['Sun', 'Лето'], ['Snowflake', 'Зима'], ['Bed', 'Спальня'],
+    ['Lamp', 'Свет в доме'], ['WashingMachine', 'Стирка'], ['Key', 'Аренда'], ['Sprout', 'Растения'],
+    ['Dog', 'Собака'], ['Cat', 'Кошка'], ['Bird', 'Птица'], ['Rabbit', 'Кролик'],
+    ['Glasses', 'Очки'], ['Watch', 'Часы'], ['Brush', 'Уход'], ['Backpack', 'Сумки'],
+    ['Headphones', 'Аудио'], ['ToyBrick', 'Игрушки'], ['Puzzle', 'Развлечения'], ['Drama', 'Театр'],
+    ['Syringe', 'Анализы'], ['HandHeart', 'Благотворит.'], ['PiggyBank', 'Копилка'], ['Coins', 'Мелочь'],
+    ['Banknote', 'Зарплата'], ['Flame', 'Отопление'], ['Ribbon', 'Важное'], ['Moon', 'Ночь'],
+];
+// Свои контурные рисунки в стиле Lucide (их нет в библиотеке)
+const CUSTOM_ICONS = {
+    Goose: [
+        ['path', { d: 'M7 12.5V5a2 2 0 0 1 4 0v8.2c3 0 5.6.8 7.4 2.6L21 14.5c-.2 3.7-2.6 6-6.5 6h-4c-3.2 0-5.4-1.4-5.9-3.6-.3-1.6.6-3.3 2.4-4.4' }],
+        ['path', { d: 'M7 4.6 3.6 5.6 7 6.6' }],
+        ['path', { d: 'M11.5 16.2c1.9 0 3.6.6 4.9 1.8' }],
+        ['circle', { cx: '9.1', cy: '4.8', r: '.3', fill: 'currentColor' }],
+    ],
+    Pasta: [
+        ['path', { d: 'M2 15h20' }],
+        ['path', { d: 'M3.5 15c1.2 3 4.4 5 8.5 5s7.3-2 8.5-5' }],
+        ['path', { d: 'M5 15c.5-3.5 3.2-6 7-6s6.5 2.5 7 6' }],
+        ['path', { d: 'M7.5 15c.3-2 2-3.5 4.5-3.5s4.2 1.5 4.5 3.5' }],
+        ['path', { d: 'M10 15c.2-.8.9-1.3 2-1.3s1.8.5 2 1.3' }],
+        ['path', { d: 'M12 9V2.5' }],
+        ['path', { d: 'M10.5 2.5v2a1.5 1.5 0 0 0 3 0v-2' }],
+    ],
+};
+function iconNode(name) {
+    if (CUSTOM_ICONS[name])
+        return CUSTOM_ICONS[name];
+    const icons = (window.lucide && window.lucide.icons) || {};
+    const ALIASES = { CircleCheck: 'CheckCircle', CalendarDays: 'Calendar', ListChecks: 'CheckSquare', CalendarPlus: 'Calendar', House: 'Home', ChartColumn: 'BarChart3', TrainFront: 'Train', Flower2: 'Flower', HandCoins: 'Coins', CalendarClock: 'Calendar' };
+    const node = icons[name] || icons[ALIASES[name]];
+    if (!node)
+        return null;
+    // Разные версии Lucide: [tag, attrs][] либо ['svg', attrs, children]
+    return node[0] === 'svg' ? node[2] : node;
+}
+function Icon({ name, size = 22, strokeWidth = 1.6, className = '', style }) {
+    const children = name ? iconNode(name) : null;
+    if (!children) {
+        // эмодзи из старых категорий или если иконки не загрузились
+        return React.createElement("span", { className: className, style: { fontSize: size * 0.9, lineHeight: 1, ...style } }, name && !/^[A-Z]/.test(name) ? name : '•');
+    }
+    return (React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: strokeWidth, strokeLinecap: "round", strokeLinejoin: "round", className: className, style: style, "aria-hidden": "true" }, children.map(([tag, attrs], i) => React.createElement(tag, { ...attrs, key: i }))));
+}
+function CategoryBadge({ category, size = 22, box = 44 }) {
+    const color = category?.color || '#ec4899';
+    return (React.createElement("div", { className: "flex items-center justify-center rounded-full shrink-0", style: { width: box, height: box, color, backgroundColor: color + '14', border: `1px solid ${color}40` } },
+        React.createElement(Icon, { name: category?.icon, size: size })));
+}
+// ---- components/Decor.jsx
+// Декоративные элементы в духе референса: полоса-анонс, логотип, печать, маркиза, сердечки.
+const MONTHS_GEN = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+const MONTHS_NOM = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+function Heart({ size = 9, className = '' }) {
+    return (React.createElement("svg", { width: size, height: size, viewBox: "0 0 24 24", className: className, "aria-hidden": "true" },
+        React.createElement("path", { fill: "currentColor", d: "M12 21s-7.5-4.6-10-9.3C.3 8.3 2.2 4 6.2 4c2.4 0 3.9 1.4 5.8 3.6C13.9 5.4 15.4 4 17.8 4c4 0 5.9 4.3 4.2 7.7C19.5 16.4 12 21 12 21z" })));
+}
+function Stamp({ text = 'MONEY · EST. 2026 · MONEY · EST. 2026 · ', size = 84, className = '', heart = false }) {
+    const id = React.useId ? React.useId().replace(/:/g, '') : 'st';
+    return (React.createElement("div", { className: `stamp ${className}`, style: { width: size, height: size }, "aria-hidden": "true" },
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-ring" },
+            React.createElement("path", { id: 'c' + id, d: "M50,50 m-36,0 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0", fill: "none" }),
+            React.createElement("text", null,
+                React.createElement("textPath", { href: '#c' + id, startOffset: "0" }, text))),
+        React.createElement("svg", { viewBox: "0 0 100 100", className: "stamp-edge" },
+            React.createElement("circle", { cx: "50", cy: "50", r: "47" })),
+        heart
+            ? React.createElement(Heart, { size: size * 0.14, className: "stamp-heart" })
+            : React.createElement("span", { className: "stamp-mark", style: { fontSize: size * 0.3 } }, "\u20BD")));
+}
+// Вместо надписи — тонкое контурное сердечко
+function LoveLogo() {
+    return (React.createElement("svg", { className: "logo-heart", width: "28", height: "26", viewBox: "0 0 24 22", "aria-hidden": "true" },
+        React.createElement("path", { d: "M12 20.2s-7.6-4.7-9.9-9.2C.4 7.6 2.4 3 6.4 3c2.4 0 3.9 1.4 5.6 3.5C13.7 4.4 15.2 3 17.6 3c4 0 6 4.6 4.3 8-2.3 4.5-9.9 9.2-9.9 9.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.1", strokeLinejoin: "round", strokeLinecap: "round" })));
+}
+function Logo({ small = false }) {
+    return (React.createElement("div", { className: `wordmark ${small ? 'wordmark-sm' : ''}` },
+        React.createElement("span", { className: "wordmark-rule" }),
+        React.createElement("span", { className: "wordmark-text" }, "MONEY"),
+        React.createElement("span", { className: "wordmark-rule" })));
+}
+// Полоса сверху показывает выбранный месяц (на экранах входа — текущий)
+function TopStrip() {
+    const store = useContext(StoreContext);
+    const d = new Date();
+    const y = store && store.month ? store.month.y : d.getFullYear();
+    const m = store && store.month ? store.month.m : d.getMonth();
+    return React.createElement("div", { className: "topstrip" },
+        window.APP_STRIP || 'Учёт трат',
+        " \u00B7 ",
+        MONTHS_NOM[m],
+        " ",
+        y);
+}
+function PageHeader({ title, subtitle }) {
+    return (React.createElement("header", { className: "pagehead" },
+        React.createElement(TopStrip, null),
+        React.createElement("div", { className: "pagehead-title" },
+            React.createElement("span", { className: "title-mark" }, "\u2726"),
+            React.createElement("h1", { className: "display" }, title),
+            subtitle && React.createElement("p", { className: "eyebrow mt-2" }, subtitle))));
+}
+function Stripes({ children, className = '' }) {
+    return React.createElement("div", { className: `stripes ${className}` }, children);
+}
+// ---- components/Ui.jsx
+// Общие элементы: нижний лист, поля, даты и деньги.
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const ymdToDate = (ymd) => new Date(ymd + 'T12:00');
+const daysUntil = (ymd) => Math.round((ymdToDate(ymd) - ymdToDate(todayYmd())) / 86400000);
+const fmtDay = (ymd) => ymdToDate(ymd).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+const money = (n) => (Number(n) || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ₽';
+const addPeriod = (ymd, repeat) => {
+    const d = ymdToDate(ymd);
+    const day = d.getDate();
+    if (repeat === 'weekly')
+        d.setDate(d.getDate() + 7);
+    if (repeat === 'monthly') {
+        d.setDate(1);
+        d.setMonth(d.getMonth() + 1);
+        d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()));
+    }
+    if (repeat === 'yearly')
+        d.setFullYear(d.getFullYear() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const whenLabel = (ymd) => {
+    const n = daysUntil(ymd);
+    if (n < 0)
+        return { text: `просрочено на ${-n} дн.`, tone: 'late' };
+    if (n === 0)
+        return { text: 'сегодня', tone: 'soon' };
+    if (n === 1)
+        return { text: 'завтра', tone: 'soon' };
+    if (n <= 7)
+        return { text: `через ${n} дн.`, tone: 'soon' };
+    return { text: fmtDay(ymd), tone: 'calm' };
+};
+function Sheet({ title, onClose, children }) {
+    return (React.createElement("div", { className: "sheet-backdrop", onClick: onClose },
+        React.createElement("div", { className: "sheet", onClick: (e) => e.stopPropagation() },
+            React.createElement("div", { className: "sheet-grip" }),
+            React.createElement("h2", { className: "display text-3xl text-gray-800 mb-5" }, title),
+            children)));
+}
+function Field({ label, children }) {
+    return (React.createElement("label", { className: "block" },
+        React.createElement("span", { className: "eyebrow block mb-2" }, label),
+        children));
+}
+function Segmented({ value, onChange, options }) {
+    return (React.createElement("div", { className: "segmented", role: "tablist" }, options.map(([v, l]) => (React.createElement("button", { key: v, type: "button", role: "tab", "aria-selected": value === v, className: value === v ? 'seg-on' : '', onClick: () => onChange(v) }, l)))));
+}
+function Chip({ tone = 'calm', children }) {
+    return React.createElement("span", { className: `chip chip-${tone}` }, children);
+}
+function SectionLabel({ children, right }) {
+    return (React.createElement("div", { className: "dayhead" },
+        React.createElement("span", { className: "eyebrow" }, children),
+        right && React.createElement("span", { className: "dayhead-sum" }, right)));
+}
+// Расчёты: остатки, сверки, поиск ошибок
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+const shiftYmd = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return ymd(d); };
+const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+const fmtShort = (s) => ymdToDate(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
+const signed = (n) => (n > 0 ? '+' : n < 0 ? '−' : '') + money(Math.abs(n));
+// Как запись меняет остаток карты
+function opDelta(op, cardId) {
+    const a = Number(op.amount) || 0;
+    if (op.type === 'in')
+        return op.card === cardId ? a : 0;
+    if (op.type === 'out')
+        return op.card === cardId ? -a : 0;
+    if (op.type === 'transfer')
+        return (op.card === cardId ? -a : 0) + (op.toCard === cardId ? a : 0);
+    return 0;
+}
+const touches = (op, cardId) => op.card === cardId || op.toCard === cardId;
+// Остаток карты на конец дня upto (включительно); записи до даты старта не считаются
+function balanceAt(card, ops, upto = '9999-12-31') {
+    if (!card || !card.startDate)
+        return 0;
+    let b = Number(card.start) || 0;
+    ops.forEach(op => { if (op.date >= card.startDate && op.date <= upto)
+        b += opDelta(op, card.id); });
+    return r2(b);
+}
+// Сверки карты по порядку; для каждой — что должно было быть и разница
+function checksFor(card, ops, checks) {
+    return checks.filter(c => c.card === card.id).sort((a, b) => a.date.localeCompare(b.date) || (a.at || 0) - (b.at || 0))
+        .map(c => { const expected = balanceAt(card, ops, c.date); return { ...c, expected, diff: r2((Number(c.actual) || 0) - expected) }; });
+}
+function cardStatus(card, ops, checks) {
+    const list = checksFor(card, ops, checks);
+    const last = list[list.length - 1] || null;
+    const lastOk = [...list].reverse().find(c => c.diff === 0) || null;
+    const since = last ? daysUntil(last.date) * -1 : null;
+    let tone = 'none';
+    if (last && last.diff !== 0)
+        tone = 'bad';
+    else if (last && since > 7)
+        tone = 'stale';
+    else if (last)
+        tone = 'ok';
+    return { last, lastOk, since, tone, list, balance: balanceAt(card, ops) };
+}
+// Подсказки, где искать расхождение
+function diffHints(diff, card, ops, fromYmd, toYmd, catName) {
+    const abs = Math.abs(diff);
+    const win = ops.filter(o => touches(o, card.id) && o.date > (fromYmd || '0000') && o.date <= toYmd);
+    const out = [];
+    const label = (o) => `${fmtShort(o.date)} · ${o.type === 'transfer' ? 'перевод' : catName(o.cat)} · ${money(o.amount)}`;
+    win.filter(o => r2(o.amount) === abs).forEach(o => {
+        const d = opDelta(o, card.id);
+        if ((d > 0 && diff < 0) || (d < 0 && diff > 0))
+            out.push({ text: `Возможно, лишняя или повторная запись: ${label(o)}`, op: o });
+    });
+    win.filter(o => r2(o.amount * 2) === abs).forEach(o => out.push({ text: `Возможно, перепутаны «поступление» и «расход»: ${label(o)}`, op: o }));
+    if (Number.isInteger(abs) && abs % 9 === 0 && abs >= 9)
+        out.push({ text: 'Разница делится на 9 — частый признак переставленных цифр в сумме (например, 1 530 вместо 1 350).' });
+    out.push({ text: diff > 0
+            ? `На карте на ${money(abs)} больше, чем по записям: не внесено поступление или внесён лишний расход.`
+            : `На карте на ${money(abs)} меньше, чем по записям: не внесён расход (комиссия, списание) или внесено лишнее поступление.` });
+    return out;
+}
+// Все найденные ошибки по бизнесу
+function findProblems({ cards, ops, checks, cats }) {
+    const list = [];
+    const catName = (id) => (cats.find(c => c.id === id) || {}).name || 'без категории';
+    const cardName = (id) => (cards.find(c => c.id === id) || {}).name || 'неизвестная карта';
+    const today = todayYmd();
+    // дубли: одинаковые тип, карта, сумма, дата и категория
+    const seen = {};
+    ops.forEach(o => {
+        const k = [o.type, o.card, o.toCard || '', r2(o.amount), o.date, o.cat || ''].join('|');
+        (seen[k] = seen[k] || []).push(o);
+    });
+    Object.values(seen).filter(g => g.length > 1).forEach(g => list.push({
+        level: 'warn', kind: 'dup', op: g[1],
+        title: `Похоже на дубль: ${g.length} одинаковые записи`,
+        text: `${fmtShort(g[0].date)} · ${g[0].type === 'transfer' ? 'перевод' : catName(g[0].cat)} · ${money(g[0].amount)} · ${cardName(g[0].card)}. Если это две разные операции — добавьте примечание.`,
+        skip: g.every(o => o.note && g.filter(x => x.note === o.note).length === 1),
+    }));
+    ops.forEach(o => {
+        if (!(Number(o.amount) > 0))
+            list.push({ level: 'bad', kind: 'amount', op: o, title: 'Запись без суммы', text: `${fmtShort(o.date)} · ${cardName(o.card)}` });
+        if (!cards.find(c => c.id === o.card))
+            list.push({ level: 'bad', kind: 'card', op: o, title: 'Не указана карта', text: `${fmtShort(o.date)} · ${money(o.amount)}` });
+        if (o.type === 'transfer') {
+            if (!o.toCard)
+                list.push({ level: 'bad', kind: 'transfer', op: o, title: 'Перевод без карты зачисления', text: `${fmtShort(o.date)} · ${money(o.amount)} ушло с «${cardName(o.card)}», но не указано, куда пришло.` });
+            else if (o.toCard === o.card)
+                list.push({ level: 'bad', kind: 'transfer', op: o, title: 'Перевод на ту же карту', text: `${fmtShort(o.date)} · ${money(o.amount)} · ${cardName(o.card)}` });
+        }
+        else if (!o.cat || !cats.find(c => c.id === o.cat)) {
+            list.push({ level: 'warn', kind: 'cat', op: o, title: 'Нет категории', text: `${fmtShort(o.date)} · ${o.type === 'in' ? 'поступление' : 'расход'} ${money(o.amount)} · ${cardName(o.card)}` });
+        }
+        if (o.date > today)
+            list.push({ level: 'warn', kind: 'future', op: o, title: 'Дата в будущем', text: `${fmtShort(o.date)} · ${money(o.amount)} — проверьте дату.` });
+        const c = cards.find(x => x.id === o.card);
+        if (c && c.startDate && o.date < c.startDate)
+            list.push({ level: 'info', kind: 'before', op: o, title: 'Запись раньше начала учёта', text: `${fmtShort(o.date)} · ${money(o.amount)} не входит в остаток «${c.name}» (учёт с ${fmtShort(c.startDate)}).` });
+    });
+    // крупные суммы для категории (в 5 раз выше обычного)
+    const byCat = {};
+    ops.filter(o => o.type !== 'transfer' && o.cat).forEach(o => (byCat[o.cat] = byCat[o.cat] || []).push(Number(o.amount) || 0));
+    ops.forEach(o => {
+        const arr = byCat[o.cat];
+        if (!arr || arr.length < 5 || o.type === 'transfer')
+            return;
+        const s = [...arr].sort((a, b) => a - b);
+        const med = s[Math.floor(s.length / 2)];
+        if (med > 0 && o.amount > med * 5)
+            list.push({ level: 'info', kind: 'big', op: o, title: 'Необычно крупная сумма', text: `${fmtShort(o.date)} · ${catName(o.cat)} · ${money(o.amount)} — обычно около ${money(med)}. Проверьте, нет ли лишнего нуля.` });
+    });
+    cards.forEach(card => {
+        if (!card.startDate)
+            return;
+        // остаток уходил в минус
+        const days = [...new Set(ops.filter(o => touches(o, card.id) && o.date >= card.startDate).map(o => o.date))].sort();
+        const neg = days.find(d => balanceAt(card, ops, d) < 0);
+        if (neg)
+            list.push({ level: 'bad', kind: 'neg', title: `«${card.name}»: остаток ушёл в минус`, text: `На конец ${fmtShort(neg)} по записям ${money(balanceAt(card, ops, neg))}. Скорее всего, не внесено поступление или перевод на эту карту.` });
+        const st = cardStatus(card, ops, checks);
+        if (st.last && st.last.diff !== 0)
+            list.push({ level: 'bad', kind: 'diff', card: card.id, title: `«${card.name}»: расхождение ${signed(st.last.diff)}`, text: `Сверка ${fmtShort(st.last.date)}: на карте было ${money(st.last.actual)}, по записям ${money(st.last.expected)}.`,
+                hints: diffHints(st.last.diff, card, ops, st.lastOk && st.lastOk !== st.last ? st.lastOk.date : card.startDate, st.last.date, catName) });
+        if (!st.last)
+            list.push({ level: 'info', kind: 'nocheck', card: card.id, title: `«${card.name}» ещё не сверялась`, text: 'Откройте «Сверку» и введите, сколько сейчас на карте.' });
+        else if (st.since > 7)
+            list.push({ level: 'info', kind: 'stale', card: card.id, title: `«${card.name}»: сверка была ${st.since} дн. назад`, text: 'Сверяйтесь хотя бы раз в неделю — так ошибку проще найти.' });
+        // запись изменили или добавили задним числом в уже сверенный период
+        if (st.lastOk) {
+            ops.filter(o => touches(o, card.id) && o.date <= st.lastOk.date && (o.updatedAt || 0) > (st.lastOk.at || 0)).forEach(o => list.push({
+                level: 'warn', kind: 'late', op: o, title: `Изменён сверенный период «${card.name}»`,
+                text: `${fmtShort(o.date)} · ${money(o.amount)} — запись добавлена или изменена после сверки ${fmtShort(st.lastOk.date)}. Проверьте, что она верна.`,
+            }));
+        }
+    });
+    const order = { bad: 0, warn: 1, info: 2 };
+    return list.filter(p => !p.skip).sort((a, b) => order[a.level] - order[b.level]);
+}
+// Выгрузка в Excel
+function exportXlsx({ ops, cards, cats }, title) {
+    if (!window.XLSX) {
+        alert('Не удалось загрузить модуль Excel. Проверьте интернет.');
+        return;
+    }
+    const cn = (id) => (cards.find(c => c.id === id) || {}).name || '';
+    const kn = (id) => (cats.find(c => c.id === id) || {}).name || '';
+    const rows = [...ops].sort((a, b) => a.date.localeCompare(b.date)).map(o => ({
+        'Дата': o.date, 'Тип': o.type === 'in' ? 'Поступление' : o.type === 'out' ? 'Расход' : 'Перевод',
+        'Поступление': o.type === 'in' ? Number(o.amount) : '', 'Расход': o.type === 'out' ? Number(o.amount) : '',
+        'Карта': cn(o.card), 'На карту': o.type === 'transfer' ? cn(o.toCard) : '', 'Категория': o.type === 'transfer' ? '' : kn(o.cat),
+        'Примечание': o.note || '', 'Кто внёс': o.by || '',
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'Операции');
+    XLSX.writeFile(wb, (title || 'business') + '.xlsx');
+}
+// ---------- страницы бизнес-учёта ----------
+const NavContext = createContext({ path: '/', go: () => { } });
+const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+const inMonthYmd = (d, y, m) => d && d.slice(0, 7) === `${y}-${String(m + 1).padStart(2, '0')}`;
+const dayTitle = (s) => { const t = todayYmd(); if (s === t)
+    return 'Сегодня'; if (s === shiftYmd(1))
+    return 'Вчера'; return ymdToDate(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' }); };
+function useNames() {
+    const { cards, cats } = useStore();
+    return {
+        card: (id) => cards.find(c => c.id === id) || { name: '—', color: '#999' },
+        cat: (id) => (cats.find(c => c.id === id) || {}).name || 'Без категории',
+    };
+}
+function PageTitle({ title, right, sub }) {
+    return (React.createElement("header", { className: "ptitle-wrap" },
+        React.createElement("div", { className: "ptitle" },
+            React.createElement("h1", null, title),
+            right),
+        sub && React.createElement("p", { className: "subtitle" }, sub)));
+}
+function MonthNav() {
+    const { month, setMonth } = useStore();
+    const shift = (k) => { const d = new Date(month.y, month.m + k, 1); setMonth({ y: d.getFullYear(), m: d.getMonth() }); };
+    return (React.createElement("div", { className: "monthnav" },
+        React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u043C\u0435\u0441\u044F\u0446", onClick: () => shift(-1) },
+            React.createElement(Icon, { name: "ChevronLeft", size: 20 })),
+        React.createElement("span", null,
+            MONTHS[month.m],
+            " ",
+            month.y),
+        React.createElement("button", { type: "button", "aria-label": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u043C\u0435\u0441\u044F\u0446", onClick: () => shift(1) },
+            React.createElement(Icon, { name: "ChevronRight", size: 20 }))));
+}
+const statusText = (st) => st.tone === 'ok' ? `сошлось · ${fmtShort(st.last.date)}` : st.tone === 'bad' ? `расхождение ${signed(st.last.diff)}` : st.tone === 'stale' ? `сверка ${st.since} дн. назад` : 'не сверялась';
+function CardTile({ card, onClick }) {
+    const { ops, checks } = useStore();
+    const st = cardStatus(card, ops, checks);
+    return (React.createElement("button", { type: "button", className: "cardtile", onClick: onClick },
+        React.createElement("span", { className: "cardtile-name" },
+            React.createElement("span", { className: "dot", style: { background: card.color } }),
+            card.name),
+        React.createElement("span", { className: "cardtile-sum tabular-nums" }, money(st.balance)),
+        React.createElement("span", { className: `status status-${st.tone}` },
+            st.tone === 'ok' && React.createElement(Icon, { name: "Check", size: 13, strokeWidth: 2.2 }),
+            st.tone === 'bad' && React.createElement(Icon, { name: "TriangleAlert", size: 13, strokeWidth: 2 }),
+            statusText(st))));
+}
+// ---------- главная: два столбца ----------
+function HomePage() {
+    const store = useStore();
+    const { ops, cards, month, loaded } = store;
+    const go = useContext(NavContext).go;
+    const names = useNames();
+    const [sheet, setSheet] = useState(null);
+    const problems = findProblems(store).filter(p => p.level !== 'info');
+    const mops = ops.filter(o => inMonthYmd(o.date, month.y, month.m));
+    const sumIn = r2(mops.filter(o => o.type === 'in').reduce((s, o) => s + Number(o.amount || 0), 0));
+    const sumOut = r2(mops.filter(o => o.type === 'out').reduce((s, o) => s + Number(o.amount || 0), 0));
+    const total = r2(cards.reduce((s, c) => s + balanceAt(c, ops), 0));
+    const days = [...new Set(mops.map(o => o.date))].sort().reverse();
+    return (React.createElement("div", { className: "page" },
+        React.createElement(PageTitle, { title: "\u0411\u0438\u0437\u043D\u0435\u0441", right: React.createElement(MonthNav, null) }),
+        React.createElement("section", { className: "ledger-head" },
+            React.createElement("div", { className: "col-in" },
+                React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F"),
+                React.createElement("b", { className: "tabular-nums" }, money(sumIn))),
+            React.createElement("div", { className: "col-out" },
+                React.createElement("span", { className: "eyebrow" }, "\u0420\u0430\u0441\u0445\u043E\u0434\u044B"),
+                React.createElement("b", { className: "tabular-nums" }, money(sumOut)))),
+        React.createElement("div", { className: "profit" },
+            React.createElement("span", null, "\u0418\u0442\u043E\u0433 \u043C\u0435\u0441\u044F\u0446\u0430"),
+            React.createElement("b", { className: `tabular-nums ${sumIn - sumOut < 0 ? 'neg' : ''}` }, signed(r2(sumIn - sumOut)))),
+        React.createElement("section", { className: "mt-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u0430\u0440\u0442\u0430\u0445"),
+                React.createElement("span", { className: "dayhead-sum tabular-nums" }, money(total))),
+            React.createElement("div", { className: "cardtiles" }, cards.map(c => React.createElement(CardTile, { key: c.id, card: c, onClick: () => go('/check') })))),
+        React.createElement("button", { type: "button", className: `alertbar ${problems.length ? 'alertbar-bad' : 'alertbar-ok'}`, onClick: () => go('/check') },
+            React.createElement(Icon, { name: problems.length ? 'TriangleAlert' : 'CircleCheck', size: 18 }),
+            React.createElement("span", null, problems.length ? `Найдено ошибок: ${problems.length} — посмотреть` : 'Ошибок не найдено'),
+            React.createElement(Icon, { name: "ChevronRight", size: 16 })),
+        React.createElement("section", { className: "mt-6" },
+            loaded && days.length === 0 && React.createElement("div", { className: "empty" },
+                React.createElement("p", { className: "empty-title display" }, "\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u0437\u0430 \u043C\u0435\u0441\u044F\u0446 \u043D\u0435\u0442"),
+                React.createElement("p", { className: "text-sm" }, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB+\u00BB, \u0447\u0442\u043E\u0431\u044B \u0432\u043D\u0435\u0441\u0442\u0438 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u0438\u043B\u0438 \u0440\u0430\u0441\u0445\u043E\u0434.")),
+            days.map(d => {
+                const list = mops.filter(o => o.date === d).sort((a, b) => (a.createdAt || a.updatedAt || 0) - (b.createdAt || b.updatedAt || 0));
+                const ins = list.filter(o => o.type === 'in'), outs = list.filter(o => o.type === 'out'), trs = list.filter(o => o.type === 'transfer');
+                return (React.createElement("div", { key: d, className: "mb-5" },
+                    React.createElement("div", { className: "dayhead" },
+                        React.createElement("span", { className: "eyebrow" }, dayTitle(d)),
+                        React.createElement("span", { className: "dayhead-sum tabular-nums" },
+                            ins.length > 0 && React.createElement("span", { className: "txt-in" },
+                                "+",
+                                money(r2(ins.reduce((s, o) => s + Number(o.amount), 0)))),
+                            ins.length > 0 && outs.length > 0 && ' · ',
+                            outs.length > 0 && React.createElement("span", { className: "txt-out" },
+                                "\u2212",
+                                money(r2(outs.reduce((s, o) => s + Number(o.amount), 0)))))),
+                    React.createElement("div", { className: "ledger" },
+                        React.createElement("div", { className: "ledger-col" }, ins.map(o => React.createElement(OpRow, { key: o.id, op: o, names: names, onClick: () => setSheet(o) }))),
+                        React.createElement("div", { className: "ledger-col" }, outs.map(o => React.createElement(OpRow, { key: o.id, op: o, names: names, onClick: () => setSheet(o) })))),
+                    trs.map(o => (React.createElement("button", { key: o.id, type: "button", className: "transfer", onClick: () => setSheet(o) },
+                        React.createElement(Icon, { name: "ArrowLeftRight", size: 15 }),
+                        React.createElement("span", null,
+                            names.card(o.card).name,
+                            " \u2192 ",
+                            o.toCard ? names.card(o.toCard).name : '?'),
+                        React.createElement("b", { className: "tabular-nums" }, money(o.amount)))))));
+            })),
+        React.createElement("button", { type: "button", "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C", className: "fab", onClick: () => setSheet('new') },
+            React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
+        sheet && React.createElement(OpSheet, { op: sheet === 'new' ? null : sheet, onClose: () => setSheet(null) })));
+}
+function OpRow({ op, names, onClick }) {
+    const c = names.card(op.card);
+    return (React.createElement("button", { type: "button", className: `oprow oprow-${op.type}`, onClick: onClick },
+        React.createElement("span", { className: "oprow-sum tabular-nums" },
+            op.type === 'in' ? '+' : '−',
+            money(op.amount)),
+        React.createElement("span", { className: "oprow-cat" }, op.cat ? names.cat(op.cat) : React.createElement("em", { className: "txt-out" }, "\u0431\u0435\u0437 \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438")),
+        React.createElement("span", { className: "oprow-meta" },
+            React.createElement("span", { className: "dot", style: { background: c.color } }),
+            c.name,
+            op.note ? ' · ' + op.note : '')));
+}
+// ---------- добавление / правка ----------
+const STICKY = 'biz-last';
+const sticky = () => { try {
+    const v = JSON.parse(localStorage.getItem(STICKY) || 'null');
+    if (v && Date.now() - v.at < 30 * 60 * 1000)
+        return v;
+}
+catch (e) { } return null; };
+const remember = (o) => { try {
+    localStorage.setItem(STICKY, JSON.stringify({ ...o, at: Date.now() }));
+}
+catch (e) { } };
+function OpSheet({ op, onClose, presetType }) {
+    const { cards, cats, saveOp, removeOp, error } = useStore();
+    const st = sticky();
+    const [f, setF] = useState(() => op ? { ...op, amount: String(op.amount) } : {
+        type: presetType || (st && st.type) || 'out', amount: '', card: (st && st.card) || cards[0]?.id, toCard: '',
+        cat: '', date: (st && st.date) || todayYmd(), note: '',
+    });
+    const [added, setAdded] = useState([]);
+    const [confirm, setConfirm] = useState(false);
+    const set = (k) => (v) => setF(x => ({ ...x, [k]: v }));
+    const typeCats = cats.filter(c => c.type === f.type);
+    const quick = [[shiftYmd(0), 'Сегодня'], [shiftYmd(1), 'Вчера'], [shiftYmd(2), 'Позавчера']];
+    const valid = Number(String(f.amount).replace(',', '.')) > 0 && f.card && f.date && (f.type !== 'transfer' || (f.toCard && f.toCard !== f.card)) && (f.type === 'transfer' || f.cat);
+    const hint = !f.amount ? 'Введите сумму' : f.type === 'transfer' ? (!f.toCard || f.toCard === f.card ? 'Выберите карту, куда пришли деньги' : '') : (!f.cat ? 'Выберите категорию' : '');
+    const submit = async (more) => {
+        if (!valid)
+            return;
+        const amount = r2(Number(String(f.amount).replace(',', '.')));
+        const rec = { ...f, amount, createdAt: f.createdAt || Date.now() };
+        if (rec.type !== 'transfer')
+            delete rec.toCard;
+        else
+            delete rec.cat;
+        remember({ type: f.type, card: f.card, date: f.date });
+        const ok = await saveOp(rec);
+        if (!ok)
+            return;
+        if (more) {
+            setAdded(a => [...a, (f.type === 'in' ? '+' : f.type === 'out' ? '−' : '⇄ ') + money(amount)]);
+            setF(x => ({ ...x, amount: '', note: '' }));
+            setTimeout(() => { const el = document.getElementById('op-amount'); if (el)
+                el.focus(); }, 0);
+        }
+        else
+            onClose();
+    };
+    return (React.createElement(Sheet, { title: op ? 'Запись' : 'Новая запись', onClose: onClose },
+        React.createElement("div", { className: "space-y-4" },
+            React.createElement(Segmented, { value: f.type, onChange: (v) => setF(x => ({ ...x, type: v, cat: '' })), options: [['in', 'Поступление'], ['out', 'Расход'], ['transfer', 'Перевод']] }),
+            React.createElement(Field, { label: "\u0421\u0443\u043C\u043C\u0430, \u20BD" },
+                React.createElement("input", { id: "op-amount", className: `input input-big ${f.type === 'in' ? 'txt-in' : f.type === 'out' ? 'txt-out' : ''}`, inputMode: "decimal", placeholder: "0", value: f.amount, onChange: (e) => set('amount')(e.target.value.replace(/[^\d.,]/g, '')), autoFocus: !op })),
+            React.createElement(Field, { label: f.type === 'transfer' ? 'С карты' : 'Карта' },
+                React.createElement("div", { className: "chips" }, cards.map(c => React.createElement("button", { key: c.id, type: "button", className: `chipbtn ${f.card === c.id ? 'chipbtn-on' : ''}`, onClick: () => set('card')(c.id) },
+                    React.createElement("span", { className: "dot", style: { background: c.color } }),
+                    c.name)))),
+            f.type === 'transfer' ? (React.createElement(Field, { label: "\u041D\u0430 \u043A\u0430\u0440\u0442\u0443" },
+                React.createElement("div", { className: "chips" }, cards.filter(c => c.id !== f.card).map(c => React.createElement("button", { key: c.id, type: "button", className: `chipbtn ${f.toCard === c.id ? 'chipbtn-on' : ''}`, onClick: () => set('toCard')(c.id) },
+                    React.createElement("span", { className: "dot", style: { background: c.color } }),
+                    c.name))))) : (React.createElement(Field, { label: "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F" },
+                React.createElement("div", { className: "chips" }, typeCats.map(c => React.createElement("button", { key: c.id, type: "button", className: `chipbtn ${f.cat === c.id ? 'chipbtn-on' : ''}`, onClick: () => set('cat')(c.id) }, c.name))))),
+            React.createElement(Field, { label: "\u0414\u0430\u0442\u0430" },
+                React.createElement("div", { className: "chips mb-2" }, quick.map(([d, l]) => React.createElement("button", { key: d, type: "button", className: `chipbtn ${f.date === d ? 'chipbtn-on' : ''}`, onClick: () => set('date')(d) }, l))),
+                React.createElement("input", { id: "op-date", className: "input", type: "date", value: f.date, onChange: (e) => set('date')(e.target.value) })),
+            React.createElement(Field, { label: "\u041F\u0440\u0438\u043C\u0435\u0447\u0430\u043D\u0438\u0435 \u2014 \u043D\u0435\u043E\u0431\u044F\u0437\u0430\u0442\u0435\u043B\u044C\u043D\u043E" },
+                React.createElement("input", { id: "op-note", className: "input", placeholder: "\u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0437\u0430\u043A\u0430\u0437 \u211615, \u0418\u0432\u0430\u043D", value: f.note || '', onChange: (e) => set('note')(e.target.value) })),
+            op && op.by && React.createElement("p", { className: "text-xs text-gray-500" },
+                "\u0412\u043D\u0451\u0441(\u043B\u0430): ",
+                op.by),
+            added.length > 0 && React.createElement("p", { className: "text-sm text-gray-500" },
+                "\u0414\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u043E \u043D\u0430 ",
+                fmtDay(f.date),
+                ": ",
+                added.join(', ')),
+            error && React.createElement("p", { className: "note" }, error),
+            !valid && hint && React.createElement("p", { className: "text-xs text-gray-500" }, hint),
+            !op && React.createElement("button", { type: "button", disabled: !valid, className: "btn-ghost w-full py-3", onClick: () => submit(true) }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0438 \u0432\u043D\u0435\u0441\u0442\u0438 \u0435\u0449\u0451"),
+            React.createElement("div", { className: "flex gap-3" },
+                React.createElement("button", { type: "button", className: "btn-ghost flex-1 py-3", onClick: onClose }, added.length ? 'Готово' : 'Отмена'),
+                React.createElement("button", { type: "button", disabled: !valid, className: "btn-primary flex-1 py-3", onClick: () => submit(false) }, op ? 'Сохранить' : 'Добавить')),
+            op && (confirm
+                ? React.createElement("div", { className: "flex gap-4 justify-center text-sm" },
+                    React.createElement("button", { type: "button", className: "link-danger", onClick: async () => { if (await removeOp(op.id))
+                            onClose(); } }, "\u0414\u0430, \u0443\u0434\u0430\u043B\u0438\u0442\u044C"),
+                    React.createElement("button", { type: "button", className: "underline text-gray-500", onClick: () => setConfirm(false) }, "\u041D\u0435\u0442"))
+                : React.createElement("button", { type: "button", className: "link-danger w-full text-sm", onClick: () => setConfirm(true) }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C")))));
+}
+// ---------- сверка ----------
+function CheckPage() {
+    const store = useStore();
+    const { cards, ops, checks, saveCheck, removeCheck } = store;
+    const [editOp, setEditOp] = useState(null);
+    const [open, setOpen] = useState(null);
+    const problems = findProblems(store);
+    const bad = problems.filter(p => p.level !== 'info');
+    return (React.createElement("div", { className: "page" },
+        React.createElement(PageTitle, { title: "\u0421\u0432\u0435\u0440\u043A\u0430", sub: "\u041F\u043E\u0441\u043C\u043E\u0442\u0440\u0438\u0442\u0435 \u0432 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0438 \u0431\u0430\u043D\u043A\u0430, \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u043D\u0430 \u043A\u0430\u0440\u0442\u0435, \u0438 \u0432\u0432\u0435\u0434\u0438\u0442\u0435 \u0441\u0443\u043C\u043C\u0443. \u0415\u0441\u043B\u0438 \u043D\u0435 \u0441\u043E\u0448\u043B\u043E\u0441\u044C \u2014 \u043D\u0438\u0436\u0435 \u043F\u043E\u0434\u0441\u043A\u0430\u0436\u0435\u043C, \u0433\u0434\u0435 \u0438\u0441\u043A\u0430\u0442\u044C." }),
+        cards.map(card => React.createElement(CheckCard, { key: card.id, card: card, ops: ops, checks: checks, onSave: saveCheck, onRemove: removeCheck })),
+        React.createElement("section", { className: "mt-8" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u0437\u0430\u043F\u0438\u0441\u0435\u0439"),
+                React.createElement("span", { className: "dayhead-sum" }, bad.length ? `ошибок: ${bad.length}` : 'всё чисто')),
+            problems.length === 0 && React.createElement("div", { className: "okbox" },
+                React.createElement(Icon, { name: "CircleCheck", size: 22 }),
+                React.createElement("span", null, "\u041E\u0448\u0438\u0431\u043E\u043A \u0438 \u0440\u0430\u0441\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439 \u043D\u0435\u0442. \u0412\u0441\u0451 \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F.")),
+            React.createElement("div", { className: "space-y-3" }, problems.map((p, i) => (React.createElement("div", { key: i, className: `problem problem-${p.level}` },
+                React.createElement("button", { type: "button", className: "w-full text-left", onClick: () => p.op ? setEditOp(p.op) : setOpen(open === i ? null : i) },
+                    React.createElement("b", null, p.title),
+                    React.createElement("span", { className: "block text-sm mt-1" }, p.text),
+                    p.op && React.createElement("span", { className: "block text-xs mt-2 underline" }, "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C")),
+                p.hints && (React.createElement("ul", { className: "hints" }, p.hints.map((h, j) => React.createElement("li", { key: j }, h.op ? React.createElement("button", { type: "button", className: "underline text-left", onClick: () => setEditOp(h.op) }, h.text) : h.text))))))))),
+        editOp && React.createElement(OpSheet, { op: editOp, onClose: () => setEditOp(null) })));
+}
+function CheckCard({ card, ops, checks, onSave, onRemove }) {
+    const st = cardStatus(card, ops, checks);
+    const [actual, setActual] = useState('');
+    const [date, setDate] = useState(todayYmd());
+    const [showHist, setShowHist] = useState(false);
+    const expected = balanceAt(card, ops, date);
+    const val = actual === '' ? null : r2(Number(String(actual).replace(',', '.')));
+    const diff = val === null ? null : r2(val - expected);
+    return (React.createElement("section", { className: "paper p-4 mb-4" },
+        React.createElement("div", { className: "flex items-center justify-between gap-3" },
+            React.createElement("span", { className: "cardtile-name" },
+                React.createElement("span", { className: "dot dot-lg", style: { background: card.color } }),
+                card.name),
+            React.createElement("span", { className: `status status-${st.tone}` }, statusText(st))),
+        React.createElement("div", { className: "calcline mt-3" },
+            React.createElement("span", null,
+                "\u041F\u043E \u0437\u0430\u043F\u0438\u0441\u044F\u043C \u043D\u0430 ",
+                date === todayYmd() ? 'сегодня' : fmtShort(date)),
+            React.createElement("b", { className: "tabular-nums" }, money(expected))),
+        React.createElement("form", { className: "mt-3 space-y-3", onSubmit: async (e) => { e.preventDefault(); if (val === null)
+                return; if (await onSave({ card: card.id, date, actual: val }))
+                setActual(''); } },
+            React.createElement("div", { className: "flex gap-2" },
+                React.createElement("input", { id: 'check-' + card.id, className: "input flex-1 min-w-0", inputMode: "decimal", placeholder: "\u0421\u043A\u043E\u043B\u044C\u043A\u043E \u043D\u0430 \u043A\u0430\u0440\u0442\u0435 \u0432 \u0431\u0430\u043D\u043A\u0435", value: actual, onChange: (e) => setActual(e.target.value.replace(/[^\d.,-]/g, '')) }),
+                React.createElement("button", { type: "submit", className: "btn-primary px-4", disabled: val === null }, "\u0421\u0432\u0435\u0440\u0438\u0442\u044C")),
+            React.createElement("div", { className: "flex items-center gap-2 text-sm text-gray-500" },
+                React.createElement("span", null, "\u043D\u0430 \u0434\u0430\u0442\u0443"),
+                React.createElement("input", { className: "input input-sm", type: "date", value: date, onChange: (e) => setDate(e.target.value) })),
+            diff !== null && React.createElement("p", { className: `text-sm ${diff === 0 ? 'txt-in' : 'txt-out'}` }, diff === 0 ? 'Совпадает — нажмите «Сверить», чтобы закрепить.' : `Разница ${signed(diff)}. Сохраните сверку — ниже появятся подсказки.`)),
+        st.list.length > 0 && React.createElement("button", { type: "button", className: "text-sm underline text-gray-500 mt-3", onClick: () => setShowHist(!showHist) }, showHist ? 'Скрыть историю' : `История сверок (${st.list.length})`),
+        showHist && (React.createElement("div", { className: "mt-2 divide-y divide-[color:var(--line)]" }, [...st.list].reverse().map(c => (React.createElement("div", { key: c.id, className: "py-2 flex items-center justify-between gap-2 text-sm" },
+            React.createElement("span", null,
+                fmtShort(c.date),
+                " \u00B7 ",
+                money(c.actual),
+                c.by ? ' · ' + c.by : ''),
+            React.createElement("span", { className: "flex items-center gap-3" },
+                React.createElement("span", { className: c.diff === 0 ? 'txt-in' : 'txt-out' }, c.diff === 0 ? '✓' : signed(c.diff)),
+                React.createElement("button", { type: "button", "aria-label": "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u0441\u0432\u0435\u0440\u043A\u0443", className: "text-gray-300", onClick: () => onRemove(c.id) }, "\u2715")))))))));
+}
+// ---------- отчёт ----------
+function ReportPage() {
+    const store = useStore();
+    const { ops, cats, cards, month } = store;
+    const names = useNames();
+    const mops = ops.filter(o => inMonthYmd(o.date, month.y, month.m));
+    const group = (type) => {
+        const m = {};
+        mops.filter(o => o.type === type).forEach(o => { m[o.cat || ''] = (m[o.cat || ''] || 0) + Number(o.amount || 0); });
+        return Object.entries(m).map(([id, s]) => ({ id, name: id ? names.cat(id) : 'Без категории', sum: r2(s) })).sort((a, b) => b.sum - a.sum);
+    };
+    const gi = group('in'), go_ = group('out');
+    const tin = r2(gi.reduce((s, x) => s + x.sum, 0)), tout = r2(go_.reduce((s, x) => s + x.sum, 0));
+    const byPerson = {};
+    mops.forEach(o => { const k = o.by || '—'; byPerson[k] = (byPerson[k] || 0) + 1; });
+    const Bars = ({ list, total, tone }) => (React.createElement("div", { className: "paper divide-y" },
+        list.length === 0 && React.createElement("p", { className: "px-4 py-3 text-sm text-gray-500" }, "\u041D\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0435\u0439"),
+        list.map(x => (React.createElement("div", { key: x.id, className: "px-4 py-3" },
+            React.createElement("div", { className: "flex justify-between gap-3" },
+                React.createElement("span", null, x.name),
+                React.createElement("b", { className: "tabular-nums" }, money(x.sum))),
+            React.createElement("div", { className: "bar" },
+                React.createElement("span", { className: `bar-${tone}`, style: { width: (total ? x.sum / total * 100 : 0) + '%' } })))))));
+    return (React.createElement("div", { className: "page" },
+        React.createElement(PageTitle, { title: "\u041E\u0442\u0447\u0451\u0442", right: React.createElement(MonthNav, null) }),
+        React.createElement("section", { className: "ledger-head" },
+            React.createElement("div", { className: "col-in" },
+                React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F"),
+                React.createElement("b", { className: "tabular-nums" }, money(tin))),
+            React.createElement("div", { className: "col-out" },
+                React.createElement("span", { className: "eyebrow" }, "\u0420\u0430\u0441\u0445\u043E\u0434\u044B"),
+                React.createElement("b", { className: "tabular-nums" }, money(tout)))),
+        React.createElement("div", { className: "profit" },
+            React.createElement("span", null, "\u0418\u0442\u043E\u0433 \u043C\u0435\u0441\u044F\u0446\u0430"),
+            React.createElement("b", { className: `tabular-nums ${tin - tout < 0 ? 'neg' : ''}` }, signed(r2(tin - tout)))),
+        React.createElement("section", { className: "mt-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F \u043F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C")),
+            React.createElement(Bars, { list: gi, total: tin, tone: "in" })),
+        React.createElement("section", { className: "mt-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u0420\u0430\u0441\u0445\u043E\u0434\u044B \u043F\u043E \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F\u043C")),
+            React.createElement(Bars, { list: go_, total: tout, tone: "out" })),
+        React.createElement("section", { className: "mt-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041A\u0442\u043E \u0432\u043D\u043E\u0441\u0438\u043B")),
+            React.createElement("div", { className: "paper divide-y" },
+                Object.entries(byPerson).map(([k, n]) => React.createElement("div", { key: k, className: "px-4 py-3 flex justify-between" },
+                    React.createElement("span", null, k),
+                    React.createElement("span", { className: "text-gray-500" },
+                        n,
+                        " \u0437\u0430\u043F."))),
+                Object.keys(byPerson).length === 0 && React.createElement("p", { className: "px-4 py-3 text-sm text-gray-500" }, "\u041D\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u0435\u0439"))),
+        React.createElement("div", { className: "mt-6 space-y-3" },
+            React.createElement("button", { type: "button", className: "btn-ghost w-full py-3 flex items-center justify-center gap-2", onClick: () => exportXlsx({ ops: mops, cards, cats }, `Бизнес ${MONTHS[month.m]} ${month.y}`) },
+                React.createElement(Icon, { name: "FileSpreadsheet", size: 18 }),
+                " Excel \u0437\u0430 ",
+                MONTHS[month.m].toLowerCase()),
+            React.createElement("button", { type: "button", className: "btn-ghost w-full py-3 flex items-center justify-center gap-2", onClick: () => exportXlsx({ ops, cards, cats }, 'Бизнес всё время') },
+                React.createElement(Icon, { name: "FileSpreadsheet", size: 18 }),
+                " Excel \u0437\u0430 \u0432\u0441\u0451 \u0432\u0440\u0435\u043C\u044F"))));
+}
+// ---------- первая настройка карт ----------
+function SetupCards() {
+    const { cards, saveCard, error } = useStore();
+    const [vals, setVals] = useState(() => Object.fromEntries(cards.map(c => [c.id, c.start != null ? String(c.start) : ''])));
+    const [date, setDate] = useState(todayYmd());
+    const ok = cards.every(c => vals[c.id] !== '' && !isNaN(Number(String(vals[c.id]).replace(',', '.'))));
+    return (React.createElement("div", { className: "page" },
+        React.createElement(PageTitle, { title: "\u041D\u0430\u0447\u0430\u043B\u043E \u0443\u0447\u0451\u0442\u0430", sub: "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u0430\u043D\u043A\u043E\u0432 \u0438 \u0432\u0432\u0435\u0434\u0438\u0442\u0435, \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u0430 \u043A\u0430\u0436\u0434\u043E\u0439 \u043A\u0430\u0440\u0442\u0435. \u041E\u0442 \u044D\u0442\u043E\u0439 \u0441\u0443\u043C\u043C\u044B \u0431\u0443\u0434\u0435\u043C \u0441\u0447\u0438\u0442\u0430\u0442\u044C \u0442\u043E\u0447\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0442\u043E\u043A." }),
+        React.createElement("div", { className: "space-y-4" },
+            cards.map(c => (React.createElement(Field, { key: c.id, label: c.name },
+                React.createElement("input", { id: 'start-' + c.id, className: "input input-big", inputMode: "decimal", placeholder: "0", value: vals[c.id], onChange: (e) => setVals(v => ({ ...v, [c.id]: e.target.value.replace(/[^\d.,-]/g, '') })) })))),
+            React.createElement(Field, { label: "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u043E\u043D\u0435\u0446 \u0434\u043D\u044F" },
+                React.createElement("input", { className: "input", type: "date", value: date, onChange: (e) => setDate(e.target.value) })),
+            React.createElement("p", { className: "text-xs text-gray-500" }, "\u0415\u0441\u043B\u0438 \u0445\u043E\u0442\u0438\u0442\u0435 \u0432\u043D\u0435\u0441\u0442\u0438 \u0438 \u043F\u0440\u043E\u0448\u043B\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u2014 \u043F\u043E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0434\u0430\u0442\u0443 \u0440\u0430\u043D\u044C\u0448\u0435 \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u0442\u043E\u0442 \u0434\u0435\u043D\u044C."),
+            error && React.createElement("p", { className: "note" }, error),
+            React.createElement("button", { type: "button", disabled: !ok, className: "btn-primary w-full py-3", onClick: async () => { for (const c of cards)
+                    await saveCard({ ...c, start: r2(Number(String(vals[c.id]).replace(',', '.'))), startDate: date }); } }, "\u041D\u0430\u0447\u0430\u0442\u044C \u0443\u0447\u0451\u0442"))));
+}
+// ---------- настройки ----------
+function SettingsPage() {
+    const { user, displayName, setName, cards, saveCard, cats, saveCats, members, addMember, removeMember, invites, bid, uid, switchBiz, isOwner, signOut, error } = useStore();
+    const [name, setNm] = useState(displayName);
+    const [email, setEmail] = useState('');
+    const [newCat, setNewCat] = useState({ type: 'out', name: '' });
+    const [editCard, setEditCard] = useState(null);
+    return (React.createElement("div", { className: "page" },
+        React.createElement(PageTitle, { title: "\u0415\u0449\u0451" }),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041A\u0430\u0440\u0442\u044B")),
+            React.createElement("div", { className: "paper divide-y" }, cards.map(c => (React.createElement("button", { key: c.id, type: "button", className: "w-full px-4 py-3 flex items-center justify-between gap-3 text-left", onClick: () => setEditCard({ ...c, start: String(c.start ?? '') }) },
+                React.createElement("span", { className: "cardtile-name" },
+                    React.createElement("span", { className: "dot dot-lg", style: { background: c.color } }),
+                    c.name),
+                React.createElement("span", { className: "text-sm text-gray-500" },
+                    "\u0441\u0442\u0430\u0440\u0442 ",
+                    money(c.start),
+                    " \u00B7 ",
+                    c.startDate ? fmtShort(c.startDate) : '—')))))),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u0438")),
+            [['in', 'Поступления'], ['out', 'Расходы']].map(([t, l]) => (React.createElement("div", { key: t, className: "mb-3" },
+                React.createElement("p", { className: "text-sm text-gray-500 mb-2" }, l),
+                React.createElement("div", { className: "chips" }, cats.filter(c => c.type === t).map(c => (React.createElement("span", { key: c.id, className: "chipbtn" },
+                    c.name,
+                    React.createElement("button", { type: "button", "aria-label": 'Удалить ' + c.name, className: "text-gray-400 ml-1", onClick: () => saveCats(cats.filter(x => x.id !== c.id)) }, "\u2715")))))))),
+            React.createElement("form", { className: "flex gap-2 mt-2", onSubmit: (e) => { e.preventDefault(); const n = newCat.name.trim(); if (!n)
+                    return; saveCats([...cats, { id: newCat.type + '-' + newId(), type: newCat.type, name: n, order: cats.length }]); setNewCat({ ...newCat, name: '' }); } },
+                React.createElement("select", { className: "input input-sm", value: newCat.type, onChange: (e) => setNewCat({ ...newCat, type: e.target.value }) },
+                    React.createElement("option", { value: "in" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B."),
+                    React.createElement("option", { value: "out" }, "\u0420\u0430\u0441\u0445\u043E\u0434")),
+                React.createElement("input", { className: "input flex-1 min-w-0", placeholder: "\u041D\u043E\u0432\u0430\u044F \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F", value: newCat.name, onChange: (e) => setNewCat({ ...newCat, name: e.target.value }) }),
+                React.createElement("button", { type: "submit", className: "btn-primary px-4" }, "+"))),
+        isOwner && (React.createElement("section", { className: "mb-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041A\u0442\u043E \u0432\u043D\u043E\u0441\u0438\u0442")),
+            React.createElement("div", { className: "paper" },
+                React.createElement("div", { className: "divide-y" },
+                    members.length === 0 && React.createElement("p", { className: "px-4 py-3 text-sm text-gray-500" }, "\u041F\u043E\u043A\u0430 \u0432\u043D\u043E\u0441\u0438\u0442\u0435 \u0442\u043E\u043B\u044C\u043A\u043E \u0432\u044B."),
+                    members.map(m => React.createElement("div", { key: m.key, className: "px-4 py-3 flex justify-between gap-3" },
+                        React.createElement("span", { className: "truncate" }, m.email),
+                        React.createElement("button", { type: "button", "aria-label": 'Убрать ' + m.email, className: "text-gray-300", onClick: () => removeMember(m.key) }, "\u2715")))),
+                React.createElement("form", { className: "px-4 py-4 border-t border-[color:var(--line)] flex gap-2", onSubmit: async (e) => { e.preventDefault(); if (!email.trim())
+                        return; if (await addMember(email))
+                        setEmail(''); } },
+                    React.createElement("input", { id: "member-email", type: "email", className: "input flex-1 min-w-0", placeholder: "\u043F\u043E\u0447\u0442\u0430 \u0432\u0442\u043E\u0440\u043E\u0433\u043E \u0447\u0435\u043B\u043E\u0432\u0435\u043A\u0430", value: email, onChange: (e) => setEmail(e.target.value) }),
+                    React.createElement("button", { type: "submit", className: "btn-primary px-4" }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C")),
+                React.createElement("p", { className: "px-4 pb-4 text-xs text-gray-500" }, "\u0427\u0435\u043B\u043E\u0432\u0435\u043A \u043E\u0442\u043A\u0440\u044B\u0432\u0430\u0435\u0442 \u044D\u0442\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435, \u0441\u043E\u0437\u0434\u0430\u0451\u0442 \u0430\u043A\u043A\u0430\u0443\u043D\u0442 \u0441 \u044D\u0442\u043E\u0439 \u043F\u043E\u0447\u0442\u043E\u0439 \u0438 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0430\u0435\u0442 \u0435\u0451 \u2014 \u0438 \u0441\u0440\u0430\u0437\u0443 \u0432\u0438\u0434\u0438\u0442 \u0438 \u0432\u043D\u043E\u0441\u0438\u0442 \u0437\u0430\u043F\u0438\u0441\u0438. \u0412\u0430\u0448\u0438 \u043B\u0438\u0447\u043D\u044B\u0435 \u0442\u0440\u0430\u0442\u044B \u0432 Money \u0435\u043C\u0443 \u043D\u0435 \u0432\u0438\u0434\u043D\u044B.")))),
+        invites.length > 0 && (React.createElement("section", { className: "mb-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u0427\u0435\u0439 \u0443\u0447\u0451\u0442 \u043E\u0442\u043A\u0440\u044B\u0442")),
+            React.createElement("div", { className: "paper divide-y" }, [{ bid: uid, name: 'Мой' }, ...invites.map(i => ({ bid: i.bid, name: i.name || i.ownerEmail }))].map(b => (React.createElement("button", { key: b.bid, type: "button", className: "w-full px-4 py-3 flex justify-between text-left", onClick: () => switchBiz(b.bid) },
+                React.createElement("span", null, b.name),
+                bid === b.bid && React.createElement(Icon, { name: "Check", size: 18 }))))))),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement("div", { className: "dayhead" },
+                React.createElement("span", { className: "eyebrow" }, "\u041F\u0440\u043E\u0444\u0438\u043B\u044C")),
+            React.createElement("div", { className: "paper p-4 space-y-3" },
+                React.createElement("p", { className: "text-sm text-gray-500" }, user?.email),
+                React.createElement("form", { className: "flex gap-2", onSubmit: (e) => { e.preventDefault(); setName(name); } },
+                    React.createElement("input", { className: "input flex-1 min-w-0", value: name, onChange: (e) => setNm(e.target.value), placeholder: "\u0412\u0430\u0448\u0435 \u0438\u043C\u044F" }),
+                    React.createElement("button", { type: "submit", className: "btn-ghost px-4" }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")),
+                error && React.createElement("p", { className: "note" }, error),
+                React.createElement("button", { type: "button", className: "link-danger text-sm", onClick: signOut }, "\u0412\u044B\u0439\u0442\u0438"))),
+        editCard && (React.createElement(Sheet, { title: editCard.name, onClose: () => setEditCard(null) },
+            React.createElement("div", { className: "space-y-4" },
+                React.createElement(Field, { label: "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435" },
+                    React.createElement("input", { className: "input", value: editCard.name, onChange: (e) => setEditCard({ ...editCard, name: e.target.value }) })),
+                React.createElement(Field, { label: "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u0441\u0442\u0430\u0440\u0442\u0435, \u20BD" },
+                    React.createElement("input", { className: "input", inputMode: "decimal", value: editCard.start, onChange: (e) => setEditCard({ ...editCard, start: e.target.value.replace(/[^\d.,-]/g, '') }) })),
+                React.createElement(Field, { label: "\u0414\u0430\u0442\u0430 \u0441\u0442\u0430\u0440\u0442\u0430 (\u043E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u043E\u043D\u0435\u0446 \u0434\u043D\u044F)" },
+                    React.createElement("input", { className: "input", type: "date", value: editCard.startDate || todayYmd(), onChange: (e) => setEditCard({ ...editCard, startDate: e.target.value }) })),
+                React.createElement("p", { className: "text-xs text-gray-500" }, "\u0415\u0441\u043B\u0438 \u043F\u043E\u043C\u0435\u043D\u044F\u0442\u044C \u0441\u0442\u0430\u0440\u0442, \u0432\u0441\u0435 \u043E\u0441\u0442\u0430\u0442\u043A\u0438 \u0438 \u0441\u0432\u0435\u0440\u043A\u0438 \u043F\u0435\u0440\u0435\u0441\u0447\u0438\u0442\u0430\u044E\u0442\u0441\u044F."),
+                React.createElement("div", { className: "flex gap-3" },
+                    React.createElement("button", { type: "button", className: "btn-ghost flex-1 py-3", onClick: () => setEditCard(null) }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "button", className: "btn-primary flex-1 py-3", onClick: async () => { if (await saveCard({ ...editCard, start: r2(Number(String(editCard.start).replace(',', '.'))) }))
+                            setEditCard(null); } }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")))))));
+}
+// ---------- навигация ----------
+function BottomNav() {
+    const { path, go } = useContext(NavContext);
+    const store = useStore();
+    const n = findProblems(store).filter(p => p.level === 'bad').length;
+    const tabs = [['/', 'Записи', 'Wallet'], ['/check', 'Сверка', 'Scale'], ['/report', 'Отчёт', 'ChartColumn'], ['/settings', 'Ещё', 'Settings']];
+    return (React.createElement("nav", { className: "navbar" },
+        React.createElement("div", null, tabs.map(([p, l, ic]) => (React.createElement("button", { key: p, type: "button", onClick: () => go(p), className: `navbtn ${path === p ? 'navbtn-active' : ''}` },
+            React.createElement("span", { className: "relative" },
+                React.createElement(Icon, { name: ic, size: 22 }),
+                p === '/check' && n > 0 && React.createElement("span", { className: "navbadge" }, n)),
+            React.createElement("span", { className: "navlabel" }, l)))))));
+}
+class Guard extends React.Component {
+    constructor(p) { super(p); this.state = { err: null }; }
+    static getDerivedStateFromError(err) { return { err }; }
+    render() {
+        if (!this.state.err)
+            return this.props.children;
+        return (React.createElement("div", { className: "page", style: { paddingTop: 80 } },
+            React.createElement("h1", { className: "display", style: { fontSize: 26 } }, "\u0427\u0442\u043E-\u0442\u043E \u043F\u043E\u0448\u043B\u043E \u043D\u0435 \u0442\u0430\u043A"),
+            React.createElement("p", { className: "mt-3 text-sm" }, "\u0421\u0434\u0435\u043B\u0430\u0439\u0442\u0435 \u0441\u043A\u0440\u0438\u043D\u0448\u043E\u0442 \u044D\u0442\u043E\u0433\u043E \u044D\u043A\u0440\u0430\u043D\u0430 \u0438 \u043F\u0440\u0438\u0448\u043B\u0438\u0442\u0435 Claude."),
+            React.createElement("p", { className: "mt-2 text-xs text-gray-500", style: { wordBreak: 'break-word' } }, String(this.state.err && (this.state.err.message || this.state.err))),
+            React.createElement("button", { type: "button", className: "btn-primary w-full py-3 mt-6", onClick: () => location.reload() }, "\u041E\u0431\u043D\u043E\u0432\u0438\u0442\u044C")));
+    }
+}
+function Main() {
+    const { cardsReady, loaded } = useStore();
+    const [path, setPath] = useState('/');
+    if (!loaded)
+        return React.createElement("div", { id: "boot" });
+    if (!cardsReady)
+        return React.createElement(SetupCards, null);
+    const Page = { '/': HomePage, '/check': CheckPage, '/report': ReportPage, '/settings': SettingsPage }[path] || HomePage;
+    const go = (p) => { setPath(p); window.scrollTo(0, 0); };
+    return (React.createElement(NavContext.Provider, { value: { path, go } },
+        React.createElement("div", { className: "min-h-screen" },
+            React.createElement(Page, null),
+            React.createElement(BottomNav, null))));
+}
+function App() { return React.createElement(Guard, null,
+    React.createElement(StoreProvider, null,
+        React.createElement(Main, null))); }
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App, null));
+
+</script>
+</body>
+</html>
