@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F6F1E7">
+<meta name="theme-color" content="#FFFFFF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -334,18 +334,94 @@ h1, h2, h3, .display { font-weight: 400; letter-spacing: -0.01em; }
 .problem-bad b { color: var(--err); }
 .navbadge { background: var(--err); }
 .status-ok, .alertbar-ok, .okbox { background: var(--in-soft); color: var(--in); }
+
+/* ===== стиль «как в кофейне Дринкит»: белый, ультрамарин, латте, квадратные скобки ===== */
+:root {
+  --cream: #FFFFFF; --paper: #F4F3F8; --ink: #23298C; --muted: #6D70A6; --line: rgba(35, 41, 140, .14);
+  --blue: #2A32A8; --latte: #CDB59C; --latte-soft: #F3ECE3;
+  --coffee: #2A32A8; --butter: #FFFFFF; --sky: #E7E8F7;
+  --olive: #2A32A8; --olive-ink: #2A32A8; --olive-soft: #E7E8F7;
+  --wine: #2A32A8; --wine-soft: #E7E8F7;
+  --in: #2A32A8; --in-soft: #E7E8F7;
+  --out: #8C6646; --out-soft: #F3ECE3;
+  --warn: #9A6A12; --warn-soft: #FBF1DC;
+  --err: #C0392B; --err-soft: #FCE5E1;
+  --display: 'Jost', -apple-system, sans-serif;
+  --sans: 'Jost', -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+html, body { background: #fff; color: var(--ink); }
+body { font-weight: 400; font-size: 16px; }
+h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spacing: 0; text-transform: lowercase; color: var(--blue); }
+.ptitle h1 { font-size: 32px; color: var(--blue); }
+.ptitle h1::before { content: '['; margin-right: 2px; }
+.ptitle h1::after { content: ']'; margin-left: 2px; }
+.subtitle, .eyebrow { color: var(--muted); }
+.dayhead .eyebrow { font-family: var(--sans); font-weight: 500; color: var(--blue); font-size: 15px; }
+.eyebrow { text-transform: lowercase; }
+
+/* карточки как в меню: белые, тонкая синяя рамка и сдвинутая тень-линия */
+.drink, .cardtile, .oprow, .paper, .problem, .ledger-head > div, .empty {
+  background: #fff; border: 1.5px solid var(--blue); border-radius: 18px; box-shadow: 3px 3px 0 var(--blue);
+}
+.paper.divide-y > * + * { border-top: 1px solid var(--line); }
+.oprow { border-left-width: 1.5px; box-shadow: 2px 2px 0 var(--blue); }
+.oprow-in, .oprow-out { background: #fff; border-color: var(--blue); }
+.oprow-out { border-color: var(--latte); box-shadow: 2px 2px 0 var(--latte); }
+.oprow-in .oprow-sum { color: var(--blue); } .oprow-out .oprow-sum { color: var(--out); }
+.col-in { background: #fff; } .col-in b { color: var(--blue); }
+.col-out { background: var(--latte-soft); border-color: var(--latte) !important; box-shadow: 3px 3px 0 var(--latte) !important; } .col-out b { color: var(--out); }
+.ledger-head b, .cardtile-sum, .calcline b, .profit b { font-weight: 500; letter-spacing: -0.01em; }
+.ledger-head b { font-size: 24px; }
+
+.hero { background: var(--blue); color: #fff; border-radius: 26px; box-shadow: none; }
+.hero::after { display: none; }
+.hero-label { font-size: 15px; opacity: .85; }
+.hero-label::before { content: '('; } .hero-label::after { content: ')'; }
+.hero-total { font-family: var(--display); font-weight: 400; font-size: 42px; color: #fff; }
+.hero .cardtile { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.35); box-shadow: none; color: #fff; }
+.hero .cardtile-sum { color: #fff; }
+.hero .status-ok { background: #fff; color: var(--blue); }
+.hero .status-bad { background: var(--err-soft); color: var(--err); }
+.hero .status-stale, .hero .status-none { background: var(--latte-soft); color: var(--out); }
+
+.input { background: var(--paper); border-radius: 14px; color: var(--ink); }
+.input:focus { border-color: var(--blue); }
+.chipbtn { background: #fff; border: 1.5px solid var(--line); color: var(--ink); border-radius: 999px; }
+.chipbtn-on { border-color: var(--blue); background: var(--sky); color: var(--blue); }
+.segmented { background: var(--paper); border-radius: 999px; }
+.segmented button { border-radius: 999px; }
+.segmented .seg-on { background: var(--blue); color: #fff; }
+.btn-primary { background: var(--blue); color: #fff; border-radius: 999px; font-weight: 500; }
+.btn-ghost { border: 1.5px solid var(--blue); color: var(--blue); border-radius: 999px; }
+.fab { background: var(--blue); color: #fff; border-radius: 50%; box-shadow: 0 10px 24px -10px rgba(42, 50, 168, .7); }
+.navbar { background: #fff; }
+.navbtn { color: #A3A6CC; } .navbtn-active { color: var(--blue); }
+.status-ok, .alertbar-ok, .okbox { background: var(--sky); color: var(--blue); }
+.status-bad, .alertbar-bad, .problem-bad { background: var(--err-soft); color: var(--err); border-color: var(--err); box-shadow: 3px 3px 0 var(--err); }
+.problem-warn { background: var(--warn-soft); border-color: var(--warn); box-shadow: 3px 3px 0 var(--warn); }
+.problem-info { background: #fff; }
+.status { border: 0; box-shadow: none; border-radius: 999px; }
+.alertbar { border-radius: 999px; }
+.alertbar-ok { border: 1.5px solid var(--blue); }
+.transfer { border: 1.5px dashed var(--blue); color: var(--blue); border-radius: 14px; }
+.bar { background: var(--paper); } .bar-in { background: var(--blue); } .bar-out { background: var(--latte); }
+.sheet { background: #fff; }
+.splash { background: var(--blue); }
+.monthnav { color: var(--blue); } .monthnav button { color: var(--blue); }
+.txt-in { color: var(--blue); }
+.hero-label { text-transform: lowercase; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
 <script>window.APP_STRIP = "Бизнес-учёт"; window.APP_TAGLINE = "Поступления и расходы";</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.1"></script>
 <script>
   tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
-    fontFamily: { sans: ['Manrope', '-apple-system', 'sans-serif'] },
-    colors: { gray: { 50: '#EDE3D1', 100: '#F6F1E7', 200: '#E0D3BD', 300: '#C7B5A2', 400: '#A8927F', 500: '#8A7364', 600: '#6E5848', 700: '#523A2C', 800: '#3A2116', 900: '#26150D' } }
+    fontFamily: { sans: ['Jost', '-apple-system', 'sans-serif'] },
+    colors: { gray: { 50: '#F4F3F8', 100: '#FFFFFF', 200: '#DCDDF0', 300: '#B9BBE0', 400: '#9093C4', 500: '#6D70A6', 600: '#4F539A', 700: '#363B90', 800: '#23298C', 900: '#181C66' } }
   } } };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
