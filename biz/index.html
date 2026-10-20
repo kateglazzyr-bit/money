@@ -451,6 +451,10 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .txt-err { color: var(--err); }
 
 .hero-hint { font-size: 12px; opacity: .75; margin: 10px 0 0; }
+
+.dayend { margin-top: 12px; padding: 12px 14px; border-radius: 16px; background: var(--paper); display: flex; flex-direction: column; gap: 6px; }
+.dayend-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.dayend-row b { font-weight: 500; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1440,7 +1444,15 @@ function HomePage() {
                     React.createElement("b", { className: "tabular-nums" }, money(daySum(selDay, 'out'))))),
             React.createElement("div", { className: "profit" },
                 React.createElement("span", null, "\u0418\u0442\u043E\u0433 \u0434\u043D\u044F"),
-                React.createElement("b", { className: "tabular-nums" }, signed(r2(daySum(selDay, 'in') - daySum(selDay, 'out'))))))),
+                React.createElement("b", { className: "tabular-nums" }, signed(r2(daySum(selDay, 'in') - daySum(selDay, 'out'))))),
+            React.createElement("div", { className: "dayend" },
+                React.createElement("span", { className: "eyebrow" }, "\u043E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u043E\u043D\u0435\u0446 \u0434\u043D\u044F \u2014 \u0441\u0440\u0430\u0432\u043D\u0438\u0442\u0435 \u0441 \u0431\u0430\u043D\u043A\u043E\u043C"),
+                cards.map(c => (React.createElement("div", { key: c.id, className: "dayend-row" },
+                    React.createElement("span", null,
+                        React.createElement("span", { className: "dot", style: { background: c.color } }),
+                        " ",
+                        c.name),
+                    React.createElement("b", { className: "tabular-nums" }, c.startDate && selDay >= dayBefore(c.startDate) ? money(selDay < c.startDate ? Number(c.start) || 0 : balanceAt(c, ops, selDay)) : '—'))))))),
         React.createElement("section", { className: "mt-6" },
             loaded && selDay && days.length === 0 && React.createElement("div", { className: "empty" },
                 React.createElement("p", { className: "empty-title display" }, "\u0412 \u044D\u0442\u043E\u0442 \u0434\u0435\u043D\u044C \u0437\u0430\u043F\u0438\u0441\u0435\u0439 \u043D\u0435\u0442"),
@@ -1760,11 +1772,11 @@ function SetupCards() {
     const [date, setDate] = useState(todayYmd());
     const ok = cards.every(c => vals[c.id] !== '' && !isNaN(Number(String(vals[c.id]).replace(',', '.'))));
     return (React.createElement("div", { className: "page" },
-        React.createElement(PageTitle, { title: "\u041D\u0430\u0447\u0430\u043B\u043E \u0443\u0447\u0451\u0442\u0430", sub: "\u041E\u0442\u043A\u0440\u043E\u0439\u0442\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u0430\u043D\u043A\u043E\u0432 \u0438 \u0432\u0432\u0435\u0434\u0438\u0442\u0435, \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0441\u0435\u0439\u0447\u0430\u0441 \u043D\u0430 \u043A\u0430\u0436\u0434\u043E\u0439 \u043A\u0430\u0440\u0442\u0435. \u041E\u0442 \u044D\u0442\u043E\u0439 \u0441\u0443\u043C\u043C\u044B \u0431\u0443\u0434\u0435\u043C \u0441\u0447\u0438\u0442\u0430\u0442\u044C \u0442\u043E\u0447\u043D\u044B\u0439 \u043E\u0441\u0442\u0430\u0442\u043E\u043A." }),
+        React.createElement(PageTitle, { title: "\u041D\u0430\u0447\u0430\u043B\u043E \u0443\u0447\u0451\u0442\u0430", sub: "\u0412\u0432\u0435\u0434\u0438\u0442\u0435, \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0431\u044B\u043B\u043E \u043D\u0430 \u043A\u0430\u0436\u0434\u043E\u0439 \u043A\u0430\u0440\u0442\u0435 \u0443\u0442\u0440\u043E\u043C \u0442\u043E\u0433\u043E \u0434\u043D\u044F, \u0441 \u043A\u043E\u0442\u043E\u0440\u043E\u0433\u043E \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0435 \u0443\u0447\u0451\u0442 (\u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, 1-\u0433\u043E \u0447\u0438\u0441\u043B\u0430). \u0412\u0441\u0435 \u0437\u0430\u043F\u0438\u0441\u0438 \u0441 \u044D\u0442\u043E\u0439 \u0434\u0430\u0442\u044B \u0432\u043E\u0439\u0434\u0443\u0442 \u0432 \u043E\u0441\u0442\u0430\u0442\u043E\u043A." }),
         React.createElement("div", { className: "space-y-4" },
             cards.map(c => (React.createElement(Field, { key: c.id, label: c.name },
                 React.createElement("input", { id: 'start-' + c.id, className: "input input-big", inputMode: "decimal", placeholder: "0", value: vals[c.id], onChange: (e) => setVals(v => ({ ...v, [c.id]: e.target.value.replace(/[^\d.,-]/g, '') })) })))),
-            React.createElement(Field, { label: "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u043E\u043D\u0435\u0446 \u0434\u043D\u044F" },
+            React.createElement(Field, { label: "\u0423\u0447\u0451\u0442 \u0441 \u0434\u0430\u0442\u044B (\u0441\u0443\u043C\u043C\u044B \u0432\u044B\u0448\u0435 \u2014 \u0441\u043A\u043E\u043B\u044C\u043A\u043E \u0431\u044B\u043B\u043E \u0443\u0442\u0440\u043E\u043C \u044D\u0442\u043E\u0433\u043E \u0434\u043D\u044F)" },
                 React.createElement("input", { className: "input", type: "date", value: date, onChange: (e) => setDate(e.target.value) })),
             React.createElement("p", { className: "text-xs text-gray-500" }, "\u0415\u0441\u043B\u0438 \u0445\u043E\u0442\u0438\u0442\u0435 \u0432\u043D\u0435\u0441\u0442\u0438 \u0438 \u043F\u0440\u043E\u0448\u043B\u044B\u0435 \u043E\u043F\u0435\u0440\u0430\u0446\u0438\u0438 \u2014 \u043F\u043E\u0441\u0442\u0430\u0432\u044C\u0442\u0435 \u0434\u0430\u0442\u0443 \u0440\u0430\u043D\u044C\u0448\u0435 \u0438 \u0443\u043A\u0430\u0436\u0438\u0442\u0435 \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u0442\u043E\u0442 \u0434\u0435\u043D\u044C."),
             error && React.createElement("p", { className: "note" }, error),
