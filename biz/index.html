@@ -449,6 +449,8 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .lrow-sum { font-size: 16px; font-weight: 500; white-space: nowrap; }
 .lrow-tr { color: var(--muted); }
 .txt-err { color: var(--err); }
+
+.hero-hint { font-size: 12px; opacity: .75; margin: 10px 0 0; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1145,7 +1147,7 @@ function findProblems({ cards, ops, checks, cats }) {
             list.push({ level: 'warn', kind: 'future', op: o, title: 'Дата в будущем', text: `${fmtShort(o.date)} · ${money(o.amount)} — проверьте дату.` });
         const c = cards.find(x => x.id === o.card);
         if (c && c.startDate && o.date < c.startDate)
-            list.push({ level: 'info', kind: 'before', op: o, title: 'Запись раньше начала учёта', text: `${fmtShort(o.date)} · ${money(o.amount)} не входит в остаток «${c.name}» (учёт с ${fmtShort(c.startDate)}).` });
+            list.push({ level: 'info', kind: 'before', op: o, title: 'Запись раньше начала учёта', text: `${fmtShort(o.date)} · ${money(o.amount)} не входит в остаток «${c.name}» (учёт с ${fmtShort(c.startDate)}). Нажмите на карту на главной, чтобы начать учёт раньше.` });
     });
     // крупные суммы для категории (в 5 раз выше обычного)
     const byCat = {};
@@ -1253,6 +1255,75 @@ function CardTile({ card, onClick }) {
             st.tone === 'bad' && React.createElement(Icon, { name: "TriangleAlert", size: 13, strokeWidth: 2 }),
             statusText(st))));
 }
+// ---------- баланс карты: старт учёта или текущий остаток ----------
+const dayBefore = (s) => { const d = ymdToDate(s); d.setDate(d.getDate() - 1); return ymd(d); };
+const toNum = (v) => r2(Number(String(v).replace(/\s/g, '').replace(',', '.')));
+function BalanceSheet({ card, onClose }) {
+    const { ops, saveCard, saveCheck, error } = useStore();
+    const [mode, setMode] = useState('start');
+    const [date, setDate] = useState(card.startDate || todayYmd());
+    const [start, setStart] = useState(String(card.start ?? ''));
+    const [now, setNow] = useState('');
+    const mine = ops.filter(o => touches(o, card.id));
+    const earliest = mine.map(o => o.date).sort()[0];
+    const before = mine.filter(o => o.date < date).length;
+    const counted = mine.filter(o => o.date >= date).length;
+    const current = balanceAt(card, ops);
+    const preview = start === '' ? null : balanceAt({ ...card, start: toNum(start), startDate: date }, ops);
+    const newStart = now === '' ? null : r2(toNum(now) - (current - (Number(card.start) || 0)));
+    const save = async () => {
+        if (mode === 'start') {
+            if (start === '' || !date)
+                return;
+            if (await saveCard({ ...card, start: toNum(start), startDate: date }))
+                onClose();
+        }
+        else {
+            if (newStart === null)
+                return;
+            if (await saveCard({ ...card, start: newStart })) {
+                await saveCheck({ card: card.id, date: todayYmd(), actual: toNum(now) });
+                onClose();
+            }
+        }
+    };
+    return (React.createElement(Sheet, { title: card.name, onClose: onClose },
+        React.createElement("div", { className: "space-y-4" },
+            React.createElement("div", { className: "calcline" },
+                React.createElement("span", null, "\u0411\u0430\u043B\u0430\u043D\u0441 \u043F\u043E \u0437\u0430\u043F\u0438\u0441\u044F\u043C \u0441\u0435\u0439\u0447\u0430\u0441"),
+                React.createElement("b", { className: "tabular-nums" }, money(current))),
+            React.createElement(Segmented, { value: mode, onChange: setMode, options: [['start', 'С какой даты считать'], ['now', 'Баланс сейчас']] }),
+            mode === 'start' ? (React.createElement(React.Fragment, null,
+                React.createElement(Field, { label: "\u041D\u0430\u0447\u0430\u0442\u044C \u0443\u0447\u0451\u0442 \u0441 \u0434\u0430\u0442\u044B" },
+                    React.createElement("input", { id: "bal-date", className: "input", type: "date", value: date, onChange: (e) => setDate(e.target.value) })),
+                earliest && earliest < date && (React.createElement("button", { type: "button", className: "btn-ghost w-full py-2 text-sm", onClick: () => setDate(earliest) },
+                    "\u041D\u0430\u0447\u0430\u0442\u044C \u0441 \u043F\u0435\u0440\u0432\u043E\u0439 \u0437\u0430\u043F\u0438\u0441\u0438 \u2014 ",
+                    fmtDay(earliest))),
+                React.createElement(Field, { label: `Сколько было на карте утром ${date ? fmtDay(date) : ''}` },
+                    React.createElement("input", { id: "bal-start", className: "input input-big", inputMode: "decimal", placeholder: "0", value: start, onChange: (e) => setStart(e.target.value.replace(/[^\d.,-]/g, '')) })),
+                React.createElement("p", { className: "text-sm text-gray-500" },
+                    "\u042D\u0442\u043E \u043E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u043E\u043D\u0435\u0446 ",
+                    date ? fmtDay(dayBefore(date)) : 'предыдущего дня',
+                    " \u2014 \u0435\u0433\u043E \u0432\u0438\u0434\u043D\u043E \u0432 \u0432\u044B\u043F\u0438\u0441\u043A\u0435 \u0438\u043B\u0438 \u0438\u0441\u0442\u043E\u0440\u0438\u0438 \u0431\u0430\u043D\u043A\u0430. \u0412\u0441\u0435 \u0437\u0430\u043F\u0438\u0441\u0438 \u0441 ",
+                    date ? fmtDay(date) : 'этой даты',
+                    " \u0438 \u043F\u043E\u0437\u0436\u0435 \u0432\u043E\u0439\u0434\u0443\u0442 \u0432 \u0431\u0430\u043B\u0430\u043D\u0441: ",
+                    counted,
+                    " \u0448\u0442.",
+                    before > 0 ? ` Раньше этой даты ещё ${before} — они не учитываются.` : ''),
+                preview !== null && React.createElement("div", { className: "calcline" },
+                    React.createElement("span", null, "\u0411\u0430\u043B\u0430\u043D\u0441 \u0441\u0442\u0430\u043D\u0435\u0442"),
+                    React.createElement("b", { className: "tabular-nums" }, money(preview))))) : (React.createElement(React.Fragment, null,
+                React.createElement(Field, { label: "\u0421\u043A\u043E\u043B\u044C\u043A\u043E \u043D\u0430 \u043A\u0430\u0440\u0442\u0435 \u0441\u0435\u0439\u0447\u0430\u0441 (\u0438\u0437 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F \u0431\u0430\u043D\u043A\u0430)" },
+                    React.createElement("input", { id: "bal-now", className: "input input-big", inputMode: "decimal", placeholder: "0", value: now, onChange: (e) => setNow(e.target.value.replace(/[^\d.,-]/g, '')) })),
+                React.createElement("p", { className: "text-sm text-gray-500" }, "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u0441\u0442\u0430\u043D\u0435\u0442 \u0442\u043E\u0447\u043D\u043E \u0442\u0430\u043A\u0438\u043C, \u0430 \u0437\u0430\u043F\u0438\u0441\u0438 \u043D\u0435 \u0438\u0437\u043C\u0435\u043D\u044F\u0442\u0441\u044F. \u0415\u0441\u043B\u0438 \u0445\u043E\u0442\u0438\u0442\u0435 \u043F\u043E\u043D\u044F\u0442\u044C, \u043E\u0442\u043A\u0443\u0434\u0430 \u0440\u0430\u0437\u043D\u0438\u0446\u0430, \u043B\u0443\u0447\u0448\u0435 \u0441\u0434\u0435\u043B\u0430\u0439\u0442\u0435 \u00AB\u0421\u0432\u0435\u0440\u043A\u0443\u00BB \u2014 \u0442\u0430\u043C \u0431\u0443\u0434\u0443\u0442 \u043F\u043E\u0434\u0441\u043A\u0430\u0437\u043A\u0438."),
+                newStart !== null && React.createElement("div", { className: "calcline" },
+                    React.createElement("span", null, "\u0420\u0430\u0437\u043D\u0438\u0446\u0430 \u0441 \u0437\u0430\u043F\u0438\u0441\u044F\u043C\u0438"),
+                    React.createElement("b", { className: "tabular-nums" }, signed(r2(toNum(now) - current)))))),
+            error && React.createElement("p", { className: "note" }, error),
+            React.createElement("div", { className: "flex gap-3" },
+                React.createElement("button", { type: "button", className: "btn-ghost flex-1 py-3", onClick: onClose }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                React.createElement("button", { type: "button", className: "btn-primary flex-1 py-3", disabled: mode === 'start' ? (start === '' || !date) : newStart === null, onClick: save }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")))));
+}
 // ---------- иконки категорий ----------
 const CAT_COLORS = ['#2A32A8', '#6C8FD9', '#4FA58A', '#A27B5C', '#C9962B', '#E07A5F', '#D0577B', '#8E5BA8', '#4A4E69'];
 const BIZ_ICONS = ['HandCoins', 'ClockArrowDown', 'Undo2', 'PiggyBank', 'Banknote', 'Coins', 'Wallet', 'WalletCards', 'CreditCard', 'Receipt',
@@ -1311,6 +1382,7 @@ function HomePage() {
     const go = useContext(NavContext).go;
     const names = useNames();
     const [sheet, setSheet] = useState(null);
+    const [balCard, setBalCard] = useState(null);
     const problems = findProblems(store).filter(p => p.level !== 'info');
     const mops = ops.filter(o => inMonthYmd(o.date, month.y, month.m));
     const sumIn = r2(mops.filter(o => o.type === 'in').reduce((s, o) => s + Number(o.amount || 0), 0));
@@ -1336,7 +1408,8 @@ function HomePage() {
         React.createElement("section", { className: "hero" },
             React.createElement("div", { className: "hero-label" }, "\u041E\u0441\u0442\u0430\u0442\u043E\u043A \u043D\u0430 \u043A\u0430\u0440\u0442\u0430\u0445"),
             React.createElement("div", { className: "hero-total" }, money(total)),
-            React.createElement("div", { className: "cardtiles" }, cards.map(c => React.createElement(CardTile, { key: c.id, card: c, onClick: () => go('/check') })))),
+            React.createElement("div", { className: "cardtiles" }, cards.map(c => React.createElement(CardTile, { key: c.id, card: c, onClick: () => setBalCard(c) }))),
+            React.createElement("p", { className: "hero-hint" }, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u043D\u0430 \u043A\u0430\u0440\u0442\u0443, \u0447\u0442\u043E\u0431\u044B \u043E\u0431\u043D\u043E\u0432\u0438\u0442\u044C \u0431\u0430\u043B\u0430\u043D\u0441 \u0438\u043B\u0438 \u043D\u0430\u0447\u0430\u0442\u044C \u0443\u0447\u0451\u0442 \u0441 \u0434\u0440\u0443\u0433\u043E\u0439 \u0434\u0430\u0442\u044B")),
         React.createElement("section", { className: "ledger-head mt-5" },
             React.createElement("div", { className: "col-in" },
                 React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F"),
@@ -1393,7 +1466,8 @@ function HomePage() {
             })),
         React.createElement("button", { type: "button", "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C", className: "fab", onClick: () => setSheet('new') },
             React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
-        sheet && React.createElement(OpSheet, { op: sheet === 'new' ? null : sheet, presetDate: sheet === 'new' ? selDay : null, onClose: () => setSheet(null) })));
+        sheet && React.createElement(OpSheet, { op: sheet === 'new' ? null : sheet, presetDate: sheet === 'new' ? selDay : null, onClose: () => setSheet(null) }),
+        balCard && React.createElement(BalanceSheet, { card: balCard, onClose: () => setBalCard(null) })));
 }
 // Календарь месяца: в каждом дне — сколько пришло и сколько ушло
 const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
