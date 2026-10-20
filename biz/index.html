@@ -1231,8 +1231,8 @@ function CardTile({ card, onClick }) {
 const CAT_COLORS = ['#2A32A8', '#6C8FD9', '#4FA58A', '#A27B5C', '#C9962B', '#E07A5F', '#D0577B', '#8E5BA8', '#4A4E69'];
 const BIZ_ICONS = ['HandCoins', 'ClockArrowDown', 'Undo2', 'PiggyBank', 'Banknote', 'Coins', 'Wallet', 'WalletCards', 'CreditCard', 'Receipt',
     'Boxes', 'Package', 'PackageOpen', 'Truck', 'Megaphone', 'Percent', 'BadgePercent', 'Users', 'Briefcase', 'Smartphone', 'Wifi', 'Laptop',
-    'Landmark', 'Building2', 'Store', 'Tag', 'ShoppingCart', 'ShoppingBag', 'Coffee', 'Car', 'Fuel', 'Printer', 'Camera', 'Scissors', 'Sprout', 'Leaf', 'Gift', 'Ellipsis'];
-const ALL_ICONS = [...new Set([...BIZ_ICONS, ...ICON_SET.map(([k]) => k)])];
+    'Landmark', 'Building2', 'Store', 'Tag', 'ShoppingCart', 'ShoppingBag', 'Car', 'Fuel', 'Printer', 'Camera', 'Scissors', 'Sprout', 'Leaf', 'Gift', 'Ellipsis'];
+const ALL_ICONS = [...new Set([...BIZ_ICONS, ...ICON_SET.map(([k]) => k)])].filter(k => k !== 'Coffee');
 function CatIcon({ cat, size = 18, box = false }) {
     const color = (cat && cat.color) || 'var(--blue)';
     if (!box)
