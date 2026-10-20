@@ -1163,7 +1163,7 @@ function findProblems({ cards, ops, checks, cats }) {
                 list.push({ level: 'bad', kind: 'transfer', op: o, title: 'Перевод на ту же карту', text: `${fmtShort(o.date)} · ${money(o.amount)} · ${cardName(o.card)}` });
         }
         else if (o.cat === 'adjust') {
-            list.push({ level: 'info', kind: 'adjust', op: o, title: 'Корректировка по банку', text: `${fmtShort(o.date)} · ${cardName(o.card)} · ${o.type === 'in' ? '+' : '−'}${money(o.amount)} — остаток подогнан под банк. Если найдёте, что это было, — поменяйте категорию.` });
+            list.push({ level: 'warn', kind: 'adjust', op: o, title: 'Не разобрано: корректировка по банку', text: `${fmtShort(o.date)} · ${cardName(o.card)} · ${o.type === 'in' ? '+' : '−'}${money(o.amount)} — остаток подогнан под банк. Если найдёте, что это было, — поменяйте категорию.` });
         }
         else if (!o.cat || !cats.find(c => c.id === o.cat)) {
             list.push({ level: 'warn', kind: 'cat', op: o, title: 'Нет категории', text: `${fmtShort(o.date)} · ${o.type === 'in' ? 'поступление' : 'расход'} ${money(o.amount)} · ${cardName(o.card)}` });
