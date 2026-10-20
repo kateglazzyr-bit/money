@@ -423,6 +423,19 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .iconbtn-on { background: var(--sky); }
 .swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); }
 .swatch-on { box-shadow: 0 0 0 2px var(--ink); }
+
+/* календарь месяца */
+.bizcal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 14px; }
+.bizcal-wd { text-align: center; font-size: 12px; color: var(--muted); padding-bottom: 2px; }
+.bizcal-day { min-height: 58px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1px; padding: 6px 1px 4px; border: 1.5px solid transparent; font-variant-numeric: tabular-nums; }
+.bizcal-has { background: var(--paper); }
+.bizcal-num { font-size: 14px; color: var(--ink); line-height: 1.1; }
+.bizcal-today .bizcal-num { color: #fff; background: var(--blue); border-radius: 999px; padding: 0 6px; }
+.bizcal-on { border-color: var(--blue); box-shadow: 2px 2px 0 var(--blue); background: #fff; }
+.bizcal-in, .bizcal-out { font-size: 10.5px; line-height: 1.15; font-weight: 600; }
+.bizcal-in { color: var(--in); } .bizcal-out { color: var(--out); }
+.daysum { margin-top: 16px; }
+.daysum-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--blue); margin-bottom: 8px; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1290,7 +1303,21 @@ function HomePage() {
     const sumIn = r2(mops.filter(o => o.type === 'in').reduce((s, o) => s + Number(o.amount || 0), 0));
     const sumOut = r2(mops.filter(o => o.type === 'out').reduce((s, o) => s + Number(o.amount || 0), 0));
     const total = r2(cards.reduce((s, c) => s + balanceAt(c, ops), 0));
-    const days = [...new Set(mops.map(o => o.date))].sort().reverse();
+    const [view, setView] = useState(() => { try {
+        return localStorage.getItem('biz-view') || 'list';
+    }
+    catch (e) {
+        return 'list';
+    } });
+    const [selDay, setSelDay] = useState(null);
+    useEffect(() => { setSelDay(null); }, [month.y, month.m]);
+    useEffect(() => { try {
+        localStorage.setItem('biz-view', view);
+    }
+    catch (e) { } }, [view]);
+    const allDays = [...new Set(mops.map(o => o.date))].sort().reverse();
+    const days = selDay ? allDays.filter(d => d === selDay) : allDays;
+    const daySum = (d, t) => r2(mops.filter(o => o.date === d && o.type === t).reduce((s, o) => s + Number(o.amount || 0), 0));
     return (React.createElement("div", { className: "page" },
         React.createElement(PageTitle, { title: "\u0411\u0438\u0437\u043D\u0435\u0441", right: React.createElement(MonthNav, null) }),
         React.createElement("section", { className: "hero" },
@@ -1311,8 +1338,28 @@ function HomePage() {
             React.createElement(Icon, { name: problems.length ? 'TriangleAlert' : 'CircleCheck', size: 18 }),
             React.createElement("span", null, problems.length ? `Найдено ошибок: ${problems.length} — посмотреть` : 'Ошибок не найдено'),
             React.createElement(Icon, { name: "ChevronRight", size: 16 })),
+        React.createElement("div", { className: "mt-6" },
+            React.createElement(Segmented, { value: view, onChange: (v) => { setView(v); setSelDay(null); }, options: [['list', 'Список'], ['cal', 'Календарь']] })),
+        view === 'cal' && React.createElement(BizCalendar, { month: month, mops: mops, selDay: selDay, onPick: (d) => setSelDay(selDay === d ? null : d) }),
+        selDay && (React.createElement("div", { className: "daysum" },
+            React.createElement("div", { className: "daysum-head" },
+                React.createElement("b", null, dayTitle(selDay)),
+                React.createElement("button", { type: "button", className: "text-sm underline", onClick: () => setSelDay(null) }, "\u0432\u0435\u0441\u044C \u043C\u0435\u0441\u044F\u0446")),
+            React.createElement("div", { className: "ledger-head" },
+                React.createElement("div", { className: "col-in" },
+                    React.createElement("span", { className: "eyebrow" }, "\u041F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u044F"),
+                    React.createElement("b", { className: "tabular-nums" }, money(daySum(selDay, 'in')))),
+                React.createElement("div", { className: "col-out" },
+                    React.createElement("span", { className: "eyebrow" }, "\u0420\u0430\u0441\u0445\u043E\u0434\u044B"),
+                    React.createElement("b", { className: "tabular-nums" }, money(daySum(selDay, 'out'))))),
+            React.createElement("div", { className: "profit" },
+                React.createElement("span", null, "\u0418\u0442\u043E\u0433 \u0434\u043D\u044F"),
+                React.createElement("b", { className: "tabular-nums" }, signed(r2(daySum(selDay, 'in') - daySum(selDay, 'out'))))))),
         React.createElement("section", { className: "mt-6" },
-            loaded && days.length === 0 && React.createElement("div", { className: "empty" },
+            loaded && selDay && days.length === 0 && React.createElement("div", { className: "empty" },
+                React.createElement("p", { className: "empty-title display" }, "\u0412 \u044D\u0442\u043E\u0442 \u0434\u0435\u043D\u044C \u0437\u0430\u043F\u0438\u0441\u0435\u0439 \u043D\u0435\u0442"),
+                React.createElement("p", { className: "text-sm" }, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB+\u00BB, \u0447\u0442\u043E\u0431\u044B \u0432\u043D\u0435\u0441\u0442\u0438 \u0437\u0430\u043F\u0438\u0441\u044C \u043D\u0430 \u044D\u0442\u0443 \u0434\u0430\u0442\u0443.")),
+            loaded && !selDay && days.length === 0 && React.createElement("div", { className: "empty" },
                 React.createElement("p", { className: "empty-title display" }, "\u0417\u0430\u043F\u0438\u0441\u0435\u0439 \u0437\u0430 \u043C\u0435\u0441\u044F\u0446 \u043D\u0435\u0442"),
                 React.createElement("p", { className: "text-sm" }, "\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u00AB+\u00BB, \u0447\u0442\u043E\u0431\u044B \u0432\u043D\u0435\u0441\u0442\u0438 \u043F\u043E\u0441\u0442\u0443\u043F\u043B\u0435\u043D\u0438\u0435 \u0438\u043B\u0438 \u0440\u0430\u0441\u0445\u043E\u0434.")),
             days.map(d => {
@@ -1342,7 +1389,35 @@ function HomePage() {
             })),
         React.createElement("button", { type: "button", "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C", className: "fab", onClick: () => setSheet('new') },
             React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
-        sheet && React.createElement(OpSheet, { op: sheet === 'new' ? null : sheet, onClose: () => setSheet(null) })));
+        sheet && React.createElement(OpSheet, { op: sheet === 'new' ? null : sheet, presetDate: sheet === 'new' ? selDay : null, onClose: () => setSheet(null) })));
+}
+// Календарь месяца: в каждом дне — сколько пришло и сколько ушло
+const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+const shortSum = (n) => n >= 1e6 ? (Math.round(n / 1e5) / 10 + 'м').replace('.', ',') : n >= 1000 ? (Math.round(n / 100) / 10 + 'к').replace('.0к', 'к').replace('.', ',') : String(Math.round(n));
+function BizCalendar({ month, mops, selDay, onPick }) {
+    const { y, m } = month;
+    const n = new Date(y, m + 1, 0).getDate();
+    const lead = (new Date(y, m, 1).getDay() + 6) % 7;
+    const today = todayYmd();
+    const cells = [...Array(lead).fill(null), ...Array.from({ length: n }, (_, i) => i + 1)];
+    return (React.createElement("div", { className: "bizcal" },
+        WD.map(w => React.createElement("span", { key: w, className: "bizcal-wd" }, w)),
+        cells.map((d, i) => {
+            if (!d)
+                return React.createElement("span", { key: 'e' + i });
+            const key = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const day = mops.filter(o => o.date === key);
+            const tin = day.filter(o => o.type === 'in').reduce((s, o) => s + Number(o.amount || 0), 0);
+            const tout = day.filter(o => o.type === 'out').reduce((s, o) => s + Number(o.amount || 0), 0);
+            return (React.createElement("button", { key: key, type: "button", onClick: () => onPick(key), className: `bizcal-day ${selDay === key ? 'bizcal-on' : ''} ${key === today ? 'bizcal-today' : ''} ${day.length ? 'bizcal-has' : ''}` },
+                React.createElement("span", { className: "bizcal-num" }, d),
+                tin > 0 && React.createElement("span", { className: "bizcal-in" },
+                    "+",
+                    shortSum(tin)),
+                tout > 0 && React.createElement("span", { className: "bizcal-out" },
+                    "\u2212",
+                    shortSum(tout))));
+        })));
 }
 function OpRow({ op, names, onClick }) {
     const c = names.card(op.card);
@@ -1370,12 +1445,12 @@ const remember = (o) => { try {
     localStorage.setItem(STICKY, JSON.stringify({ ...o, at: Date.now() }));
 }
 catch (e) { } };
-function OpSheet({ op, onClose, presetType }) {
+function OpSheet({ op, onClose, presetType, presetDate }) {
     const { cards, cats, saveOp, removeOp, error } = useStore();
     const st = sticky();
     const [f, setF] = useState(() => op ? { ...op, amount: String(op.amount) } : {
         type: presetType || (st && st.type) || 'out', amount: '', card: (st && st.card) || cards[0]?.id, toCard: '',
-        cat: '', date: (st && st.date) || todayYmd(), note: '',
+        cat: '', date: presetDate || (st && st.date) || todayYmd(), note: '',
     });
     const [added, setAdded] = useState([]);
     const [confirm, setConfirm] = useState(false);
