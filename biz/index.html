@@ -436,6 +436,19 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .bizcal-in { color: var(--in); } .bizcal-out { color: var(--out); }
 .daysum { margin-top: 16px; }
 .daysum-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--blue); margin-bottom: 8px; }
+
+/* список записей дня — спокойный, без колонок */
+.daylist { background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.lrow { width: 100%; display: flex; align-items: center; gap: 12px; padding: 11px 14px; text-align: left; }
+.lrow + .lrow { border-top: 1px solid var(--line); }
+.caticon-sm { width: 38px; height: 38px; border-width: 1px; }
+.lrow-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.lrow-title { font-size: 15px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow-sub { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lrow-sub .dot { width: 6px; height: 6px; }
+.lrow-sum { font-size: 16px; font-weight: 500; white-space: nowrap; }
+.lrow-tr { color: var(--muted); }
+.txt-err { color: var(--err); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1376,16 +1389,7 @@ function HomePage() {
                             outs.length > 0 && React.createElement("span", { className: "txt-out" },
                                 "\u2212",
                                 money(r2(outs.reduce((s, o) => s + Number(o.amount), 0)))))),
-                    React.createElement("div", { className: "ledger" },
-                        React.createElement("div", { className: "ledger-col" }, ins.map(o => React.createElement(OpRow, { key: o.id, op: o, names: names, onClick: () => setSheet(o) }))),
-                        React.createElement("div", { className: "ledger-col" }, outs.map(o => React.createElement(OpRow, { key: o.id, op: o, names: names, onClick: () => setSheet(o) })))),
-                    trs.map(o => (React.createElement("button", { key: o.id, type: "button", className: "transfer", onClick: () => setSheet(o) },
-                        React.createElement(Icon, { name: "ArrowLeftRight", size: 15 }),
-                        React.createElement("span", null,
-                            names.card(o.card).name,
-                            " \u2192 ",
-                            o.toCard ? names.card(o.toCard).name : '?'),
-                        React.createElement("b", { className: "tabular-nums" }, money(o.amount)))))));
+                    React.createElement("div", { className: "daylist" }, list.map(o => React.createElement(ListRow, { key: o.id, op: o, names: names, onClick: () => setSheet(o) })))));
             })),
         React.createElement("button", { type: "button", "aria-label": "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C", className: "fab", onClick: () => setSheet('new') },
             React.createElement(Icon, { name: "Plus", size: 26, strokeWidth: 1.4 })),
@@ -1418,6 +1422,28 @@ function BizCalendar({ month, mops, selDay, onPick }) {
                     "\u2212",
                     shortSum(tout))));
         })));
+}
+// Строка списка, как в личном учёте трат
+function ListRow({ op, names, onClick }) {
+    const c = names.card(op.card);
+    const cat = names.catObj(op.cat);
+    const isT = op.type === 'transfer';
+    const title = isT ? 'Перевод между картами' : cat ? cat.name : 'Без категории';
+    const sub = isT ? `${c.name} → ${op.toCard ? names.card(op.toCard).name : '?'}` : c.name;
+    return (React.createElement("button", { type: "button", className: "lrow", onClick: onClick },
+        isT ? React.createElement("span", { className: "caticon caticon-sm", style: { color: 'var(--muted)', borderColor: 'var(--line)' } },
+            React.createElement(Icon, { name: "ArrowLeftRight", size: 17 }))
+            : React.createElement("span", { className: "caticon caticon-sm", style: { color: (cat && cat.color) || 'var(--err)', background: ((cat && cat.color) || '#C0392B') + '12', borderColor: ((cat && cat.color) || '#C0392B') + '44' } },
+                React.createElement(Icon, { name: (cat && cat.icon) || 'CircleHelp', size: 17, strokeWidth: 1.6 })),
+        React.createElement("span", { className: "lrow-main" },
+            React.createElement("span", { className: `lrow-title ${!isT && !cat ? 'txt-err' : ''}` }, title),
+            React.createElement("span", { className: "lrow-sub" },
+                React.createElement("span", { className: "dot", style: { background: c.color } }),
+                sub,
+                op.note ? ' · ' + op.note : '')),
+        React.createElement("span", { className: `lrow-sum tabular-nums ${op.type === 'in' ? 'txt-in' : op.type === 'out' ? 'txt-out' : 'lrow-tr'}` },
+            op.type === 'in' ? '+' : op.type === 'out' ? '−' : '',
+            money(op.amount))));
 }
 function OpRow({ op, names, onClick }) {
     const c = names.card(op.card);
