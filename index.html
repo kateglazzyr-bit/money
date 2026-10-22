@@ -890,6 +890,41 @@ function SectionLabel({ children, right }) {
         React.createElement("span", { className: "eyebrow" }, children),
         right && React.createElement("span", { className: "dayhead-sum" }, right)));
 }
+// Сумма со сложением: «350+120+45» → 515. Минус тоже можно.
+const evalSum = (s) => {
+    const t = String(s !== null && s !== void 0 ? s : '').replace(/\s/g, '').replace(/,/g, '.');
+    if (!t || !/^[\d.+\-]+$/.test(t))
+        return NaN;
+    const parts = t.match(/[+\-]?[^+\-]+/g) || [];
+    let sum = 0;
+    for (const p of parts) {
+        const n = Number(p);
+        if (isNaN(n))
+            return NaN;
+        sum += n;
+    }
+    return Math.round(sum * 100) / 100;
+};
+function AmountInput({ id, value, onChange, autoFocus }) {
+    const ref = useRef(null);
+    const str = String(value !== null && value !== void 0 ? value : '');
+    const hasOp = /\d[+\-]/.test(str);
+    const total = evalSum(str);
+    const plus = () => {
+        const v = str.replace(/[+\-]+$/, '');
+        if (v)
+            onChange(v + '+');
+        setTimeout(() => { if (ref.current)
+            ref.current.focus(); }, 0);
+    };
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "flex gap-2 items-stretch" },
+            React.createElement("input", { ref: ref, id: id, type: "text", inputMode: "decimal", autoComplete: "off", value: str, autoFocus: autoFocus, onChange: (e) => onChange(e.target.value.replace(/[^\d.,+\-\s]/g, '')), placeholder: "0", className: "flex-1 min-w-0 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold" }),
+            React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0438\u0431\u0430\u0432\u0438\u0442\u044C \u0435\u0449\u0451 \u0441\u0443\u043C\u043C\u0443", onClick: plus, className: "px-5 rounded-lg border-2 border-pink-200 text-2xl font-semibold text-gray-700 active:bg-pink-50" }, "+")),
+        hasOp && React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
+            "= ",
+            isNaN(total) ? 'проверьте сумму' : money(total))));
+}
 // ---- components/Calendar.jsx
 // Переключатель месяцев и календарь трат.
 const WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -1071,10 +1106,11 @@ function AddExpenseModal({ categories, onAdd, onAddMore, onClose, defaultDate })
     useEffect(() => { if (!categoryId && categories[0])
         setCategoryId(categories[0].id); }, [categories, categoryId]);
     const submit = (more) => {
-        if (!amount || !categoryId)
+        const sum = evalSum(amount);
+        if (!(sum > 0) || !categoryId)
             return;
         const dateTime = new Date(`${date}T${time}`).toISOString();
-        const item = { amount: parseFloat(amount), categoryId, date: dateTime, description: note.trim() };
+        const item = { amount: sum, categoryId, date: dateTime, description: note.trim() };
         rememberDate(date);
         if (more && onAddMore) {
             onAddMore(item);
@@ -1095,7 +1131,7 @@ function AddExpenseModal({ categories, onAdd, onAddMore, onClose, defaultDate })
             React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0421\u0443\u043C\u043C\u0430 (\u20BD)"),
-                    React.createElement("input", { id: "add-amount", type: "number", inputMode: "decimal", step: "0.01", value: amount, onChange: (e) => setAmount(e.target.value), placeholder: "0.00", className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
+                    React.createElement(AmountInput, { id: "add-amount", value: amount, onChange: setAmount, autoFocus: true })),
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
                     React.createElement("div", { className: "flex flex-wrap gap-2 max-h-40 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm transition-colors ${categoryId === cat.id ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` },
@@ -1151,10 +1187,12 @@ function EditExpenseModal({ expense, categories, onSave, onClose }) {
     const [note, setNote] = useState(expense.description || '');
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!(evalSum(amount) > 0))
+            return;
         const dateTime = new Date(`${date}T${time}`).toISOString();
         onSave({
             ...expense,
-            amount: parseFloat(amount),
+            amount: evalSum(amount),
             categoryId,
             date: dateTime,
             description: note.trim()
@@ -1166,7 +1204,7 @@ function EditExpenseModal({ expense, categories, onSave, onClose }) {
             React.createElement("form", { onSubmit: handleSubmit, className: "space-y-4" },
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u0421\u0443\u043C\u043C\u0430 (\u20BD)"),
-                    React.createElement("input", { type: "number", step: "0.01", value: amount, onChange: (e) => setAmount(parseFloat(e.target.value)), className: "w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold", autoFocus: true })),
+                    React.createElement(AmountInput, { id: "edit-amount", value: amount, onChange: setAmount, autoFocus: true })),
                 React.createElement("div", null,
                     React.createElement("label", { className: "block text-gray-600 text-sm mb-2" }, "\u041A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044F"),
                     React.createElement("div", { className: "flex flex-wrap gap-2 max-h-40 overflow-y-auto" }, categories.map(cat => (React.createElement("button", { key: cat.id, type: "button", onClick: () => setCategoryId(cat.id), className: `flex items-center gap-2 pl-1 pr-3 py-1 rounded-full border text-sm transition-colors ${categoryId === cat.id ? 'border-pink-400 bg-pink-50 text-gray-800' : 'border-gray-200 text-gray-600'}` },
