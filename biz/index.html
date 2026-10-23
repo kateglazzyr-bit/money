@@ -457,6 +457,10 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .dayend-row b { font-weight: 500; }
 
 .mini-link { font-size: 13px; color: var(--blue); text-decoration: underline; }
+
+.problem { position: relative; }
+.problem-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: inherit; opacity: .6; }
+.problem-x:active { opacity: 1; background: rgba(0,0,0,.06); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -643,7 +647,7 @@ function StoreProvider({ children }) {
     const [bid, setBid] = useState(null); // чей бизнес открыт (uid владельца)
     const [invites, setInvites] = useState([]); // [{ bid, name, ownerEmail }]
     const [members, setMembers] = useState([]);
-    const [data, setData] = useState({ cards: [], ops: [], checks: [], cats: [] });
+    const [data, setData] = useState({ cards: [], ops: [], checks: [], cats: [], dismissed: [] });
     const [loaded, setLoaded] = useState(false);
     const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
     const [error, setError] = useState('');
@@ -698,7 +702,7 @@ function StoreProvider({ children }) {
             offAll();
             setUser(u);
             setDisplayName(u?.displayName || '');
-            setData({ cards: [], ops: [], checks: [], cats: [] });
+            setData({ cards: [], ops: [], checks: [], cats: [], dismissed: [] });
             setLoaded(false);
             setInvites([]);
             setMembers([]);
@@ -729,7 +733,7 @@ function StoreProvider({ children }) {
                 }
                 catch (e) { }
                 dataOff.current = listen(db.ref('biz/' + b + '/data'), v => {
-                    setData({ cards: toList(v?.cards), ops: toList(v?.ops), checks: toList(v?.checks), cats: toList(v?.cats) });
+                    setData({ cards: toList(v?.cards), ops: toList(v?.ops), checks: toList(v?.checks), cats: toList(v?.cats), dismissed: toList(v?.dismissed) });
                     setLoaded(true);
                 }, (e) => { if (b !== me)
                     switchTo(me);
@@ -778,14 +782,14 @@ function StoreProvider({ children }) {
         const { id: _, ...body } = item;
         const rec = { ...body, updatedAt: Date.now() };
         if (demoRef.current) {
-            setData(d => ({ ...d, [col]: [...d[col].filter(x => x.id !== id), { ...rec, id }] }));
+            setData(d => ({ ...d, [col]: [...(d[col] || []).filter(x => x.id !== id), { ...rec, id }] }));
             return;
         }
         await firebase.database().ref(`biz/${bid}/data/${col}/${id}`).set(clean(rec));
     });
     const del = (col, id) => wrap(async () => {
         if (demoRef.current) {
-            setData(d => ({ ...d, [col]: d[col].filter(x => x.id !== id) }));
+            setData(d => ({ ...d, [col]: (d[col] || []).filter(x => x.id !== id) }));
             return;
         }
         await firebase.database().ref(`biz/${bid}/data/${col}/${id}`).remove();
@@ -796,7 +800,15 @@ function StoreProvider({ children }) {
         mode, user, uid, bid, displayName, month, setMonth, error, setError, invites, members, loaded,
         isOwner: bid === uid,
         cardsReady: data.cards.length > 0 && data.cards.every(c => c.startDate),
-        cards, cats, ops: data.ops, checks: data.checks,
+        cards, cats, ops: data.ops, checks: data.checks, dismissed: data.dismissed || [],
+        dismissProblem: (key) => put('dismissed', { id: key, at: Date.now() }),
+        restoreProblems: () => wrap(async () => {
+            if (demoRef.current) {
+                setData(d => ({ ...d, dismissed: [] }));
+                return;
+            }
+            await firebase.database().ref(`biz/${bid}/data/dismissed`).remove();
+        }),
         saveOp: (op) => put('ops', { ...op, by: op.by || displayName || (user?.email || '') }),
         removeOp: (id) => del('ops', id),
         saveCard: (c) => put('cards', c),
@@ -1052,6 +1064,41 @@ function SectionLabel({ children, right }) {
         React.createElement("span", { className: "eyebrow" }, children),
         right && React.createElement("span", { className: "dayhead-sum" }, right)));
 }
+// Сумма со сложением: «350+120+45» → 515. Минус тоже можно.
+const evalSum = (s) => {
+    const t = String(s ?? '').replace(/\s/g, '').replace(/,/g, '.');
+    if (!t || !/^[\d.+\-]+$/.test(t))
+        return NaN;
+    const parts = t.match(/[+\-]?[^+\-]+/g) || [];
+    let sum = 0;
+    for (const p of parts) {
+        const n = Number(p);
+        if (isNaN(n))
+            return NaN;
+        sum += n;
+    }
+    return Math.round(sum * 100) / 100;
+};
+function AmountInput({ id, value, onChange, autoFocus }) {
+    const ref = useRef(null);
+    const str = String(value ?? '');
+    const hasOp = /\d[+\-]/.test(str);
+    const total = evalSum(str);
+    const plus = () => {
+        const v = str.replace(/[+\-]+$/, '');
+        if (v)
+            onChange(v + '+');
+        setTimeout(() => { if (ref.current)
+            ref.current.focus(); }, 0);
+    };
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "flex gap-2 items-stretch" },
+            React.createElement("input", { ref: ref, id: id, type: "text", inputMode: "decimal", autoComplete: "off", value: str, autoFocus: autoFocus, onChange: (e) => onChange(e.target.value.replace(/[^\d.,+\-\s]/g, '')), placeholder: "0", className: "flex-1 min-w-0 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold" }),
+            React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0438\u0431\u0430\u0432\u0438\u0442\u044C \u0435\u0449\u0451 \u0441\u0443\u043C\u043C\u0443", onClick: plus, className: "px-5 rounded-lg border-2 border-pink-200 text-2xl font-semibold text-gray-700 active:bg-pink-50" }, "+")),
+        hasOp && React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
+            "= ",
+            isNaN(total) ? 'проверьте сумму' : money(total))));
+}
 // Расчёты: остатки, сверки, поиск ошибок
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const shiftYmd = (k) => { const d = new Date(); d.setDate(d.getDate() - k); return ymd(d); };
@@ -1134,7 +1181,20 @@ async function adjustTo(store, card, day, bankAmount) {
     return diff;
 }
 // Все найденные ошибки по бизнесу
-function findProblems({ cards, ops, checks, cats }) {
+// Ключ ошибки: если ситуация изменится (другая сумма, дата) — ошибка покажется снова
+const hashStr = (t) => { let h = 0; for (let i = 0; i < t.length; i++)
+    h = (h * 31 + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); };
+const problemKey = (p) => (p.kind + '_' + ((p.op && p.op.id) || p.card || '') + '_' + hashStr(p.title + '|' + p.text)).replace(/[.#$\[\]\/]/g, '-');
+function findProblems(store) {
+    const all = findProblemsAll(store).map(p => ({ ...p, key: problemKey(p) }));
+    const hidden = new Set((store.dismissed || []).map(d => d.id));
+    return all.filter(p => !hidden.has(p.key));
+}
+function countHidden(store) {
+    const keys = new Set(findProblemsAll(store).map(problemKey));
+    return (store.dismissed || []).filter(d => keys.has(d.id)).length;
+}
+function findProblemsAll({ cards, ops, checks, cats }) {
     const list = [];
     const catName = (id) => id === 'adjust' ? 'корректировка по банку' : (cats.find(c => c.id === id) || {}).name || 'без категории';
     const cardName = (id) => (cards.find(c => c.id === id) || {}).name || 'неизвестная карта';
@@ -1701,12 +1761,18 @@ function CheckPage() {
             problems.length === 0 && React.createElement("div", { className: "okbox" },
                 React.createElement(Icon, { name: "CircleCheck", size: 22 }),
                 React.createElement("span", null, "\u041E\u0448\u0438\u0431\u043E\u043A \u0438 \u0440\u0430\u0441\u0445\u043E\u0436\u0434\u0435\u043D\u0438\u0439 \u043D\u0435\u0442. \u0412\u0441\u0451 \u0441\u0445\u043E\u0434\u0438\u0442\u0441\u044F.")),
-            React.createElement("div", { className: "space-y-3" }, problems.map((p, i) => (React.createElement("div", { key: i, className: `problem problem-${p.level}` },
-                React.createElement("button", { type: "button", className: "w-full text-left", onClick: () => p.op ? setEditOp(p.op) : setOpen(open === i ? null : i) },
+            React.createElement("div", { className: "space-y-3" }, problems.map((p, i) => (React.createElement("div", { key: p.key, className: `problem problem-${p.level}` },
+                React.createElement("button", { type: "button", "aria-label": "\u0421\u043A\u0440\u044B\u0442\u044C \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u0435", className: "problem-x", onClick: () => store.dismissProblem(p.key) },
+                    React.createElement(Icon, { name: "X", size: 16 })),
+                React.createElement("button", { type: "button", className: "w-full text-left pr-6", onClick: () => p.op ? setEditOp(p.op) : setOpen(open === i ? null : i) },
                     React.createElement("b", null, p.title),
                     React.createElement("span", { className: "block text-sm mt-1" }, p.text),
                     p.op && React.createElement("span", { className: "block text-xs mt-2 underline" }, "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0437\u0430\u043F\u0438\u0441\u044C")),
-                p.hints && (React.createElement("ul", { className: "hints" }, p.hints.map((h, j) => React.createElement("li", { key: j }, h.op ? React.createElement("button", { type: "button", className: "underline text-left", onClick: () => setEditOp(h.op) }, h.text) : h.text))))))))),
+                p.hints && (React.createElement("ul", { className: "hints" }, p.hints.map((h, j) => React.createElement("li", { key: j }, h.op ? React.createElement("button", { type: "button", className: "underline text-left", onClick: () => setEditOp(h.op) }, h.text) : h.text)))))))),
+            countHidden(store) > 0 && React.createElement("button", { type: "button", className: "text-sm underline text-gray-500 mt-4", onClick: () => store.restoreProblems() },
+                "\u0421\u043A\u0440\u044B\u0442\u044B\u0435 \u0443\u0432\u0435\u0434\u043E\u043C\u043B\u0435\u043D\u0438\u044F: ",
+                countHidden(store),
+                " \u2014 \u043F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u0441\u043D\u043E\u0432\u0430")),
         editOp && React.createElement(OpSheet, { op: editOp, onClose: () => setEditOp(null) })));
 }
 function CheckCard({ card, ops, checks, onSave, onRemove }) {
