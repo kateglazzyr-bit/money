@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#FEFCF7">
+<meta name="theme-color" content="#F6F0EE">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -227,18 +227,133 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .hello-night .hello-sky span { width: 40vmax; height: 40vmax; right: -14vmax; top: 14%; background: transparent; box-shadow: -7vmax 4vmax 0 0 #E9E3C3; }
 
 .hello-evening .hello-text span:nth-child(3) { color: #FBF8EF; }
+
+/* ===== Стиль «Beauty Agent»: пудровый фон, глубокий красный, широкие заглавные, рукописные акценты ===== */
+:root {
+  --cream: #F6F0EE;      /* пудровый фон */
+  --paper: #FFFFFF;      /* карточки — белые */
+  --olive: #8E1B22;      /* действие — глубокий красный */
+  --olive-ink: #8E1B22;
+  --olive-soft: #F1E1DF;
+  --wine: #8E1B22;
+  --wine-soft: #F3DEDC;
+  --ink: #2B1E1F;
+  --muted: #8D7D7E;
+  --line: rgba(142, 27, 34, .13);
+  --soon: #B4787C;
+  --display: 'Montserrat', -apple-system, sans-serif;
+  --sans: 'Montserrat', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --script: 'Marck Script', cursive;
+}
+body { font-size: 15px; font-weight: 400; letter-spacing: .01em; }
+h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spacing: .12em; text-transform: uppercase; color: var(--olive); line-height: 1.1; }
+.eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.ptitle h1 { font-size: 24px; }
+.subtitle { font-size: 13px; }
+.dayhead .eyebrow { font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--olive); }
+
+/* поверхности: белое на пудре, тонкая линия, мягкие углы */
+.paper, .taskcard, .empty, .taskstats > div, .comment { background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.taskcard.is-done { background: transparent; }
+.empty-title { font-weight: 400; letter-spacing: .1em; text-transform: uppercase; color: var(--olive); font-size: 15px; }
+.note { background: var(--wine-soft); color: var(--olive); }
+
+/* кнопки: тонкие, заглавные, с разрядкой */
+.btn-primary { background: var(--olive); color: #fff; border-radius: 10px; font-size: 12px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; }
+.btn-primary:active { background: #6E1218; }
+.btn-ghost { border: 1px solid var(--olive); color: var(--olive); border-radius: 10px; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; }
+.mini-btn { background: transparent; border: 1px solid var(--olive); color: var(--olive); border-radius: 999px; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; padding: 6px 14px; }
+.mini-btn:active { background: var(--olive); color: #fff; }
+.input { background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.input:focus { border-color: var(--olive); }
+.input::placeholder { color: #BBA9AA; }
+.segmented { background: #fff; border: 1px solid var(--line); border-radius: 999px; }
+.segmented button { border-radius: 999px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.segmented .seg-on { background: var(--olive); color: #fff; }
+.chipbtn { background: #fff; border: 1px solid var(--line); border-radius: 999px; }
+.chipbtn-on { border-color: var(--olive); color: var(--olive); }
+.checkbox { border-color: var(--olive); }
+.checkbox-on { background: var(--olive); }
+.fab { background: var(--olive); color: #fff; border-radius: 50%; box-shadow: 0 10px 24px -12px rgba(142, 27, 34, .7); }
+.navbar { background: rgba(246, 240, 238, .96); backdrop-filter: blur(8px); }
+.navbtn-active { color: var(--olive); }
+.navlabel { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
+.sheet { background: var(--cream); }
+.sheet h2 { font-size: 18px !important; color: var(--olive) !important; }
+.sheet-grip { background: var(--wine-soft); }
+.sheet-backdrop { background: rgba(43, 30, 31, .35); }
+
+/* год и месяцы: широкие заглавные, как вывеска */
+.year-head { background: rgba(246, 240, 238, .96); backdrop-filter: blur(8px); }
+.year-big { font-family: var(--display); font-weight: 400; font-size: 20px; letter-spacing: .28em; text-transform: uppercase; color: var(--olive); }
+.month-title { font-family: var(--display); font-weight: 300; font-size: 34px; letter-spacing: .16em; text-transform: uppercase; color: var(--olive); margin-bottom: 16px; }
+.month-year { font-family: var(--script); font-size: 22px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.cal-wd { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.ycell-num { font-weight: 400; font-size: 16px; border-radius: 50%; }
+.ycell-today .ycell-num { background: var(--olive); color: #fff; font-weight: 500; }
+.ycell-we .ycell-num { color: var(--olive); }
+
+/* день */
+.dayview { background: var(--cream); }
+.dayview-title { font-weight: 300; font-size: 26px; letter-spacing: .14em; text-transform: uppercase; color: var(--olive); }
+.dayview-title span { font-family: var(--script); font-size: 22px; letter-spacing: 0; text-transform: none; }
+.backlink { color: var(--olive); font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 500; }
+.wstrip-on { background: var(--olive); }
+.wstrip-today .wstrip-num { color: var(--olive); }
+.wstrip-num { font-weight: 500; }
+.hour-label { background: var(--cream); }
+.evblock { border-left-width: 2px; border-radius: 8px; }
+.evblock-title { font-weight: 500; }
+
+/* прогресс недели — белая карточка с тонкой орбитой */
+.weekhero { background: #fff; color: var(--ink); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.weekhero::before { content: ''; position: absolute; width: 240px; height: 120px; right: -60px; top: -30px; border: 1px solid var(--olive); border-radius: 50%; transform: rotate(-18deg); opacity: .5; }
+.weekhero-main b { font-weight: 300; letter-spacing: .02em; color: var(--olive); }
+.weekhero-diff, .weekhero-stats span { color: var(--muted); }
+.weekhero-stats { border-top-color: var(--line); }
+.weekhero-stats b { font-weight: 400; color: var(--olive); }
+.taskstats b { font-weight: 300; color: var(--olive); }
+.progress span { background: var(--olive); }
+
+/* заставка: пудра, тонкая орбита, рукописное приветствие */
+.hello, .hello-evening, .hello-night { background: var(--cream); color: var(--olive); }
+.hello-sky span, .hello-morning .hello-sky span, .hello-day .hello-sky span, .hello-evening .hello-sky span, .hello-night .hello-sky span {
+  width: 120vmin; height: 64vmin; right: -36vmin; top: 22%; background: transparent; box-shadow: none;
+  border: 1px solid var(--olive); border-radius: 50%; transform: rotate(-16deg); opacity: .55; }
+.hello-date { color: var(--muted); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; }
+.hello-text { font-family: var(--script); font-weight: 400; letter-spacing: 0; color: var(--olive); font-size: clamp(46px, 13vw, 76px); line-height: 1.05; }
+.hello-text span:nth-child(3), .hello-evening .hello-text span:nth-child(3) {
+  font-family: var(--display); font-weight: 300; text-transform: uppercase; letter-spacing: .22em; font-size: .5em; color: var(--ink); margin-top: 18px; }
+.hello-text span:first-child::before { content: '{ '; }
+.hello-text span:nth-child(2)::after { content: ' }'; }
+
+/* вход */
+.splash { background: var(--cream); color: var(--ink); }
+.splash-title { font-family: var(--display); font-weight: 300; letter-spacing: .18em; text-transform: uppercase; color: var(--olive); font-size: 30px !important; }
+.splash .logo-heart { color: var(--olive); }
+.splash .eyebrow { color: var(--muted); }
+.splash .input, .splash .note { background: #fff; }
+.splash .btn-primary { background: var(--olive); }
+.splash .segmented { background: #fff; }
+.splash .segmented button { color: var(--muted); }
+.splash .segmented .seg-on { background: var(--olive); color: #fff; }
+.splash p, .splash .text-gray-500, .splash .text-gray-600 { color: var(--muted) !important; }
+#boot { background: var(--cream); color: var(--olive); }
+.hello-text { text-transform: none; }
+.hello-text span:nth-child(3) { text-transform: uppercase; }
+.weekhero::before { width: 200px; height: 90px; right: -90px; top: -40px; opacity: .35; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
 <script>window.APP_STRIP = "Календарь"; window.APP_TAGLINE = "Ваш личный календарь";</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Onest:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Marck+Script&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.1"></script>
 <script>
   tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
-    fontFamily: { sans: ['Onest', '-apple-system', 'sans-serif'], serif: ['Unbounded', 'sans-serif'] },
-    colors: { gray: { 50: '#F4EEDF', 100: '#FEFCF7', 200: '#DED6AE', 300: '#C9C1A0', 400: '#A9A184', 500: '#8C8466', 600: '#7A7358', 700: '#5A5338', 800: '#2E2A14', 900: '#1F1C0D' } }
+    fontFamily: { sans: ['Montserrat', '-apple-system', 'sans-serif'] },
+    colors: { gray: { 50: '#F6F0EE', 100: '#FBF7F6', 200: '#EADCDB', 300: '#D2BEBF', 400: '#B39FA0', 500: '#8D7D7E', 600: '#6F5F60', 700: '#4F3F40', 800: '#2B1E1F', 900: '#1C1213' } }
   } } };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
@@ -815,6 +930,41 @@ function SectionLabel({ children, right }) {
     return (React.createElement("div", { className: "dayhead" },
         React.createElement("span", { className: "eyebrow" }, children),
         right && React.createElement("span", { className: "dayhead-sum" }, right)));
+}
+// Сумма со сложением: «350+120+45» → 515. Минус тоже можно.
+const evalSum = (s) => {
+    const t = String(s ?? '').replace(/\s/g, '').replace(/,/g, '.');
+    if (!t || !/^[\d.+\-]+$/.test(t))
+        return NaN;
+    const parts = t.match(/[+\-]?[^+\-]+/g) || [];
+    let sum = 0;
+    for (const p of parts) {
+        const n = Number(p);
+        if (isNaN(n))
+            return NaN;
+        sum += n;
+    }
+    return Math.round(sum * 100) / 100;
+};
+function AmountInput({ id, value, onChange, autoFocus }) {
+    const ref = useRef(null);
+    const str = String(value ?? '');
+    const hasOp = /\d[+\-]/.test(str);
+    const total = evalSum(str);
+    const plus = () => {
+        const v = str.replace(/[+\-]+$/, '');
+        if (v)
+            onChange(v + '+');
+        setTimeout(() => { if (ref.current)
+            ref.current.focus(); }, 0);
+    };
+    return (React.createElement("div", null,
+        React.createElement("div", { className: "flex gap-2 items-stretch" },
+            React.createElement("input", { ref: ref, id: id, type: "text", inputMode: "decimal", autoComplete: "off", value: str, autoFocus: autoFocus, onChange: (e) => onChange(e.target.value.replace(/[^\d.,+\-\s]/g, '')), placeholder: "0", className: "flex-1 min-w-0 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-pink-400 focus:outline-none text-2xl font-semibold" }),
+            React.createElement("button", { type: "button", "aria-label": "\u041F\u0440\u0438\u0431\u0430\u0432\u0438\u0442\u044C \u0435\u0449\u0451 \u0441\u0443\u043C\u043C\u0443", onClick: plus, className: "px-5 rounded-lg border-2 border-pink-200 text-2xl font-semibold text-gray-700 active:bg-pink-50" }, "+")),
+        hasOp && React.createElement("p", { className: "text-sm text-gray-500 mt-1" },
+            "= ",
+            isNaN(total) ? 'проверьте сумму' : money(total))));
 }
 // Повторы, сортировка и экспорт в календарь телефона (.ics)
 const REPEAT_OPTS = [['none', 'Нет'], ['daily', 'День'], ['weekly', 'Неделя'], ['monthly', 'Месяц'], ['yearly', 'Год']];
