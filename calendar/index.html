@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#F6F0EE">
+<meta name="theme-color" content="#F2F8FF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -342,6 +342,39 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .hello-text { text-transform: none; }
 .hello-text span:nth-child(3) { text-transform: uppercase; }
 .weekhero::before { width: 200px; height: 90px; right: -90px; top: -40px; opacity: .35; }
+
+/* ===== Палитра SEA / SKY: морской синий + небесно-голубой ===== */
+:root {
+  --cream: #F2F8FF;      /* фон — очень светлое небо */
+  --paper: #FFFFFF;
+  --olive: #6482F2;      /* SEA — действие */
+  --olive-ink: #3F5BC9;
+  --olive-soft: #D2EAFF; /* SKY */
+  --wine: #6482F2;
+  --wine-soft: #D2EAFF;
+  --ink: #1F2A55;        /* тёмно-синий текст */
+  --muted: #7C88AE;
+  --line: rgba(100, 130, 242, .18);
+  --soon: #8FA6F5;
+}
+.btn-primary:active { background: #4F6DE0; }
+.input::placeholder { color: #A9B4D6; }
+.fab { box-shadow: 0 10px 24px -12px rgba(100, 130, 242, .8); }
+.navbar, .year-head { background: rgba(242, 248, 255, .96); }
+.sheet-backdrop { background: rgba(31, 42, 85, .35); }
+.ycell-today .ycell-num { background: var(--olive); }
+.weekhero { background: var(--olive); border: 0; color: #fff; }
+.weekhero::before { border-color: #fff; opacity: .45; }
+.weekhero-main b, .weekhero-stats b { color: #fff; }
+.weekhero-main span { color: #fff; }
+.weekhero-diff, .weekhero-stats span { color: #D2EAFF; }
+.weekhero-stats { border-top-color: rgba(255, 255, 255, .3); }
+/* заставка — небо с морской орбитой */
+.hello, .hello-evening, .hello-night, .splash, #boot { background: #D2EAFF; }
+.hello-text { color: #6482F2; }
+.hello-text span:nth-child(3), .hello-evening .hello-text span:nth-child(3) { color: var(--ink); }
+.hello-date { color: #5D6EA3; }
+.ycell-today .ycell-num, .ycell-we.ycell-today .ycell-num { color: #fff; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -508,12 +541,12 @@ function NoAccess({ user }) {
 }
 // Категории по умолчанию (можно менять в настройках)
 const DEFAULT_CATS = [
-    { id: 'work', name: 'Работа', color: '#4F6470' },
-    { id: 'study', name: 'Учёба', color: '#6B4C7A' },
-    { id: 'health', name: 'Здоровье', color: '#5F7A3E' },
-    { id: 'home', name: 'Дом', color: '#B88A22' },
-    { id: 'family', name: 'Семья', color: '#8C2E3E' },
-    { id: 'me', name: 'Для себя', color: '#C46F80' },
+    { id: 'work', name: 'Работа', color: '#6482F2' },
+    { id: 'study', name: 'Учёба', color: '#8A7CE8' },
+    { id: 'health', name: 'Здоровье', color: '#3FB0A5' },
+    { id: 'home', name: 'Дом', color: '#F2A65A' },
+    { id: 'family', name: 'Семья', color: '#E57A9A' },
+    { id: 'me', name: 'Для себя', color: '#9DB8FF' },
 ];
 const toList = (v) => Object.entries(v || {}).map(([id, d]) => ({ ...d, id }));
 function StoreProvider({ children }) {
