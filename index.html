@@ -64,6 +64,9 @@ button { background: none; border: 0; font: inherit; cursor: pointer; }
   .pagehead-bar { background: var(--lav); border-bottom: 1px solid #D9D6EC; display: flex; justify-content: center; padding: 14px 16px; }
   .pagehead-title { padding: 28px 16px 4px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
   .pagehead-title h1 { font-size: 46px; color: var(--ink); }
+  .notes-heart { position: absolute; top: 14px; right: 16px; width: 40px; height: 40px; display: grid; place-items: center; color: var(--pink-deep); border-radius: 50%; background: transparent; }
+  .notes-heart:active { background: rgba(232, 204, 215, .5); }
+  .notes-count { position: absolute; top: 3px; right: 2px; min-width: 15px; height: 15px; padding: 0 3px; border-radius: 8px; background: var(--pink-deep); color: #fff; font-size: 9px; line-height: 15px; text-align: center; font-family: var(--sans); }
 
   .stripes { background: repeating-linear-gradient(90deg, var(--pink) 0 18px, var(--lav) 18px 36px); padding: 28px 22px; }
   .hero-card { position: relative; background: var(--cream); padding: 26px 20px 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
@@ -376,7 +379,8 @@ function StoreProvider({ children }) {
     const [categories, setCategories] = useState([]);
     const [payments, setPayments] = useState([]);
     const [debts, setDebts] = useState([]);
-    const setters = { expenses: setExpenses, categories: setCategories, payments: setPayments, debts: setDebts };
+    const [notes, setNotes] = useState([]);
+    const setters = { expenses: setExpenses, categories: setCategories, payments: setPayments, debts: setDebts, notes: setNotes };
     const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
     const [mode, setMode] = useState('loading'); // loading | cloud | local
     const [error, setError] = useState('');
@@ -401,6 +405,7 @@ function StoreProvider({ children }) {
             setCategories(lsGet('categories'));
             setPayments(lsGet('payments'));
             setDebts(lsGet('debts'));
+            setNotes(lsGet('notes'));
             setMode('local');
         };
         let dataUnsubs = [];
@@ -415,6 +420,7 @@ function StoreProvider({ children }) {
             dataUnsubs.push(db.collection('categories').onSnapshot(s => setCategories(toList(s)), onErr));
             dataUnsubs.push(db.collection('payments').onSnapshot(s => setPayments(toList(s)), onErr));
             dataUnsubs.push(db.collection('debts').onSnapshot(s => setDebts(toList(s)), onErr));
+            dataUnsubs.push(db.collection('notes').onSnapshot(s => setNotes(toList(s)), () => { }));
         };
         const start = async () => {
             var _a;
@@ -462,6 +468,7 @@ function StoreProvider({ children }) {
                         setCategories([]);
                         setPayments([]);
                         setDebts([]);
+                        setNotes([]);
                         attach(firebaseAdapter(rtdb, 'spaces/' + sid + '/data/'), () => { if (sid !== myUid)
                             switchTo(myUid);
                         else
@@ -529,6 +536,7 @@ function StoreProvider({ children }) {
                     setCategories([]);
                     setPayments([]);
                     setDebts([]);
+                    setNotes([]);
                     setMode('signedout');
                 }
             });
@@ -552,7 +560,7 @@ function StoreProvider({ children }) {
                 : ((e === null || e === void 0 ? void 0 : e.message) || 'Не удалось сохранить'));
         }
     };
-    const current = { expenses, categories, payments, debts };
+    const current = { expenses, categories, payments, debts, notes };
     // Универсальные запись/удаление для платежей и долгов
     const saveDoc = (col, item) => wrap(async () => {
         const id = item.id || newId();
@@ -576,7 +584,7 @@ function StoreProvider({ children }) {
         }
     });
     const api = {
-        expenses, categories, payments, debts, mode, error, saveDoc, removeDoc, month, setMonth, user,
+        expenses, categories, payments, debts, notes, mode, error, saveDoc, removeDoc, month, setMonth, user,
         signOut: () => window.firebase && firebase.auth().signOut(),
         isOwner, members, displayName,
         setName: (n) => wrap(async () => {
@@ -681,6 +689,7 @@ function StoreProvider({ children }) {
                 setCategories([]);
                 setPayments([]);
                 setDebts([]);
+                setNotes([]);
                 ['expenses', 'categories', 'payments', 'debts'].forEach(k => lsSet(k, []));
             }
         }),
@@ -826,7 +835,8 @@ function TopStrip() {
 function PageHeader({ title, subtitle }) {
     return (React.createElement("header", { className: "pagehead" },
         React.createElement(TopStrip, null),
-        React.createElement("div", { className: "pagehead-title" },
+        React.createElement("div", { className: "pagehead-title", style: { position: 'relative' } },
+            React.createElement(NotesButton, null),
             React.createElement("span", { className: "title-mark" }, "\u2726"),
             React.createElement("h1", { className: "display" }, title),
             subtitle && React.createElement("p", { className: "eyebrow mt-2" }, subtitle))));
@@ -1020,6 +1030,53 @@ function BottomNav() {
         React.createElement("div", { className: "max-w-md mx-auto flex justify-around" }, tabs.map(tab => (React.createElement("button", { key: tab.path, onClick: () => navigate(tab.path), className: `navbtn ${(location.pathname === tab.path || (tab.path === '/settings' && location.pathname === '/categories')) ? 'navbtn-active' : ''}` },
             React.createElement(Icon, { name: tab.icon, size: 22 }),
             React.createElement("span", { className: "navlabel" }, tab.label)))))));
+}
+// ---- components/Notes.jsx
+// Заметки: открываются сердечком в шапке. Хранятся вместе с тратами (видят участники пространства).
+function NotesButton() {
+    const [open, setOpen] = useState(false);
+    const store = useStore();
+    const n = (store && store.notes ? store.notes.length : 0);
+    return (React.createElement(React.Fragment, null,
+        React.createElement("button", { type: "button", "aria-label": "\u0417\u0430\u043C\u0435\u0442\u043A\u0438", className: "notes-heart", onClick: () => setOpen(true) },
+            React.createElement("svg", { width: "22", height: "20", viewBox: "0 0 24 22", "aria-hidden": "true" },
+                React.createElement("path", { d: "M12 20.2s-7.6-4.7-9.9-9.2C.4 7.6 2.4 3 6.4 3c2.4 0 3.9 1.4 5.6 3.5C13.7 4.4 15.2 3 17.6 3c4 0 6 4.6 4.3 8-2.3 4.5-9.9 9.2-9.9 9.2z", fill: "none", stroke: "currentColor", strokeWidth: "1.4", strokeLinejoin: "round" })),
+            n > 0 && React.createElement("span", { className: "notes-count" }, n)),
+        open && React.createElement(NotesSheet, { onClose: () => setOpen(false) })));
+}
+function NotesSheet({ onClose }) {
+    const { notes, saveDoc, removeDoc } = useStore();
+    const [text, setText] = useState('');
+    const [edit, setEdit] = useState(null); // { id, text }
+    const [confirm, setConfirm] = useState(null);
+    const list = [...(notes || [])].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || (b.updatedAt || 0) - (a.updatedAt || 0));
+    const add = async () => { const t = text.trim(); if (!t)
+        return; await saveDoc('notes', { text: t, createdAt: Date.now(), updatedAt: Date.now() }); setText(''); };
+    const fmt = (ms) => ms ? new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '';
+    return (React.createElement(Sheet, { title: "\u0417\u0430\u043C\u0435\u0442\u043A\u0438", onClose: onClose },
+        React.createElement("div", { className: "space-y-4" },
+            React.createElement("div", null,
+                React.createElement("textarea", { id: "note-new", rows: 3, className: "input resize-none", placeholder: "\u0427\u0442\u043E \u0437\u0430\u043F\u043E\u043C\u043D\u0438\u0442\u044C? \u041D\u0430\u043F\u0440\u0438\u043C\u0435\u0440: \u0432\u0435\u0440\u043D\u0443\u0442\u044C \u041B\u0435\u043D\u0435 2 000, \u043E\u0442\u043B\u043E\u0436\u0438\u0442\u044C \u043D\u0430 \u043F\u043E\u0434\u0430\u0440\u043E\u043A\u2026", value: text, onChange: (e) => setText(e.target.value) }),
+                React.createElement("button", { type: "button", disabled: !text.trim(), className: "btn-primary w-full py-3 mt-2", onClick: add }, "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u0437\u0430\u043C\u0435\u0442\u043A\u0443")),
+            list.length === 0 && React.createElement("p", { className: "text-sm text-gray-500 text-center py-4" }, "\u041F\u043E\u043A\u0430 \u0437\u0430\u043C\u0435\u0442\u043E\u043A \u043D\u0435\u0442"),
+            React.createElement("div", { className: "space-y-3" }, list.map(n => (React.createElement("div", { key: n.id, className: "paper p-4" }, edit && edit.id === n.id ? (React.createElement(React.Fragment, null,
+                React.createElement("textarea", { rows: 4, className: "input resize-none", value: edit.text, onChange: (e) => setEdit({ ...edit, text: e.target.value }), autoFocus: true }),
+                React.createElement("div", { className: "flex gap-3 mt-2" },
+                    React.createElement("button", { type: "button", className: "btn-ghost flex-1 py-2", onClick: () => setEdit(null) }, "\u041E\u0442\u043C\u0435\u043D\u0430"),
+                    React.createElement("button", { type: "button", className: "btn-primary flex-1 py-2", disabled: !edit.text.trim(), onClick: async () => { await saveDoc('notes', { ...n, text: edit.text.trim(), updatedAt: Date.now() }); setEdit(null); } }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C")))) : (React.createElement(React.Fragment, null,
+                React.createElement("button", { type: "button", className: "w-full text-left", onClick: () => setEdit({ id: n.id, text: n.text }) },
+                    React.createElement("p", { className: "whitespace-pre-wrap text-gray-800" }, n.text)),
+                React.createElement("div", { className: "flex items-center justify-between mt-3 text-xs text-gray-400" },
+                    React.createElement("span", null,
+                        n.pinned ? '📌 ' : '',
+                        fmt(n.updatedAt || n.createdAt)),
+                    React.createElement("span", { className: "flex gap-4" },
+                        React.createElement("button", { type: "button", onClick: () => saveDoc('notes', { ...n, pinned: !n.pinned }) }, n.pinned ? 'Открепить' : 'Закрепить'),
+                        confirm === n.id
+                            ? React.createElement(React.Fragment, null,
+                                React.createElement("button", { type: "button", className: "text-red-500", onClick: () => { removeDoc('notes', n.id); setConfirm(null); } }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C"),
+                                React.createElement("button", { type: "button", onClick: () => setConfirm(null) }, "\u041D\u0435\u0442"))
+                            : React.createElement("button", { type: "button", onClick: () => setConfirm(n.id) }, "\u0423\u0434\u0430\u043B\u0438\u0442\u044C"))))))))))));
 }
 // ---- components/ExpenseList.jsx
 function ExpenseList({ expenses, categories, onEdit, onDelete }) {
