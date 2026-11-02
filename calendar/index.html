@@ -375,6 +375,9 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .hello-text span:nth-child(3), .hello-evening .hello-text span:nth-child(3) { color: var(--ink); }
 .hello-date { color: #5D6EA3; }
 .ycell-today .ycell-num, .ycell-we.ycell-today .ycell-num { color: #fff; }
+.navbtn svg { transition: transform .15s ease; }
+.navbtn-active svg { transform: translateY(-1px); }
+.navbtn-active .navlabel { font-weight: 700; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -1378,7 +1381,7 @@ function layoutDay(evs) {
     } cols[c] = it.en; it.col = c; }); g.forEach(it => { it.cols = cols.length; }); });
     return items;
 }
-function DayView({ day, setDay, onBack }) {
+function DayView({ day, setDay, onBack, extra }) {
     const { events, tasks } = useStore();
     const catOf = useCat();
     const [sheet, setSheet] = useState(null);
@@ -1400,11 +1403,11 @@ function DayView({ day, setDay, onBack }) {
         React.createElement("div", { className: "dayview-head" },
             React.createElement("div", { className: "max-w-md mx-auto" },
                 React.createElement("div", { className: "flex items-center justify-between px-4 pt-3" },
-                    React.createElement("button", { type: "button", onClick: onBack, className: "backlink" },
+                    React.createElement(onBack ? "button" : "span", { type: "button", onClick: onBack, className: "backlink" },
                         React.createElement(Icon, { name: "ChevronLeft", size: 18 }),
                         " ",
                         MONTHS_NOM[d.getMonth()]),
-                    React.createElement("button", { type: "button", className: "mini-btn", onClick: () => setDay(today) }, "\u0421\u0435\u0433\u043E\u0434\u043D\u044F")),
+                    React.createElement("div", { style: { display: 'flex', gap: 6, alignItems: 'center' } }, extra, React.createElement("button", { type: "button", className: "mini-btn", onClick: () => setDay(today) }, "\u0421\u0435\u0433\u043E\u0434\u043D\u044F"))),
                 React.createElement("h1", { className: "dayview-title" },
                     d.getDate(),
                     " ",
@@ -1679,9 +1682,156 @@ function SettingsPage() {
                 catEdit.id && React.createElement(ConfirmDelete, { label: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043A\u0430\u0442\u0435\u0433\u043E\u0440\u0438\u044E", onDelete: () => delCat(catEdit.id) }))))));
 }
 // ---------- навигация ----------
+
+// ---------- вкладки в стиле «Мой день»: День / Задачи / Проекты / Привычки / Неделя ----------
+// вкладка «День»: сегодняшний день по часам; быстрые переходы к году, прогрессу и настройкам
+function TodayTab() {
+    const { go } = useContext(NavContext);
+    const [day, setDay] = useState(todayYmd());
+    const quick = [['/year', 'Календарь', 'CalendarDays'], ['/progress', 'Прогресс', 'ChartColumn'], ['/settings', 'Настройки', 'Settings']];
+    const extra = quick.map(([p, l, ic]) => React.createElement("button", { key: p, type: "button", "aria-label": l, title: l, onClick: () => go(p), className: "mini-btn", style: { padding: '6px 8px', display: 'flex', alignItems: 'center' } },
+        React.createElement(Icon, { name: ic, size: 15 })));
+    return React.createElement(DayView, { day: day, setDay: setDay, onBack: null, extra: extra });
+}
+
+// вкладка «Неделя»: 7 дней подряд — события и открытые задачи
+function WeekPage() {
+    const { events, tasks } = useStore();
+    const [off, setOff] = useState(0);
+    const [sheet, setSheet] = useState(null);
+    const [evSheet, setEvSheet] = useState(null);
+    const today = todayYmd();
+    const days = weekDays(off);
+    return React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: "Неделя" }),
+        React.createElement("div", { className: "flex items-center justify-between mb-4" },
+            React.createElement("button", { type: "button", className: "mini-btn", "aria-label": "Назад", onClick: () => setOff(off - 1) }, "‹"),
+            React.createElement("span", { className: "text-sm font-medium" }, fmtDay(days[0]) + " — " + fmtDay(days[6])),
+            React.createElement("div", { className: "flex gap-2" },
+                React.createElement("button", { type: "button", className: "mini-btn", "aria-label": "Вперёд", onClick: () => setOff(off + 1) }, "›"),
+                off !== 0 && React.createElement("button", { type: "button", className: "mini-btn", onClick: () => setOff(0) }, "Сегодня"))),
+        days.map((d, i) => {
+            const ev = events.filter(e => occursOn(e, d)).sort(byTime);
+            const tk = tasks.filter(t => !t.done && t.date === d);
+            const isToday = d === today;
+            return React.createElement("section", { key: d, className: "mb-5" },
+                React.createElement(SectionLabel, { right: isToday ? 'сегодня' : String(ev.length + tk.length) },
+                    WEEKDAYS[i] + ', ' + ymdToDate(d).getDate() + ' ' + MONTHS_GEN[ymdToDate(d).getMonth()]),
+                ev.length === 0 && tk.length === 0 && React.createElement("p", { className: "text-xs text-gray-400 px-1" }, "Нет записей"),
+                React.createElement("div", { className: "space-y-2" },
+                    ev.map(e => React.createElement("button", { key: e.id + d, type: "button", onClick: () => setEvSheet({ ev: e, date: d }), className: "taskcard w-full text-left flex items-center gap-3" },
+                        React.createElement("span", { className: "text-xs tabular-nums text-gray-500 w-12" }, e.allDay ? 'весь день' : (e.start || '')),
+                        React.createElement("span", { className: "font-medium text-gray-800 truncate" }, e.title))),
+                    tk.map(t => React.createElement(TaskCard, { key: t.cal + t.id, t: t, onOpen: () => setSheet(t) }))));
+        }),
+        evSheet && React.createElement(EventSheet, { ev: evSheet.ev, date: evSheet.date, start: evSheet.ev.start, onClose: () => setEvSheet(null) }),
+        sheet && React.createElement(TaskSheet, { task: sheet, onClose: () => setSheet(null) }));
+}
+
+// вкладка «Проекты»: категории как проекты — прогресс по задачам каждого
+function ProjectsPage() {
+    const { tasks, categories } = useStore();
+    const [openId, setOpenId] = useState(null);
+    const [sheet, setSheet] = useState(null);
+    const rows = categories.map(c => {
+        const ts = tasks.filter(t => t.category === c.id);
+        return { c, ts, open: ts.filter(t => !t.done), done: ts.filter(t => t.done).length };
+    }).filter(r => r.ts.length > 0);
+    const active = rows.filter(r => r.open.length > 0).length;
+    return React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: "Проекты" }),
+        React.createElement("div", { className: "taskstats mb-5" },
+            React.createElement("div", null,
+                React.createElement("b", null, categories.length),
+                React.createElement("span", null, "проектов")),
+            React.createElement("div", null,
+                React.createElement("b", null, active),
+                React.createElement("span", null, "в работе")),
+            React.createElement("div", null,
+                React.createElement("b", null, tasks.filter(t => t.done).length),
+                React.createElement("span", null, "готово"))),
+        rows.length === 0 && React.createElement("div", { className: "empty" },
+            React.createElement("p", { className: "empty-title" }, "Пока пусто"),
+            React.createElement("p", null, "Задачи появятся здесь из раздела «Задачи».")),
+        React.createElement("div", { className: "space-y-3" }, rows.map(({ c, ts, open, done }) => {
+            const pct = Math.round(done / ts.length * 100);
+            const isOpen = openId === c.id;
+            return React.createElement("div", { key: c.id, className: "taskcard" },
+                React.createElement("button", { type: "button", onClick: () => setOpenId(isOpen ? null : c.id), className: "w-full text-left" },
+                    React.createElement("div", { className: "flex items-center gap-2" },
+                        React.createElement("span", { className: "dot", style: { background: c.color } }),
+                        React.createElement("span", { className: "font-medium text-gray-800 flex-1" }, c.name),
+                        React.createElement("span", { className: "text-xs text-gray-500 tabular-nums" }, done + '/' + ts.length)),
+                    React.createElement("div", { className: "progress mt-3" }, React.createElement("span", { style: { width: pct + '%' } }))),
+                isOpen && React.createElement("div", { className: "space-y-2 mt-3" },
+                    open.length === 0 && React.createElement("p", { className: "text-xs text-gray-400" }, "Всё завершено"),
+                    open.map(t => React.createElement(TaskCard, { key: t.cal + t.id, t: t, onOpen: () => setSheet(t) }))));
+        })),
+        sheet && React.createElement(TaskSheet, { task: sheet, onClose: () => setSheet(null) }));
+}
+
+// вкладка «Привычки»: повторяющиеся события (ежедневные и еженедельные), отмечаются на каждый день
+function HabitsPage() {
+    const { events, save } = useStore();
+    const today = todayYmd();
+    const catOf = useCat();
+    const habits = events.filter(e => (e.repeat === 'daily' || e.repeat === 'weekly') && !e.allDay);
+    const todays = habits.filter(e => occursOn(e, today));
+    const doneToday = todays.filter(e => (e.doneDates || []).includes(today)).length;
+    const week = weekDays(0);
+    const toggle = (e, d) => {
+        const cur = e.doneDates || [];
+        const next = cur.includes(d) ? cur.filter(x => x !== d) : [...cur, d];
+        save('events', e.cal, { ...e, doneDates: next });
+    };
+    const WD = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    return React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
+        React.createElement(PageTitle, { title: "Привычки" }),
+        React.createElement("div", { className: "taskstats mb-5" },
+            React.createElement("div", null,
+                React.createElement("b", null, doneToday + '/' + todays.length),
+                React.createElement("span", null, "сегодня")),
+            React.createElement("div", null,
+                React.createElement("b", null, habits.length),
+                React.createElement("span", null, "всего"))),
+        habits.length === 0 && React.createElement("div", { className: "empty" },
+            React.createElement("p", { className: "empty-title" }, "Пока нет привычек"),
+            React.createElement("p", null, "Создайте событие с повтором «День» или «Неделя» — оно станет привычкой.")),
+        React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "Сегодня"),
+            todays.length === 0 && React.createElement("p", { className: "text-xs text-gray-400 px-1" }, "На сегодня привычек нет"),
+            React.createElement("div", { className: "space-y-2" }, todays.map(e => {
+                const on = (e.doneDates || []).includes(today);
+                const cat = catOf(e.category);
+                return React.createElement("div", { key: e.id, className: `taskcard flex items-center gap-3 ${on ? 'is-done' : ''}` },
+                    React.createElement("button", { type: "button", "aria-label": on ? 'Снять отметку' : 'Отметить', className: `checkbox ${on ? 'checkbox-on' : ''}`, onClick: () => toggle(e, today) }),
+                    React.createElement("div", { className: "flex-1 min-w-0" },
+                        React.createElement("p", { className: `font-medium ${on ? 'line-through text-gray-400' : 'text-gray-800'}` }, e.title),
+                        React.createElement("p", { className: "flex items-center gap-2 mt-1 text-xs text-gray-500" },
+                            React.createElement("span", { className: "dot", style: { background: cat.color } }),
+                            cat.name, e.start ? ' · ' + e.start : '')));
+            }))),
+        habits.length > 0 && React.createElement("section", { className: "mb-6" },
+            React.createElement(SectionLabel, null, "За неделю"),
+            React.createElement("div", { className: "space-y-2" }, habits.map(e => React.createElement("div", { key: e.id, className: "taskcard" },
+                React.createElement("p", { className: "font-medium text-gray-800 mb-2 truncate" }, e.title),
+                React.createElement("div", { className: "flex justify-between gap-1" }, week.map((d, i) => {
+                    const future = d > today;
+                    const occurs = occursOn(e, d);
+                    const isDone = (e.doneDates || []).includes(d);
+                    return React.createElement("button", { key: d, type: "button", disabled: future || !occurs, onClick: () => toggle(e, d),
+                        className: 'flex-1 flex flex-col items-center gap-1 text-[10px] text-gray-500 disabled:opacity-40' },
+                        React.createElement("span", null, WD[i]),
+                        React.createElement("span", { className: 'w-7 h-7 rounded-full flex items-center justify-center', style: {
+                                background: isDone ? 'var(--olive)' : 'transparent',
+                                border: isDone ? 'none' : '1px solid var(--line)',
+                                color: isDone ? '#fff' : 'inherit' } }, ymdToDate(d).getDate()));
+                })))))));
+}
+
 function BottomNav() {
     const { path, go } = useContext(NavContext);
-    const tabs = [['/', 'Календарь', 'CalendarDays'], ['/tasks', 'Задачи', 'ListChecks'], ['/progress', 'Прогресс', 'ChartColumn'], ['/settings', 'Настройки', 'Settings']];
+    const tabs = [['/', 'День', 'Sun'], ['/tasks', 'Задачи', 'ListChecks'], ['/projects', 'Проекты', 'Folder'], ['/habits', 'Привычки', 'Leaf'], ['/week', 'Неделя', 'CalendarDays']];
     return (React.createElement("nav", { className: "navbar" },
         React.createElement("div", null, tabs.map(([p, l, ic]) => (React.createElement("button", { key: p, type: "button", onClick: () => go(p), className: `navbtn ${path === p ? 'navbtn-active' : ''}` },
             React.createElement(Icon, { name: ic, size: 22 }),
@@ -1695,7 +1845,7 @@ function Main() {
     useEffect(() => { const t = setTimeout(() => setShowSplash(false), 2200); return () => clearTimeout(t); }, []);
     if (showSplash)
         return React.createElement(Splash, null);
-    const Page = { '/': YearPage, '/tasks': TasksPage, '/progress': ProgressPage, '/settings': SettingsPage }[path] || YearPage;
+    const Page = { '/': TodayTab, '/year': YearPage, '/tasks': TasksPage, '/projects': ProjectsPage, '/habits': HabitsPage, '/week': WeekPage, '/progress': ProgressPage, '/settings': SettingsPage }[path] || TodayTab;
     // повторное нажатие на «Календарь» возвращает из дня к году
     const go = (p) => { if (p === path)
         setK(k + 1); setPath(p); window.scrollTo(0, 0); };
