@@ -1734,7 +1734,7 @@ function WeekPage() {
     const today = todayYmd();
     const days = weekDays(off);
     return React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
-        React.createElement(PageTitle, { title: "Неделя" }, React.createElement("button", { type: "button", onClick: () => go("/progress"), className: "mini-btn", style: { marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 } }, React.createElement(Icon, { name: "ChartColumn", size: 15 }), "Прогресс недели")),
+        React.createElement(PageTitle, { title: "Неделя" }, React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 } }, React.createElement("button", { type: "button", onClick: () => go("/progress"), className: "mini-btn", style: { display: "inline-flex", alignItems: "center", gap: 6 } }, React.createElement(Icon, { name: "ChartColumn", size: 15 }), "Прогресс недели"), React.createElement("button", { type: "button", onClick: () => go("/habits"), className: "mini-btn", style: { display: "inline-flex", alignItems: "center", gap: 6 } }, React.createElement(Icon, { name: "Leaf", size: 15 }), "Привычки"))),
         React.createElement("div", { className: "flex items-center justify-between mb-4" },
             React.createElement("button", { type: "button", className: "mini-btn", "aria-label": "Назад", onClick: () => setOff(off - 1) }, "‹"),
             React.createElement("span", { className: "text-sm font-medium" }, fmtDay(days[0]) + " — " + fmtDay(days[6])),
@@ -1862,7 +1862,7 @@ function HabitsPage() {
 
 function BottomNav() {
     const { path, go } = useContext(NavContext);
-    const tabs = [['/', 'День', 'Sun'], ['/tasks', 'Задачи', 'ListChecks'], ['/projects', 'Проекты', 'Folder'], ['/habits', 'Привычки', 'Leaf'], ['/week', 'Неделя', 'CalendarDays']];
+    const tabs = [['/', 'День', 'Sun'], ['/tasks', 'Задачи', 'ListChecks'], ['/projects', 'Проекты', 'Folder'], ['/week', 'Неделя', 'CalendarDays']];
     return (React.createElement("nav", { className: "navbar" },
         React.createElement("div", null, tabs.map(([p, l, ic]) => (React.createElement("button", { key: p, type: "button", onClick: () => go(p), className: `navbtn ${path === p ? 'navbtn-active' : ''}` },
             React.createElement(Icon, { name: ic, size: 22 }),
