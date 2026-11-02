@@ -378,13 +378,43 @@ h1, h2, h3, .display { font-family: var(--display); font-weight: 400; letter-spa
 .navbtn svg { transition: transform .15s ease; }
 .navbtn-active svg { transform: translateY(-1px); }
 .navbtn-active .navlabel { font-weight: 700; }
+
+/* ===== стиль «как на образце»: светлый фон, белые карточки, navy-акцент, плавающая нижняя панель ===== */
+:root { --navy: #1F2F6B; --navy-soft: #E8EDF8; --ink: #14182B; --ink-muted: #7A8096; }
+body { background: #F4F5F8 !important; color: var(--ink); font-family: var(--sans); }
+.min-h-screen { background: #F4F5F8; }
+.dayview, .year-head { background: #F4F5F8 !important; }
+.navbar, .navbar.navbar { background: #FFFFFF !important; border: none !important; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); border-radius: 28px; box-shadow: 0 10px 30px -10px rgba(20, 24, 43, .22); padding: 0; }
+.navbar > div { justify-content: space-around; padding: 6px 4px; }
+.navbtn { color: var(--ink-muted); border-radius: 20px; padding: 8px 6px 7px; min-width: 0; }
+.navbtn svg { width: 22px; height: 22px; }
+.navbtn-active { color: var(--navy) !important; background: var(--navy-soft); }
+.navlabel { font-size: 10px; letter-spacing: .02em; text-transform: none; font-weight: 500; }
+.navbtn-active .navlabel { font-weight: 600; }
+.ptitle h1, .dayview-title, .year-big { font-family: 'Playfair Display', Georgia, serif !important; font-weight: 500 !important; font-size: 30px !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ink) !important; line-height: 1.15; }
+.dayview-title span { font-family: 'Playfair Display', Georgia, serif !important; font-size: 16px !important; color: var(--ink-muted) !important; }
+.dayview-head { background: #F4F5F8; border-bottom: none; }
+.taskstats > div { background: #FFFFFF !important; border-radius: 20px; box-shadow: 0 1px 2px rgba(20, 24, 43, .04); }
+.taskstats b { font-family: 'Playfair Display', Georgia, serif !important; font-weight: 500 !important; color: var(--ink) !important; font-size: 30px !important; }
+.taskstats .is-late b { color: #C0392B !important; }
+.taskstats span { color: var(--ink-muted) !important; }
+.taskcard { background: #FFFFFF !important; border-radius: 20px !important; box-shadow: 0 1px 2px rgba(20, 24, 43, .04); padding: 16px !important; }
+.is-done { opacity: .6; }
+.checkbox-on, .checkbox.checkbox-on { background: var(--navy) !important; border-color: var(--navy) !important; }
+.progress { background: #E6E9F2; }
+.progress span { background: var(--navy) !important; }
+.mini-btn { color: var(--navy) !important; background: #FFFFFF !important; border: 1px solid #DCE1EE !important; border-radius: 999px !important; }
+.mini-btn:active { background: var(--navy) !important; color: #fff !important; }
+.fab { background: var(--navy) !important; color: #fff !important; border-radius: 50% !important; box-shadow: 0 12px 24px -10px rgba(31, 47, 107, .6) !important; bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important; }
+.empty { color: var(--ink-muted); }
+.empty-title { font-family: 'Playfair Display', Georgia, serif; color: var(--ink); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script>window.FIREBASE_CONFIG = {"apiKey": "AIzaSyAy8Vn_WUQJ9bHTWD8mW8n802tM0EKkoj0", "authDomain": "money-is-sexy.firebaseapp.com", "databaseURL": "https://money-is-sexy-default-rtdb.firebaseio.com", "projectId": "money-is-sexy", "storageBucket": "money-is-sexy.firebasestorage.app", "messagingSenderId": "629170490091", "appId": "1:629170490091:web:70a590999886a0ef850cae"};</script>
 <script>window.APP_STRIP = "Календарь"; window.APP_TAGLINE = "Ваш личный календарь";</script>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Marck+Script&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600&family=Marck+Script&family=Playfair+Display:wght@400;500;600&display=swap">
 <script src="https://cdn.tailwindcss.com/3.4.1"></script>
 <script>
   tailwind.config = { corePlugins: { preflight: true }, theme: { extend: {
