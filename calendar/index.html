@@ -1697,13 +1697,14 @@ function TodayTab() {
 // вкладка «Неделя»: 7 дней подряд — события и открытые задачи
 function WeekPage() {
     const { events, tasks } = useStore();
+    const { go } = useContext(NavContext);
     const [off, setOff] = useState(0);
     const [sheet, setSheet] = useState(null);
     const [evSheet, setEvSheet] = useState(null);
     const today = todayYmd();
     const days = weekDays(off);
     return React.createElement("div", { className: "pb-32 px-4 max-w-md mx-auto" },
-        React.createElement(PageTitle, { title: "Неделя" }),
+        React.createElement(PageTitle, { title: "Неделя" }, React.createElement("button", { type: "button", onClick: () => go("/progress"), className: "mini-btn", style: { marginTop: 8, display: "inline-flex", alignItems: "center", gap: 6 } }, React.createElement(Icon, { name: "ChartColumn", size: 15 }), "Прогресс недели")),
         React.createElement("div", { className: "flex items-center justify-between mb-4" },
             React.createElement("button", { type: "button", className: "mini-btn", "aria-label": "Назад", onClick: () => setOff(off - 1) }, "‹"),
             React.createElement("span", { className: "text-sm font-medium" }, fmtDay(days[0]) + " — " + fmtDay(days[6])),
