@@ -380,7 +380,8 @@ function StoreProvider({ children }) {
     const [payments, setPayments] = useState([]);
     const [debts, setDebts] = useState([]);
     const [notes, setNotes] = useState([]);
-    const setters = { expenses: setExpenses, categories: setCategories, payments: setPayments, debts: setDebts, notes: setNotes };
+    const [balance, setBalance] = useState([]);
+    const setters = { expenses: setExpenses, categories: setCategories, payments: setPayments, debts: setDebts, notes: setNotes, balance: setBalance };
     const [month, setMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
     const [mode, setMode] = useState('loading'); // loading | cloud | local
     const [error, setError] = useState('');
@@ -406,6 +407,7 @@ function StoreProvider({ children }) {
             setPayments(lsGet('payments'));
             setDebts(lsGet('debts'));
             setNotes(lsGet('notes'));
+            setBalance(lsGet('balance'));
             setMode('local');
         };
         let dataUnsubs = [];
@@ -421,6 +423,7 @@ function StoreProvider({ children }) {
             dataUnsubs.push(db.collection('payments').onSnapshot(s => setPayments(toList(s)), onErr));
             dataUnsubs.push(db.collection('debts').onSnapshot(s => setDebts(toList(s)), onErr));
             dataUnsubs.push(db.collection('notes').onSnapshot(s => setNotes(toList(s)), () => { }));
+            dataUnsubs.push(db.collection('balance').onSnapshot(s => setBalance(toList(s)), () => { }));
         };
         const start = async () => {
             var _a;
@@ -468,7 +471,7 @@ function StoreProvider({ children }) {
                         setCategories([]);
                         setPayments([]);
                         setDebts([]);
-                        setNotes([]);
+                        setNotes([]); setBalance([]);
                         attach(firebaseAdapter(rtdb, 'spaces/' + sid + '/data/'), () => { if (sid !== myUid)
                             switchTo(myUid);
                         else
@@ -536,7 +539,7 @@ function StoreProvider({ children }) {
                     setCategories([]);
                     setPayments([]);
                     setDebts([]);
-                    setNotes([]);
+                    setNotes([]); setBalance([]);
                     setMode('signedout');
                 }
             });
@@ -560,7 +563,7 @@ function StoreProvider({ children }) {
                 : ((e === null || e === void 0 ? void 0 : e.message) || 'Не удалось сохранить'));
         }
     };
-    const current = { expenses, categories, payments, debts, notes };
+    const current = { expenses, categories, payments, debts, notes, balance };
     // Универсальные запись/удаление для платежей и долгов
     const saveDoc = (col, item) => wrap(async () => {
         const id = item.id || newId();
@@ -584,7 +587,7 @@ function StoreProvider({ children }) {
         }
     });
     const api = {
-        expenses, categories, payments, debts, notes, mode, error, saveDoc, removeDoc, month, setMonth, user,
+        expenses, categories, payments, debts, notes, balance, mode, error, saveDoc, removeDoc, month, setMonth, user,
         signOut: () => window.firebase && firebase.auth().signOut(),
         isOwner, members, displayName,
         setName: (n) => wrap(async () => {
@@ -689,7 +692,7 @@ function StoreProvider({ children }) {
                 setCategories([]);
                 setPayments([]);
                 setDebts([]);
-                setNotes([]);
+                setNotes([]); setBalance([]);
                 ['expenses', 'categories', 'payments', 'debts'].forEach(k => lsSet(k, []));
             }
         }),
@@ -1300,6 +1303,46 @@ function EditExpenseModal({ expense, categories, onSave, onClose }) {
 }
 // ---- pages/Dashboard.jsx
 const plural = (n, f) => f[(n % 10 === 1 && n % 100 !== 11) ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 1 : 2];
+// ---- components/BalanceCard.jsx
+// «Остаток на счёте»: вносите, сколько денег на счёте сейчас; дальше траты после этого момента вычитаются.
+function BalanceCard() {
+    const { balance, expenses, saveDoc } = useStore();
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState('');
+    const b = (balance || []).find(x => x.id === 'main');
+    const spent = b ? expenses.filter(e => new Date(e.date).getTime() > b.at).reduce((sum, e) => sum + (Number(e.amount) || 0), 0) : 0;
+    const left = b ? Math.round((b.amount - spent) * 100) / 100 : 0;
+    const start = () => { setVal(b ? String(left).replace('.', ',') : ''); setEditing(true); };
+    const save = async () => {
+        const n = evalSum(val);
+        if (isNaN(n))
+            return;
+        await saveDoc('balance', { id: 'main', amount: n, at: Date.now() });
+        setEditing(false);
+    };
+    const when = b ? new Date(b.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '';
+    if (editing)
+        return (React.createElement("div", { className: "paper px-4 py-4 mb-7" },
+            React.createElement("p", { className: "eyebrow mb-2" }, "Сколько сейчас на счёте"),
+            React.createElement(AmountInput, { id: "balance-amount", value: val, onChange: setVal, autoFocus: true }),
+            React.createElement("p", { className: "text-xs text-gray-500 mt-2" }, "Потом я вычитаю из этой суммы все траты, внесённые после сегодняшнего момента."),
+            React.createElement("div", { className: "flex gap-2 mt-3" },
+                React.createElement("button", { type: "button", className: "btn-primary flex-1 py-2", onClick: save }, "Сохранить"),
+                React.createElement("button", { type: "button", className: "btn-ghost px-4", onClick: () => setEditing(false) }, "Отмена"))));
+    if (!b)
+        return (React.createElement("button", { type: "button", onClick: start, className: "paper w-full px-4 py-3 mb-7 flex items-center gap-3 text-left" },
+            React.createElement(Icon, { name: "Wallet", size: 20, className: "text-gray-600 shrink-0" }),
+            React.createElement("span", { className: "flex-1 min-w-0" },
+                React.createElement("span", { className: "eyebrow block" }, "Остаток на счёте"),
+                React.createElement("span", { className: "block text-gray-800" }, "Внести, сколько денег на счёте"))));
+    return (React.createElement("div", { className: "paper px-4 py-3 mb-7 flex items-center gap-3" },
+        React.createElement(Icon, { name: "Wallet", size: 20, className: "text-gray-600 shrink-0" }),
+        React.createElement("span", { className: "flex-1 min-w-0" },
+            React.createElement("span", { className: "eyebrow block" }, "Остаток на счёте"),
+            React.createElement("span", { className: "display text-2xl tabular-nums block", style: left < 0 ? { color: 'var(--late)' } : undefined }, money(left)),
+            React.createElement("span", { className: "block text-xs text-gray-500" }, `с ${when} было ${money(b.amount)}, потрачено ${money(spent)}`)),
+        React.createElement("button", { type: "button", className: "btn-ghost px-3 py-2 shrink-0", onClick: start }, "Изменить")));
+}
 function Dashboard() {
     const { expenses, categories, payments, addExpense, updateExpense, deleteExpense, error, month } = useStore();
     const go = useNavigate();
@@ -1347,6 +1390,7 @@ function Dashboard() {
                     " ",
                     plural(monthExpenses.length, ['операция', 'операции', 'операций'])),
                 React.createElement(Stamp, { size: 78, className: "hero-stamp" }))),
+        React.createElement(BalanceCard, null),
         nextPay && (React.createElement("button", { type: "button", onClick: () => go('/payments'), className: "paper w-full px-4 py-3 mb-7 flex items-center gap-3 text-left" },
             React.createElement(Icon, { name: "CalendarClock", size: 20, className: "text-gray-600 shrink-0" }),
             React.createElement("span", { className: "flex-1 min-w-0" },
